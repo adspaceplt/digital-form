@@ -135,21 +135,10 @@
         cmp: { paid: 'Paid to', paidA: 'Meta, charged to your credit card', paidB: AGENCY.trading_name, when: 'Payment timing', whenA: 'As the ads run', whenB: 'Before each month',
           fee: 'Agency Credit Term Fee', feeA: 'None', feeB: 'None when prepaid; {fee}% if billed with the invoice' },
         own: 'Your own ad account',
-        ownPts: ['Meta charges the ads directly to your own credit card.',
-          'The account is linked to the ' + AGENCY.trading_name + ' Meta business portfolio, so ' + AGENCY.trading_name + ' runs and manages the campaigns.'],
         pre: 'Prepaid through ' + AGENCY.trading_name,
-        prePts: ['The first month\'s advertising budget is paid to ' + AGENCY.trading_name + ' before the ads start.',
-          'Each following month is requested when about {pct}% of the current budget is spent.',
-          'If payment is not received, the ads will be paused until payment is received.'],
-        termH: 'Billed with the invoice',
-        term: 'Where the advertising budget is billed with the invoice on the quotation\'s payment terms instead of prepaid, an Agency Credit Term Fee of {fee}% will be added to the advertising budget.',
-        eg: 'For example, a budget of {c}\u00a0{b} carries a fee of {c}\u00a0{x}.', close: 'Close'
+        termH: 'Billed with the invoice', close: 'Close'
       },
       adLine: '{p} advertising budget', adsT: 'Advertising budget for the term',
-      adsNote: 'The advertising budget is paid to the advertising platforms on the Client\'s behalf and is payable before the service commences.',
-      payNote: 'Payment is due within {d} days of the invoice date.', payApprove: 'Payment is due within {d} days of the invoice date, subject to ' + AGENCY.trading_name + '\'s approval.',
-      billManaged: 'The fees include the management of an advertising budget of up to {c}\u00a0{b} per month.',
-      basis: 'Rates are based on the ' + AGENCY.trading_name + ' Rate Card v.{v}.',
       reviewT: 'Request received', reviewP: AGENCY.trading_name + ' will review your quotation and send it to you on WhatsApp by {d}.',
       rcvSent: 'Request sent', rcvSend: 'Quotation sent on WhatsApp',
       rcvBy: 'By {d}', rcvSign: 'Accept and sign on this page', rcvYours: 'Your request',
@@ -200,7 +189,6 @@
         mobile: 'Mobile', email: 'Email', minTerm: 'Minimum term', termTotal: 'Total for the term', termTotalIncl: 'Total for the term incl. SST',
         signer: 'Full name', desig: 'Designation', sig: 'Signature', clear: 'Clear', typeIn: 'Type instead', drawIn: 'Draw instead',
         pad: 'Signature area', padHint: 'Sign here', typedPh: 'Type your full name',
-        agree: 'I am authorised to sign on behalf of {c} and accept this quotation and the ' + AGENCY.trading_name + ' Service Terms.',
         terms: 'Read the Service Terms', sending: 'Sending…',
         codeL: 'Enter the code sent to {e}', digit: 'Digit {n} of 6', resendQ: 'Did not receive it?', resend: 'Send again',
         resendIn: 'Send again ({s}s)', resent: 'A new code has been sent.', finish: 'Accept and sign', finishing: 'Signing…',
@@ -312,21 +300,10 @@
         cmp: { paid: '付款对象', paidA: 'Meta（您的信用卡）', paidB: AGENCY.trading_name, when: '付款时间', whenA: '广告投放时扣款', whenB: '每月投放前',
           fee: '账期服务费', feeA: '无', feeB: '预付则无；随发票结算加收{fee}%' },
         own: '您自己的广告账户',
-        ownPts: ['Meta 直接从您自己的信用卡扣除广告费用。',
-          '该账户将关联至 ' + AGENCY.trading_name + ' 的 Meta 商务资产组合，由 ' + AGENCY.trading_name + ' 投放并管理广告活动。'],
         pre: '通过 ' + AGENCY.trading_name + ' 预付',
-        prePts: ['首月广告预算须于广告开始投放前支付予 ' + AGENCY.trading_name + '。',
-          '当月预算消耗约{pct}%时，' + AGENCY.trading_name + ' 将请款下月预算。',
-          '如未收到款项，广告将暂停投放，直至收款为止。'],
-        termH: '随发票结算',
-        term: '如广告预算按报价单的付款期限随发票结算而非预付，将按广告预算另加收{fee}%的账期服务费（Agency Credit Term Fee）。',
-        eg: '例如：广告预算 {c}\u00a0{b}，账期服务费为 {c}\u00a0{x}。', close: '关闭'
+        termH: '随发票结算', close: '关闭'
       },
       adLine: '{p} 广告预算', adsT: '合约期广告预算',
-      adsNote: '广告预算由 ' + AGENCY.trading_name + ' 代客户支付予广告平台，须于服务开始前支付。',
-      payNote: '付款期限为发票日期起{d}天内。', payApprove: '付款期限为发票日期起{d}天内，须经 ' + AGENCY.trading_name + ' 批准。',
-      billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。',
-      basis: '价格依据 ' + AGENCY.trading_name + ' 价目表 v.{v}。',
       reviewT: '已收到您的请求', reviewP: AGENCY.trading_name + ' 将审核您的报价，并于 {d} 前通过 WhatsApp 发送给您。',
       rcvSent: '已提交请求', rcvSend: '通过 WhatsApp 发送报价',
       rcvBy: '{d}前', rcvSign: '在此页面接受并签署', rcvYours: '您的请求',
@@ -379,7 +356,6 @@
         mobile: '手机号码', email: '邮箱', minTerm: '最低合约期', termTotal: '合约期总额', termTotalIncl: '合约期总额（含 SST）',
         signer: '全名', desig: '职位', sig: '签名', clear: '清除', typeIn: '改为输入', drawIn: '改为手写',
         pad: '签名区', padHint: '请在此签名', typedPh: '请输入您的全名',
-        agree: '本人获授权代表 {c} 签署，并接受本报价及 ' + AGENCY.trading_name + ' 服务条款。',
         terms: '阅读服务条款', sending: '发送中…',
         codeL: '请输入发送至 {e} 的验证码', digit: '第{n}位，共6位', resendQ: '没有收到？', resend: '重新发送',
         resendIn: '重新发送（{s}秒）', resent: '新的验证码已发送。', finish: '接受并签署', finishing: '签署中…',
@@ -441,6 +417,31 @@
   try { if (localStorage.getItem(LANG_KEY) === 'zh') lang = 'zh'; } catch (e) {}
   function t() { return WORDS[lang]; }
   function f(s, o) { return String(s).replace(/\{(\w+)\}/g, function (m, k) { return o && o[k] != null ? o[k] : m; }); }
+  /* The quotation's terms on this page (how ad spend is paid, the notes
+     under the quotation, the signing consent) are the template store's
+     (`quote.*`; restructure release 13, 2026-11-28), in force on the
+     quotation's day of issue (today before one is sent), read for the
+     page's language before it is drawn: a store that does not answer
+     covers the page as Unable to load, never draws it without them. */
+  var TERM_KEYS = ['quote.ads.own.1', 'quote.ads.own.2', 'quote.ads.pre.1', 'quote.ads.pre.2', 'quote.ads.pre.3',
+    'quote.ads.term', 'quote.ads.example', 'quote.notes.ads', 'quote.notes.pay', 'quote.notes.pay-approve',
+    'quote.notes.managed', 'quote.notes.basis', 'quote.sign.agree'];
+  var BOOKS = {};
+  function termsId() {
+    var C = window.ADspaceClock, at = Q && Q.issued_at ? (C ? C.day(Q.issued_at) : String(Q.issued_at).slice(0, 10)) : '';
+    return lang + '|' + at;
+  }
+  function termsLoad() {
+    var id = termsId(), at = id.split('|')[1] || null;
+    if (!window.ADspaceTpl) return Promise.reject(new Error('no-tpl'));
+    return window.ADspaceTpl.texts(TERM_KEYS, lang, at).then(function (b) { BOOKS[id] = b; return b; });
+  }
+  /* A value not to hand prints blank, as the page always printed it. */
+  function tw(k, o) {
+    var v = Object.assign({ agency: AGENCY.trading_name }, o || {});
+    Object.keys(v).forEach(function (x) { if (v[x] == null || String(v[x]).trim() === '') v[x] = '\u0000'; });
+    return BOOKS[termsId()].say(k, v).replace(/\u0000/g, '');
+  }
   /* Figures through the one money formatter (js/money.js), its sign left to the table head. */
   var MON = window.ADspaceMoney;
   function n0(v) { return MON.money(v, 'MY').replace(/^RM /, ''); }
@@ -710,7 +711,7 @@
     var w = t().ads, at = Q && Q.issued_at ? Q.issued_at : undefined, c = Q ? qc() : 'RM';
     var pct = MON.setting('ad_prepay_pct', at), fee = MON.setting('ad_credit_fee_pct', at);
     var x = Math.round(AD_EG * Number(fee)) / 100;
-    var pts = function (list) { return '<ul class="adway-pts">' + list.map(function (p) { return '<li>' + esc(f(p, { pct: pctWord(pct) })) + '</li>'; }).join('') + '</ul>'; };
+    var pts = function (keys) { return '<ul class="adway-pts">' + keys.map(function (k) { return '<li>' + esc(tw(k, { 'prepay pct': pctWord(pct) })) + '</li>'; }).join('') + '</ul>'; };
     $('adHeading').textContent = adw('adHow');
     $('adClose').setAttribute('aria-label', w.close);
     $('adClose').innerHTML = ic('close');
@@ -720,13 +721,13 @@
     $('adBody').innerHTML = '<p class="adways-lead">' + esc(w.lead) + '</p><div class="stepcards adways">' +
       '<div class="stepcard is-rec"><span class="qs-rec">' + esc(t().recommended) + '</span><span class="stepcard-mark">' + ic('adaccount') + '</span><div class="adway-text">' +
         '<span class="adway-n">' + esc(f(w.opt, { n: 1 })) + '</span>' +
-        '<p class="adway-name"><b>' + esc(w.own) + '</b></p>' + pts(w.ownPts) + '</div></div>' +
+        '<p class="adway-name"><b>' + esc(w.own) + '</b></p>' + pts(['quote.ads.own.1', 'quote.ads.own.2']) + '</div></div>' +
       '<p class="adways-or" aria-hidden="true"><span>' + esc(w.or) + '</span></p>' +
       '<div class="stepcard"><span class="stepcard-mark">' + ic('prepaid') + '</span><div class="adway-text">' +
         '<span class="adway-n">' + esc(f(w.opt, { n: 2 })) + '</span>' +
-        '<p class="adway-name"><b>' + esc(w.pre) + '</b></p>' + pts(w.prePts) +
-        '<div class="adway-sub"><h4>' + esc(w.termH) + '</h4><p>' + esc(f(w.term, { fee: pctWord(fee) })) + '</p>' +
-          '<p>' + esc(f(w.eg, { c: c, b: n0(AD_EG), x: x % 1 ? n2(x) : n0(x) })) + '</p></div></div></div></div>' +
+        '<p class="adway-name"><b>' + esc(w.pre) + '</b></p>' + pts(['quote.ads.pre.1', 'quote.ads.pre.2', 'quote.ads.pre.3']) +
+        '<div class="adway-sub"><h4>' + esc(w.termH) + '</h4><p>' + esc(tw('quote.ads.term', { 'fee pct': pctWord(fee) })) + '</p>' +
+          '<p>' + esc(tw('quote.ads.example', { currency: c, budget: n0(AD_EG), fee: x % 1 ? n2(x) : n0(x) })) + '</p></div></div></div></div>' +
       '<div class="adcmp-wrap"><table class="adcmp"><thead><tr><td></td><th scope="col">' + esc(f(w.opt, { n: 1 })) + '</th><th scope="col">' + esc(f(w.opt, { n: 2 })) + '</th></tr></thead><tbody>' +
         row(C.paid, C.paidA, C.paidB) + row(C.when, C.whenA, C.whenB) + row(C.fee, C.feeA, f(C.feeB, { fee: pctWord(fee) })) + '</tbody></table></div>';
   }
@@ -1155,21 +1156,21 @@
         '<span class="qs-num qs-mute qs-onreq">' + esc(t().onReq) + '</span></div>';
     }).join('');
     var notes = [], managed = managedBudget(q), adAt = -1;
-    if (adsOf(tt).length) notes.push(t().adsNote);
+    if (adsOf(tt).length) notes.push(tw('quote.notes.ads'));
     else if (managed || Number(tt.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) {
       /* Not included, then How ad spend works under it (2026-11-27). */
-      if (managed) notes.push(f(t().billManaged, { c: qc(), b: n0(qb(managed)) }));
+      if (managed) notes.push(tw('quote.notes.managed', { currency: qc(), budget: n0(qb(managed)) }));
       adAt = notes.push(adw('adNot')) - 1;
     }
     /* The validity is the status line's on screen; the PDF states it in its
        remarks (2026-10-20, QTE-1). */
     if (tt.layout === 2) {
       var pd = Number(tt.pay_days) || 7;
-      notes.push(f(pd >= 30 ? t().payApprove : t().payNote, { d: pd }));
+      notes.push(tw(pd >= 30 ? 'quote.notes.pay-approve' : 'quote.notes.pay', { days: pd }));
       (Array.isArray(tt.terms) ? tt.terms : []).forEach(function (x) { if (String(x || '').trim()) notes.push(String(x).trim()); });
     }
     if (addonsOf(tt).length) notes.push(aoWord('aoTerm'));
-    notes.push(f(t().basis, { v: q.version }));
+    notes.push(tw('quote.notes.basis', { version: q.version }));
     var aside = '<aside class="qs-side" id="qsSide">' + sideHtml(q) + '</aside>';
     return '<div class="qs-quote" data-shown><section class="qs-main">' +
       ((st !== 'quote' && st !== 'ready') || q.revised || bn || q.change ? '' : '<button class="btn btn-quiet qs-change" type="button" data-a="change">' + window.ADspaceIcons.glyph('back', '', 'width="15" height="15"') + esc(t().change) + '</button>') +
@@ -1703,7 +1704,7 @@
           '<button class="btn btn-quiet btn-sm" type="button" data-a="signmode">' + esc(SG.mode === 'draw' ? s.typeIn : s.drawIn) + '</button></span></div>' +
           sig + '<span class="msg" id="sgPadMsg"></span></div>' +
         '<label class="qs-consent"><input type="checkbox" id="sgAgree"' + (SG.agree ? ' checked' : '') + '>' + MARK +
-          '<span class="qs-text">' + esc(f(s.agree, { c: SG.co.legal_name })) + '</span></label><span class="msg" id="sgAgreeMsg"></span>' +
+          '<span class="qs-text">' + esc(tw('quote.sign.agree', { company: SG.co.legal_name })) + '</span></label><span class="msg" id="sgAgreeMsg"></span>' +
         (cfg.serviceTermsUrl ? '<a class="btn btn-quiet btn-sm qs-terms" href="' + esc(window.ADspaceWords.absUrl(cfg.serviceTermsUrl)) + '" target="_blank" rel="noopener">' + esc(s.terms) + LEAVE + '</a>' : '') +
         '<div class="qs-cf" data-cf></div><p class="msg" id="qsSideMsg" role="status"></p>' + signFoot('signback', 'signcode') + '</form>';
     }
@@ -1966,6 +1967,14 @@
     if ($('langToggle')) $('langToggle').textContent = t().lang;
     if (paint.lost) { cover(t().lostT, t().lostP, true, 'linkoff'); return; }
     if (!CAT && !Q) { if (paint.off) cover(t().offT, t().offP, false, 'alert'); return; }
+    if (!BOOKS[termsId()]) {
+      if (!paint.terms) {
+        paint.terms = true;
+        termsLoad().then(function () { paint.terms = false; paint(); })
+          .catch(function () { paint.terms = false; paint.off = true; Q = null; CAT = null; paint(); });
+      }
+      return;
+    }
     /* A quotation the team never sent holds back its price at every stage
        (audit 2026-10-30): closed, it reads its stage alone. */
     // The budget follows the selection on every paint.

@@ -16,6 +16,13 @@
  *      sign and stamp (Name, Designation, Date), left empty until signed.
  * Every page's foot is the reference, PRIVATE & CONFIDENTIAL and the page
  * count. A preview carries DRAFT over every page.
+ *
+ * Its wording (the cover's fallback, the lead, TERMS in both layouts and
+ * the acceptance line) is the template store's (`quotation.*`, kind
+ * `quotation-terms`; restructure release 13, 2026-11-28), read through
+ * ADspaceTpl.texts in force on the quotation's day of issue, so a copy
+ * redrawn later reads as issued. A store that does not answer every key
+ * refuses the PDF; it is never drawn with a term left out.
  */
 (function () {
   'use strict';
@@ -26,8 +33,26 @@
   var KEPT = null;
   function agency() { return (KEPT && KEPT.a) || CFG().agencyName; }
   function issuer() { return window.ADSPACE_ORG.name; }
-  /* The Service Terms clause, left out where none is set. */
-  function termsAt(lead) { var u = KEPT ? KEPT.t : CFG().serviceTermsUrl; return u ? lead + agency() + ' Service Terms at ' + u : ''; }
+  /* The Service Terms' address, none where none is set. */
+  function termsUrl() { return KEPT ? KEPT.t : CFG().serviceTermsUrl; }
+  /* The template store's wording for this draw (ADspaceTpl.texts). */
+  var BOOK = null;
+  var KEYS = ['quotation.cover', 'quotation.lead', 'quotation.acceptance',
+    'quotation.terms.validity', 'quotation.terms.fees', 'quotation.terms.fees-sst', 'quotation.terms.fees-own',
+    'quotation.terms.fees-own-sst', 'quotation.terms.ads', 'quotation.terms.ads-excluded', 'quotation.terms.ad-ways',
+    'quotation.terms.exclusions', 'quotation.terms.on-request', 'quotation.terms.budget-above', 'quotation.terms.agreement',
+    'quotation.terms.agreement-terms', 'quotation.terms.basis',
+    'quotation.notes.validity', 'quotation.notes.includes', 'quotation.notes.includes-own', 'quotation.notes.once-items',
+    'quotation.notes.ad-ways', 'quotation.notes.on-request', 'quotation.notes.budget-above', 'quotation.notes.commitment',
+    'quotation.notes.commitment-once', 'quotation.notes.commitment-own', 'quotation.notes.commitment-own-once',
+    'quotation.notes.binding', 'quotation.notes.binding-terms', 'quotation.notes.basis'];
+  /* A value not to hand (a draft's date) prints blank, as the PDF always
+     printed it, never the store's {field}. */
+  function say(k, values) {
+    var v = Object.assign({ agency: agency() }, values || {});
+    Object.keys(v).forEach(function (x) { if (v[x] == null || String(v[x]).trim() === '') v[x] = '\u0000'; });
+    return BOOK.say(k, v).replace(/\u0000/g, '');
+  }
   var FLOOR = 76;
   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
     'October', 'November', 'December'];
@@ -43,37 +68,26 @@
   }
   var TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
   /* The cover's words where the team's own Quotation Cover type is not to
-     hand (a client page reads no document types): the type as seeded. */
-  var COVER = {
-    title: 'QUOTATION FOR DIGITAL MARKETING SERVICES', salutation: 'Dear Sir/Madam,', closing: 'Yours sincerely,',
-    body_en: 'We are pleased to submit our quotation for your consideration. It has been prepared based on the scope and ' +
-      'requirements discussed, with full details set out in the following pages.\n\nShould you need any clarification or ' +
-      'additional information, please do not hesitate to contact us. We would be pleased to provide further materials to support ' +
-      'your evaluation.'
-  };
+     hand (a client page reads no document types): its title and message
+     the store's `quotation.cover`, the salutation and closing the
+     letter's own. */
+  var COVER = { salutation: 'Dear Sir/Madam,', closing: 'Yours sincerely,' };
   function inWords(n) {
     n = Math.floor(Number(n) || 0);
     if (n < 20) return WORDS[n];
     if (n < 100) return TENS[Math.floor(n / 10)] + (n % 10 ? '-' + WORDS[n % 10] : '');
     return String(n);
   }
-  function both(n) { return inWords(n) + ' (' + n + ')'; }
   /* HOW AD SPEND WORKS (2026-11-27, the user): where the advertising
      budget is not in the quotation, the PDF says so and names the two ways
      it is paid, with Settings' figures as they stood on the quotation's day
      (`ad_prepay_pct`, `ad_credit_fee_pct`; js/money.js), so a copy redrawn
      later reads as issued. `formal`: TERMS in a contract's register. */
-  function pctOf(v) { return String(Math.round(Number(v) * 100) / 100) + '%'; }
+  function pctOf(v) { return String(Math.round(Number(v) * 100) / 100); }
   function adWays(q, formal) {
     var M = window.ADspaceMoney, at = q.issued_at || undefined;
     var pct = pctOf(M && M.setting ? M.setting('ad_prepay_pct', at) : 80), fee = pctOf(M && M.setting ? M.setting('ad_credit_fee_pct', at) : 20);
-    return formal
-      ? 'The Advertising Budget is paid either by the Client\'s own credit card through the Client\'s own ad account, or in advance to ' + agency() +
-        ' each month before the ads run. Each following month is requested when about ' + pct + ' of the current budget is spent. Where it is ' +
-        'instead invoiced on the payment terms of this Quotation, an Agency Credit Term Fee of ' + fee + ' of the Advertising Budget applies.'
-      : 'It is paid by the client\'s own credit card through the client\'s own ad account, or prepaid to ' + agency() + ' each month before the ads run. ' +
-        'Each following month is requested when about ' + pct + ' of the current budget is spent. Where the advertising budget is invoiced on this quotation\'s payment terms instead, an Agency Credit Term Fee of ' +
-        fee + ' of the advertising budget applies.';
+    return say(formal ? 'quotation.terms.ad-ways' : 'quotation.notes.ad-ways', { 'prepay pct': pct, 'fee pct': fee });
   }
   function longDay(iso) {
     var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
@@ -111,7 +125,12 @@
     if (seal && !S) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     /* Settings' figures read before the draw (the ad spend line's). */
     var M = window.ADspaceMoney, figures = M && M.load ? M.load() : null;
-    return Promise.resolve(figures).catch(function () {}).then(function () { return docs.lib(); }).then(function (PDF) {
+    /* The terms in force on its day of issue (today for a draft). */
+    var TPL = window.ADspaceTpl, book;
+    if (!TPL) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
+    return Promise.resolve(figures).catch(function () {}).then(function () {
+      return TPL.texts(KEYS, 'en', q.issued_at ? dayOf(q.issued_at) : null);
+    }).then(function (b) { book = b; return docs.lib(); }).then(function (PDF) {
       var pdf;
       return PDF.PDFDocument.create().then(function (doc) {
         pdf = doc;
@@ -130,6 +149,7 @@
           opts.extraPages = S.pagesFor(PDF, got[0], info);
         }
         KEPT = opts.agency ? { a: opts.agency, t: opts.termsUrl || '' } : null;
+        BOOK = book;
         var form = layout(pdf, PDF, got[0], got[1], q, opts);
         signedN = pdf.getPageCount();
         return docs.formFields(pdf, PDF, form.page, form.boxes);
@@ -137,7 +157,7 @@
         /* The reference in the file's title: a send by WhatsApp or email is
            checked against it (`_shared/pdfref.ts`). */
         docs.meta(pdf, agency() + ' Quotation ' + q.ref, 'Quotation');
-        KEPT = null;
+        KEPT = null; BOOK = null;
         if (!seal) return pdf.save();
         return pdf.save().then(S.sha256).then(function (pagesSha) {
           info.pagesSha = pagesSha; info.signedPages = signedN; info.total = signedN + opts.extraPages;
@@ -166,10 +186,10 @@
     var first = docs.letterPages(pdf, PDF, fonts, logo, {
       family: 'quote_cover', pdfKind: 'quotation', serial: q.ref, issued_at: q.issued_at, languages: ['en'], signed: false, code: opts.code || '',
       recipient: { name: to.name || q.brand, address: to.address || '', attn: person, attn_role: opts.attentionRole || '' },
-      title: cover.title || COVER.title,
+      title: cover.title || BOOK.subject('quotation.cover'),
       salutation: person ? 'Dear ' + person + ',' : (cover.salutation || COVER.salutation),
       closing: cover.closing || COVER.closing,
-      body: { en: cover.body_en || COVER.body_en },
+      body: { en: cover.body_en || say('quotation.cover') },
       signatory: { name: prep.name || '', designation: prep.designation || '' }
     });
     var pn = first.pn, pages = first.pages.slice();
@@ -306,8 +326,7 @@
     heading('Quotation');
     /* Its validity is said once, in TERMS (the user, 2026-11-12: the PDF
        said too much twice). */
-    para('Quotation ' + q.ref + ', dated ' + longDay(dayOf(q.issued_at)) +
-      ', sets out the services and fees proposed for ' + buyer + '.', 11, 14.5);
+    para(say('quotation.lead', { reference: q.ref, date: longDay(dayOf(q.issued_at)), buyer: buyer }), 11, 14.5);
     y -= 16;
     }
 
@@ -590,28 +609,22 @@
       var grp = function (h, list) { list = list.filter(Boolean); if (list.length) groups.push({ h: h, list: list }); };
       var fee = t.month ? Math.round((Number(t.commitment || 0) - Number((t.once || {}).incl || 0)) * 100) / 100 : 0;
       var days2 = validDays(q);
-      grp('Validity', ['This Quotation is valid for ' + both(days2) + ' days from its date of issue and shall lapse on ' +
-        longDay(q.valid_until) + ' unless accepted before that date.']);
+      grp('Validity', [say('quotation.terms.validity', { 'days in words': inWords(days2), days: days2, 'valid until': longDay(q.valid_until) })]);
       grp('Fees and payment', [
-        t.month ? 'The total Monthly Service Fee payable ' + (own ? 'over the period stated for each service' : 'over the minimum term') +
-          ' is ' + amt(fee, q) + (sstOn ? ', inclusive of SST' : '') + '.' : ''
+        t.month ? say('quotation.terms.fees' + (own ? '-own' : '') + (sstOn ? '-sst' : ''), { amount: amt(fee, q) }) : ''
       ]);
       grp('Advertising budget', ads.length
-        ? ['The Advertising Budget shall be paid to the advertising platforms on the Client\'s behalf before the ' +
-          'services commence. It includes any SST and withholding tax applicable to the advertising platforms\' charges.']
+        ? [say('quotation.terms.ads')]
         : (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; }))
-          ? ['The Advertising Budget is not included in this Quotation.', adWays(q, true)] : []);
+          ? [say('quotation.terms.ads-excluded'), adWays(q, true)] : []);
       /* Files and further filming (2026-11-12, the user's own sentence). */
-      grp('Exclusions', [addons.length ? window.ADspaceWords.line.addonTerm : 'Additional footage, working files and raw footage are not included and shall be charged separately upon request.',
-        (t.on_request || []).length ? (function () {
-          var w = t.on_request.map(function (x) { return x === 'budget' ? 'An advertising budget above the highest tier of the ' + agency() + ' Rate Card' : x; });
-          return w.join(', ') + ' shall be quoted separately upon request.';
-        })() : '']);
+      grp('Exclusions', [addons.length ? window.ADspaceWords.line.addonTerm : say('quotation.terms.exclusions'),
+        (t.on_request || []).length ? say('quotation.terms.on-request', { items: t.on_request.map(function (x) {
+          return x === 'budget' ? say('quotation.terms.budget-above') : x;
+        }).join(', ') }) : '']);
       grp('Special terms', (Array.isArray(t.terms) ? t.terms : []).map(function (x) { return String(x).trim(); }));
-      grp('Agreement', ['This Quotation shall become binding upon its acceptance and signature by the Client on the Acceptance of Quotation page. ' +
-        (termsAt('This Quotation, together with the ') ? termsAt('This Quotation, together with the ') + ', shall constitute the contract between the parties.'
-          : 'This Quotation shall constitute the contract between the parties.'),
-        'All rates are based on the ' + agency() + ' Rate Card Version ' + q.version + '. E&OE.']);
+      grp('Agreement', [termsUrl() ? say('quotation.terms.agreement-terms', { 'terms url': termsUrl() }) : say('quotation.terms.agreement'),
+        say('quotation.terms.basis', { version: q.version })]);
       /* TERMS under the rates, one numbered list (the user, 2026-11-12:
          "dont categorize my terms make it under the rates as usual"). */
       var all = [];
@@ -686,26 +699,25 @@
 
     // TERMS.
     var days = validDays(q);
-    var notes = ['This quotation is valid for ' + both(days) + ' days from its date of issue, until ' + longDay(q.valid_until) + '.'];
+    var notes = [say('quotation.notes.validity', { 'days in words': inWords(days), days: days, 'valid until': longDay(q.valid_until) })];
     var holds = [];
-    if (own && t.once) holds.push('the one-time items');
+    if (own && t.once) holds.push(say('quotation.notes.once-items'));
     if (sstOn) holds.push(/\d/.test(taxed.word) ? taxed.word.replace(/^SST /, 'SST at ') : 'SST');
-    if (t.month && holds.length) notes.push((own ? 'The first month\'s amount' : 'The amount per month') + ' includes ' + holds.join(' and ') + '.');
+    if (t.month && holds.length) notes.push(say(own ? 'quotation.notes.includes-own' : 'quotation.notes.includes', { items: holds.join(' and ') }));
     if (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) {
       notes.push(window.ADspaceWords.line.adNotIncluded + ' ' + adWays(q, false));
     }
     if ((t.on_request || []).length) {
-      notes.push('The following are quoted on request: ' + t.on_request.map(function (x) {
-        return x === 'budget' ? 'an advertising budget above the highest tier of the ' + agency() + ' Rate Card' : x;
-      }).join(', ') + '.');
+      notes.push(say('quotation.notes.on-request', { items: t.on_request.map(function (x) {
+        return x === 'budget' ? say('quotation.notes.budget-above') : x;
+      }).join(', ') }));
     }
     if (t.month) {
-      notes.push((own ? 'The total commitment over the months stated for each service' : 'The total commitment for ' + both(t.term) + ' months') +
-        ' is ' + amt(t.commitment, q) + incl + (t.once ? ', one-time items included.' : '.'));
+      notes.push(say('quotation.notes.commitment' + (own ? '-own' : '') + (t.once ? '-once' : ''),
+        { 'term in words': inWords(t.term), term: t.term, amount: amt(t.commitment, q) + incl }));
     }
-    notes.push('This quotation becomes binding once accepted and signed on its acceptance page.' +
-      (termsAt('') ? ' Together with the ' + termsAt('') + ', it forms the contract between the parties.' : ''));
-    notes.push('Rates are based on the ' + agency() + ' Rate Card Version ' + q.version + '. E&OE.');
+    notes.push(termsUrl() ? say('quotation.notes.binding-terms', { 'terms url': termsUrl() }) : say('quotation.notes.binding'));
+    notes.push(say('quotation.notes.basis', { version: q.version }));
     room(30);
     y -= 8;
     text('TERMS', M, y, SM, book, mute);
@@ -737,8 +749,7 @@
       }
       y -= 6; text('Acceptance of Quotation', M, y, H1, reg, pn.strong); y -= 8;
     } else heading('Acceptance of Quotation');
-    para('By signing below, the Client accepts Quotation ' + q.ref + ', dated ' + longDay(dayOf(q.issued_at)) + ', and agrees ' +
-      'to be bound by the terms set out in this document.', v2 ? 10.5 : 11, 14.5);
+    para(say('quotation.acceptance', { reference: q.ref, date: longDay(dayOf(q.issued_at)) }), v2 ? 10.5 : 11, 14.5);
     y -= v2 ? 22 : 12;
     if (v2) { text('Agreed figures', M, y, LBL, book, mute); y -= 6; }
     rule(y);

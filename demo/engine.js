@@ -115,7 +115,7 @@
     team_roles: 'slug name is_admin can_clients can_review can_campaigns can_links can_activity can_billing can_remove position created_at can_doc_void access client_scope updated_at ai_on email_on whatsapp_on sensitive_on reports_to'
   };
   var LIVE_FNS = {
-    template_render: 'p_key p_lang p_record p_values p_at p_strict', templates_list: 'p_key',
+    template_render: 'p_key p_lang p_record p_values p_at p_strict', templates_list: 'p_key', template_texts: 'p_keys p_lang p_at',
     template_draft_save: 'p_id p_key p_kind p_lang p_subject p_body p_expected', template_publish: 'p_id p_from',
     template_draft_delete: 'p_id',
     activity_section: 'p_action',
@@ -154,6 +154,7 @@
     wa_templates_read: '',
     wa_messages: 'p_month',
     mail_log: 'p_month',
+    mail_cancel: 'p_source p_id',
     mail_senders_read: '',
     agency_profile_read: '',
     mail_boxes_set: 'p_values',
@@ -5978,6 +5979,32 @@ function cardSlugFree(name, self, email) {
     return window.__bukkuAccounts || [{ id: 100, code: '6000-03', name: 'Cost of Sales - Influencers', type: 'cost_of_sales' },
       { id: 610, code: '6100', name: 'Creator fees', type: 'cost_of_sales' }, { id: 620, code: '6200', name: 'Advertising', type: 'expenses' }];
   }
+
+  function undoQueue(src, table, key, logId, close) {
+    var secs = Number(window.__undoSeconds) || 0;
+    if (!(secs > 0)) return null;
+    var row = (DB[table] || []).filter(function (x) { return x.id === logId; })[0];
+    if (!row) return null;
+    row[key] = 'queued';
+    DB.mail_queue = DB.mail_queue || [];
+    var me = opsMe() || {};
+    var q = { id: nid('mq'), source: src, table: table, key: key, log_id: logId, status: 'queued', queued_by: me.id || null,
+      send_at: new Date(Date.now() + secs * 1000).toISOString(), created_at: new Date().toISOString() };
+    DB.mail_queue.push(q);
+    persist();
+    setTimeout(function () {
+      var x = (DB.mail_queue || []).filter(function (y) { return y.id === q.id; })[0];
+      var r = x && (DB[table] || []).filter(function (y) { return y.id === logId; })[0];
+      if (!x || x.status !== 'queued' || !r) return;
+      x.status = 'sending'; r[key] = 'sending';
+      persist();
+      window.__undoSent = (window.__undoSent || []).concat([{ source: src, id: logId }]);
+      Promise.resolve(close(window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent')).then(function () {
+        x.status = r[key] === 'sending' ? 'unknown' : r[key]; persist();
+      });
+    }, secs * 1000);
+    return { source: src, id: logId, seconds: secs, send_at: q.send_at };
+  }
   function opsMe() {
     var e = String((session && session.user && session.user.email) || '').toLowerCase();
 
@@ -6137,9 +6164,84 @@ function cardSlugFree(name, self, email) {
     code: ['name', 'code', 'minutes', 'purpose'],
     feedback: ['contact name', 'client name', 'link'],
     quote: ['contact name', 'brand', 'reference', 'details', 'reply by', 'link'],
+    'quotation-terms': ['agency', 'reference', 'date', 'buyer', 'days', 'days in words', 'valid until', 'amount', 'items', 'prepay pct', 'fee pct',
+      'terms url', 'version', 'term', 'term in words', 'currency', 'budget', 'fee', 'company'],
     candidate: ['candidate name', 'position', 'interview length', 'where', 'times', 'reply by', 'note', 'time', 'previous time', 'new time', 'place', 'google meet notice',
       'decision date', 'months', 'document', 'reference', 'requested action', 'purpose', 'reason', 'document date', 'contact', 'sign-off', 'button']
   };
+
+  var TPL_TERMS = [
+      ['quotation.cover', 'en', "QUOTATION FOR DIGITAL MARKETING SERVICES", "We are pleased to submit our quotation for your consideration. It has been prepared based on the scope and requirements discussed, with full details set out in the following pages.\n\nShould you need any clarification or additional information, please do not hesitate to contact us. We would be pleased to provide further materials to support your evaluation."],
+      ['quotation.lead', 'en', "", "Quotation {reference}, dated {date}, sets out the services and fees proposed for {buyer}."],
+      ['quotation.terms.validity', 'en', "", "This Quotation is valid for {days in words} ({days}) days from its date of issue and shall lapse on {valid until} unless accepted before that date."],
+      ['quotation.terms.fees', 'en', "", "The total Monthly Service Fee payable over the minimum term is {amount}."],
+      ['quotation.terms.fees-sst', 'en', "", "The total Monthly Service Fee payable over the minimum term is {amount}, inclusive of SST."],
+      ['quotation.terms.fees-own', 'en', "", "The total Monthly Service Fee payable over the period stated for each service is {amount}."],
+      ['quotation.terms.fees-own-sst', 'en', "", "The total Monthly Service Fee payable over the period stated for each service is {amount}, inclusive of SST."],
+      ['quotation.terms.ads', 'en', "", "The Advertising Budget shall be paid to the advertising platforms on the Client's behalf before the services commence. It includes any SST and withholding tax applicable to the advertising platforms' charges."],
+      ['quotation.terms.ads-excluded', 'en', "", "The Advertising Budget is not included in this Quotation."],
+      ['quotation.terms.ad-ways', 'en', "", "The Advertising Budget is paid either by the Client's own credit card through the Client's own ad account, or in advance to {agency} each month before the ads run. Each following month is requested when about {prepay pct}% of the current budget is spent. Where it is instead invoiced on the payment terms of this Quotation, an Agency Credit Term Fee of {fee pct}% of the Advertising Budget applies."],
+      ['quotation.terms.exclusions', 'en', "", "Additional footage, working files and raw footage are not included and shall be charged separately upon request."],
+      ['quotation.terms.on-request', 'en', "", "{items} shall be quoted separately upon request."],
+      ['quotation.terms.budget-above', 'en', "", "An advertising budget above the highest tier of the {agency} Rate Card"],
+      ['quotation.terms.agreement', 'en', "", "This Quotation shall become binding upon its acceptance and signature by the Client on the Acceptance of Quotation page. This Quotation shall constitute the contract between the parties."],
+      ['quotation.terms.agreement-terms', 'en', "", "This Quotation shall become binding upon its acceptance and signature by the Client on the Acceptance of Quotation page. This Quotation, together with the {agency} Service Terms at {terms url}, shall constitute the contract between the parties."],
+      ['quotation.terms.basis', 'en', "", "All rates are based on the {agency} Rate Card Version {version}. E&OE."],
+      ['quotation.notes.validity', 'en', "", "This quotation is valid for {days in words} ({days}) days from its date of issue, until {valid until}."],
+      ['quotation.notes.includes', 'en', "", "The amount per month includes {items}."],
+      ['quotation.notes.includes-own', 'en', "", "The first month's amount includes {items}."],
+      ['quotation.notes.once-items', 'en', "", "the one-time items"],
+      ['quotation.notes.ad-ways', 'en', "", "It is paid by the client's own credit card through the client's own ad account, or prepaid to {agency} each month before the ads run. Each following month is requested when about {prepay pct}% of the current budget is spent. Where the advertising budget is invoiced on this quotation's payment terms instead, an Agency Credit Term Fee of {fee pct}% of the advertising budget applies."],
+      ['quotation.notes.on-request', 'en', "", "The following are quoted on request: {items}."],
+      ['quotation.notes.budget-above', 'en', "", "an advertising budget above the highest tier of the {agency} Rate Card"],
+      ['quotation.notes.commitment', 'en', "", "The total commitment for {term in words} ({term}) months is {amount}."],
+      ['quotation.notes.commitment-once', 'en', "", "The total commitment for {term in words} ({term}) months is {amount}, one-time items included."],
+      ['quotation.notes.commitment-own', 'en', "", "The total commitment over the months stated for each service is {amount}."],
+      ['quotation.notes.commitment-own-once', 'en', "", "The total commitment over the months stated for each service is {amount}, one-time items included."],
+      ['quotation.notes.binding', 'en', "", "This quotation becomes binding once accepted and signed on its acceptance page."],
+      ['quotation.notes.binding-terms', 'en', "", "This quotation becomes binding once accepted and signed on its acceptance page. Together with the {agency} Service Terms at {terms url}, it forms the contract between the parties."],
+      ['quotation.notes.basis', 'en', "", "Rates are based on the {agency} Rate Card Version {version}. E&OE."],
+      ['quotation.acceptance', 'en', "", "By signing below, the Client accepts Quotation {reference}, dated {date}, and agrees to be bound by the terms set out in this document."],
+      ['quote.ads.own.1', 'en', "", "Meta charges the ads directly to your own credit card."],
+      ['quote.ads.own.1', 'zh', "", "Meta 直接从您自己的信用卡扣除广告费用。"],
+      ['quote.ads.own.2', 'en', "", "The account is linked to the {agency} Meta business portfolio, so {agency} runs and manages the campaigns."],
+      ['quote.ads.own.2', 'zh', "", "该账户将关联至 {agency} 的 Meta 商务资产组合，由 {agency} 投放并管理广告活动。"],
+      ['quote.ads.pre.1', 'en', "", "The first month's advertising budget is paid to {agency} before the ads start."],
+      ['quote.ads.pre.1', 'zh', "", "首月广告预算须于广告开始投放前支付予 {agency}。"],
+      ['quote.ads.pre.2', 'en', "", "Each following month is requested when about {prepay pct}% of the current budget is spent."],
+      ['quote.ads.pre.2', 'zh', "", "当月预算消耗约{prepay pct}%时，{agency} 将请款下月预算。"],
+      ['quote.ads.pre.3', 'en', "", "If payment is not received, the ads will be paused until payment is received."],
+      ['quote.ads.pre.3', 'zh', "", "如未收到款项，广告将暂停投放，直至收款为止。"],
+      ['quote.ads.term', 'en', "", "Where the advertising budget is billed with the invoice on the quotation's payment terms instead of prepaid, an Agency Credit Term Fee of {fee pct}% will be added to the advertising budget."],
+      ['quote.ads.term', 'zh', "", "如广告预算按报价单的付款期限随发票结算而非预付，将按广告预算另加收{fee pct}%的账期服务费（Agency Credit Term Fee）。"],
+      ['quote.ads.example', 'en', "", "For example, a budget of {currency}\u00a0{budget} carries a fee of {currency}\u00a0{fee}."],
+      ['quote.ads.example', 'zh', "", "例如：广告预算 {currency}\u00a0{budget}，账期服务费为 {currency}\u00a0{fee}。"],
+      ['quote.notes.ads', 'en', "", "The advertising budget is paid to the advertising platforms on the Client's behalf and is payable before the service commences."],
+      ['quote.notes.ads', 'zh', "", "广告预算由 {agency} 代客户支付予广告平台，须于服务开始前支付。"],
+      ['quote.notes.pay', 'en', "", "Payment is due within {days} days of the invoice date."],
+      ['quote.notes.pay', 'zh', "", "付款期限为发票日期起{days}天内。"],
+      ['quote.notes.pay-approve', 'en', "", "Payment is due within {days} days of the invoice date, subject to {agency}'s approval."],
+      ['quote.notes.pay-approve', 'zh', "", "付款期限为发票日期起{days}天内，须经 {agency} 批准。"],
+      ['quote.notes.managed', 'en', "", "The fees include the management of an advertising budget of up to {currency}\u00a0{budget} per month."],
+      ['quote.notes.managed', 'zh', "", "费用包括代为管理每月最高 {currency}\u00a0{budget} 的广告预算。"],
+      ['quote.notes.basis', 'en', "", "Rates are based on the {agency} Rate Card v.{version}."],
+      ['quote.notes.basis', 'zh', "", "价格依据 {agency} 价目表 v.{version}。"],
+      ['quote.sign.agree', 'en', "", "I am authorised to sign on behalf of {company} and accept this quotation and the {agency} Service Terms."],
+      ['quote.sign.agree', 'zh', "", "本人获授权代表 {company} 签署，并接受本报价及 {agency} 服务条款。"]
+  ];
+  function tplRows() {
+    if (!DB.templates) DB.templates = [
+      { id: nid('tp'), key: 'sample.greeting', kind: 'client', language: 'en', version: 1, subject: 'Sample for {client name}',
+        body: 'Dear {contact name},\n\nThis is a sample template for {client name}.\n\n{sender name}', status: 'live', effective_from: '2026-01-01', sample: true },
+      { id: nid('tp'), key: 'sample.greeting', kind: 'client', language: 'zh', version: 1, subject: '{client name}示例',
+        body: '{contact name}您好：\n\n这是{client name}的示例模板。\n\n{sender name}', status: 'live', effective_from: '2026-01-01', sample: true }];
+    TPL_TERMS.forEach(function (r) {
+      if (!DB.templates.some(function (x) { return x.key === r[0] && x.language === r[1]; }))
+        DB.templates.push({ id: nid('tp'), key: r[0], kind: 'quotation-terms', language: r[1], version: 1, subject: r[2], body: r[3],
+          status: 'live', effective_from: '2026-01-01', sample: false });
+    });
+    return DB.templates;
+  }
 
   function clientRep(c, purpose) {
     if (!c) return null;
@@ -16117,7 +16219,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return { source: 'manual', id: e.id, kind: 'message', to_email: e.to_email, to_name: e.to_name || null, cc_email: e.cc_email || null,
               subject: e.subject, body: e.body, reference: e.attachment || null, status: e.status, error: e.error || null,
               created_at: e.created_at, sent_at: e.sent_at || null, delivered_at: e.delivered_at || null, opened_at: e.opened_at || null,
-              bounced_at: e.bounced_at || null, sent_by: who ? who.name : null, client_id: e.client_id };
+              bounced_at: e.bounced_at || null, sent_by: who ? who.name : null, sent_by_id: e.sent_by || null, client_id: e.client_id };
           }) });
       }
       if (!opsAllowed('whatsapp', 'work')) return emNo('denied');
@@ -16231,6 +16333,29 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: { ok: true, id: caId }, error: null });
     }
+    if (name === 'mail_cancel') {
+      var mcMe = opsMe();
+      if (!mcMe) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var mq = (DB.mail_queue || []).filter(function (x) { return x.source === args.p_source && x.log_id === args.p_id; })[0];
+
+      var mqc = !mq && args.p_source === 'system' && (DB.hiring_candidates || []).filter(function (x) { return x.id === args.p_id; })[0];
+      if (mqc) {
+        if (mqc.outcome_mail === 'cancelled') return Promise.resolve({ data: { ok: true, same: true }, error: null });
+        if (mqc.outcome_mail !== 'queued') return Promise.resolve({ data: { error: 'sent' }, error: null });
+        mqc.outcome_mail = 'cancelled'; mqc.outcome_mail_due = null; persist();
+        return Promise.resolve({ data: { ok: true }, error: null });
+      }
+      if (!mq) return Promise.resolve({ data: { error: 'not-found' }, error: null });
+      if (mq.queued_by !== mcMe.id && !opsAllowed('whatsapp', 'manage')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      if (mq.status === 'cancelled') return Promise.resolve({ data: { ok: true, same: true }, error: null });
+      if (mq.status !== 'queued') return Promise.resolve({ data: { error: 'sent' }, error: null });
+      mq.status = 'cancelled'; mq.cancelled_by = mcMe.id;
+      var mr = (DB[mq.table] || []).filter(function (x) { return x.id === mq.log_id; })[0];
+      if (mr) { mr[mq.key] = 'cancelled'; if (mq.table === 'feedback_requests' && !mr.closed_at) { mr.closed_at = new Date().toISOString(); mr.closed_reason = 'withdrawn'; } }
+      DB.activity_log.unshift({ id: nid('al'), actor: mcMe.name, action: 'email.sent', subject: 'Email', detail: 'Email · email to the recipient cancelled before it was sent', created_at: new Date().toISOString() });
+      persist();
+      return Promise.resolve({ data: { ok: true }, error: null });
+    }
     if (name === 'mail_log') {
       if (window.__refuseRpc && window.__refuseRpc.mail_log) return Promise.resolve({ data: null, error: { message: window.__refuseRpc.mail_log } });
       if (!opsAllowed('whatsapp', 'view')) return Promise.resolve({ data: { error: 'denied' }, error: null });
@@ -16245,7 +16370,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var mlFree = function () { var me = opsMe(); return !!me && (me.is_admin || (me.client_scope || 'all') !== 'own'); };
       var mlSeen = function (cid) { return cid ? scopeSeen(cid, 'view') : mlFree(); };
       var mlBase = function (e) { return { id: e.id, to_email: e.to_email, cc_email: e.cc_email || null, subject: e.subject, body: e.body,
-        sent_by: mlWho(e.sent_by, e.by), created_at: e.created_at, status: e.status, error: e.error || null, sent_at: e.sent_at || null,
+        sent_by: mlWho(e.sent_by, e.by), sent_by_id: e.sent_by || null, created_at: e.created_at, status: e.status, error: e.error || null, sent_at: e.sent_at || null,
         delivered_at: e.delivered_at || null, opened_at: e.opened_at || null, bounced_at: e.bounced_at || null,
         client_id: null, client: null, supplier_id: null, supplier: null, supplier_code: null, reference: null, to_name: null,
         ref_id: e.ref_id || null, again_of: e.again_of || null }; };
@@ -16769,16 +16894,30 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
     }
 
+    if (name === 'template_texts') {
+      if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: { error: window.__refuseRpc[name] }, error: null });
+      var ttLang = args.p_lang == null ? 'en' : args.p_lang, ttKeys = args.p_keys;
+      if (ttLang !== 'en' && ttLang !== 'zh') return Promise.resolve({ data: { error: 'bad-lang' }, error: null });
+      if (!Array.isArray(ttKeys) || !ttKeys.length || ttKeys.length > 80) return Promise.resolve({ data: { error: 'bad-keys' }, error: null });
+      var ttAt = args.p_at || appToday(), ttOut = {};
+      var ttIn = function (key, lg) {
+        return tplRows().filter(function (x) { return x.key === key && x.language === lg && x.status === 'live' && x.effective_from <= ttAt; })
+          .sort(function (a, b) { return a.effective_from < b.effective_from ? 1 : a.effective_from > b.effective_from ? -1 : b.version - a.version; })[0] || null;
+      };
+      for (var tti = 0; tti < ttKeys.length; tti++) {
+        var ttT = ttIn(ttKeys[tti], ttLang), ttFb = false;
+        if (!ttT && ttLang !== 'en') { ttT = ttIn(ttKeys[tti], 'en'); ttFb = !!ttT; }
+        if (!ttT || ttT.kind !== 'quotation-terms') return Promise.resolve({ data: { error: 'not-found', key: ttKeys[tti] }, error: null });
+        ttOut[ttKeys[tti]] = { subject: ttT.subject, body: ttT.body, version: ttT.version, lang: ttT.language, fallback: ttFb, effective_from: ttT.effective_from };
+      }
+      return Promise.resolve({ data: JSON.parse(JSON.stringify({ ok: true, at: ttAt, texts: ttOut })), error: null });
+    }
     if (name === 'template_render' || name === 'templates_list' || name === 'template_draft_save' ||
         name === 'template_publish' || name === 'template_draft_delete') {
       var tsNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       var tsOk = function (d) { persist(); return Promise.resolve({ data: JSON.parse(JSON.stringify(Object.assign({ ok: true }, d || {}))), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return tsNo(window.__refuseRpc[name]);
-      if (!DB.templates) DB.templates = [
-        { id: nid('tp'), key: 'sample.greeting', kind: 'client', language: 'en', version: 1, subject: 'Sample for {client name}',
-          body: 'Dear {contact name},\n\nThis is a sample template for {client name}.\n\n{sender name}', status: 'live', effective_from: '2026-01-01', sample: true },
-        { id: nid('tp'), key: 'sample.greeting', kind: 'client', language: 'zh', version: 1, subject: '{client name}示例',
-          body: '{contact name}您好：\n\n这是{client name}的示例模板。\n\n{sender name}', status: 'live', effective_from: '2026-01-01', sample: true }];
+      tplRows();
       var tsMe = opsMe(), tsToday = appToday();
       var tsNorm = function (x) { return String(x == null ? '' : x).toLowerCase().replace(/\s+/g, ' ').trim(); };
       var tsEsc = function (x) { return String(x == null ? '' : x).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -19469,10 +19608,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!opsAllowed('suppliers', 'view')) return spNo('denied');
           return spOk({ rows: DB.supplier_emails.filter(function (e) { return e.supplier_id === args.p_supplier; })
             .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })
-            .map(function (e) { return { id: e.id, purpose: e.purpose, to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: e.by, document: e.document }; })
+            .map(function (e) { return { id: e.id, purpose: e.purpose, to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: e.by, by_id: e.sent_by || null, source: 'supplier', document: e.document }; })
             .concat((DB.team_emails || []).filter(function (e) { return e.supplier_id === args.p_supplier; }).map(function (e) {
               var who = (DB.team_members || []).filter(function (m) { return m.id === e.sent_by; })[0];
-              return { id: e.id, purpose: 'message', to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: who ? who.name : null, document: e.attachment };
+              return { id: e.id, purpose: 'message', to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: who ? who.name : null, by_id: e.sent_by || null, source: 'manual', document: e.attachment };
             }))
             .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; }) });
         }
@@ -20946,6 +21085,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
           });
         }
 
+        if (name === 'hiring-mail' && opts && opts.body && opts.body.kind === 'outcome' && !opts.body.byHand && !opts.body.againOf) {
+
+          var hq0 = opts.body;
+          return rpc('hiring_outcome_mail_queue', { p_id: hq0.candidateId }).then(function (r) {
+            var d = r.data || {};
+            if (r.error || d.error) return { data: { error: d.error || 'denied' }, error: null };
+            return { data: { ok: true, queued: { source: 'system', id: hq0.candidateId, seconds: d.seconds || 60, send_at: d.due } }, error: null };
+          });
+        }
         if (name === 'hiring-mail' && opts && opts.body && opts.body.kind === 'outcome') {
           var ho = opts.body;
           return rpc('hiring_outcome_mail_prepare', { p_id: ho.candidateId }).then(function (r) {
@@ -21596,6 +21744,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 bkb.cc !== false, bkb.subject, bkb.body, bkb.again === true, ivSend ? 'invoice' : 'reminder',
                 typeof bkb.to === 'string' && bkb.to.trim() ? bkb.to.trim() : null, Array.isArray(bkb.ccs) ? bkb.ccs.filter(function (x) { return typeof x === 'string'; }) : null);
               if (b.error) return bkR(Object.assign(b, { paid: paid }));
+              var iq = undoQueue('invoice', 'invoice_emails', 'status', b.id, function (st) { invDone(b.id, st, st === 'sent' ? 're_' + b.id : null, window.__mailFail || null); });
+              if (iq) { persist(); return bkR({ ok: true, id: b.id, to: b.to, cc: b.cc || null, paid: paid, queued: iq }); }
               var st2 = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
               invDone(b.id, st2, st2 === 'sent' ? 're_' + b.id : null, window.__mailFail || null);
               window.__invSent = (window.__invSent || []).concat([{ to: b.to, cc: b.cc, subject: b.subject, body: b.body, invoices: lines.map(function (l) { return l.number; }) }]);
@@ -21783,6 +21933,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             p_to: nb.to, p_ccs: nb.ccs || [], p_subject: nb.subject, p_body: nb.body, p_attachment: nb.file ? nb.file.name : null, p_idem: nb.key }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
+            var nq = undoQueue('manual', 'team_emails', 'status', b.id, function (st) { return rpc('email_new_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (nq) return { data: { ok: true, id: b.id, to: b.to, to_name: b.to_name || null, cc: b.cc, queued: nq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('email_new_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to, cc: b.cc } : { error: window.__mailFail }, error: null };
@@ -21797,6 +21949,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
             window.__quoteAskSent = b;
+            var aq = undoQueue('client', 'client_emails', 'status', b.id, function (st) { return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (aq) return { data: { ok: true, id: b.id, to: b.to_email, to_name: b.to_name, queued: aq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name } : { error: window.__mailFail }, error: null };
@@ -21811,6 +21965,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
             window.__fbMailSent = b;
+            var fq = undoQueue('feedback', 'feedback_requests', 'mail_status', b.id, function (st) { return rpc('feedback_mail_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (fq) return { data: { ok: true, id: b.id, to: b.to_email, to_name: b.to_name, queued: fq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('feedback_mail_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name } : { error: window.__mailFail }, error: null };
@@ -21827,6 +21983,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             p_subject: dmb.subject, p_body: dmb.body, p_again: dmb.again === true }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
+            var cq = undoQueue('client', 'client_emails', 'status', b.id, function (st) { return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (cq) return { data: { ok: true, id: b.id, queued: cq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id } : { error: window.__mailFail }, error: null };
@@ -21843,6 +22001,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             p_subject: mb.subject, p_body: mb.body, p_again: mb.again === true }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
+            var sq = undoQueue('supplier', 'supplier_emails', 'status', b.id, function (st) { return rpc('supplier_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (sq) return { data: { ok: true, id: b.id, queued: sq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('supplier_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id } : { error: window.__mailFail }, error: null };

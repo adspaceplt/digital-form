@@ -7,12 +7,15 @@
  *   ADspaceTpl.fill(text, values)          { text, html, missing }
  *   ADspaceTpl.render(key, lang, opts)     the database's render, a promise
  *   ADspaceTpl.said(res)                   a refusal in the team's words
+ *   ADspaceTpl.texts(keys, lang, at)       a signed-out page's wording, a promise
+ *                                          of { say(key, values), subject(key) }
  *
  * A placeholder is `{field}`, read in any case and spacing. Each value is
  * escaped where it is inserted (ADspaceWords.esc), the words around it
  * too; a field with no value is kept as `{field}` and named in `missing`,
- * never left blank. No page loads this yet: Settings › Messages moves onto
- * the store in release 12. */
+ * never left blank. The quotation's terms read it (release 13): the PDF
+ * (js/quotepdf.js) and the quotation page (js/quote.js); Settings ›
+ * Messages moves onto the store in release 12. */
 (function () {
   'use strict';
   var W = function () { return window.ADspaceWords; };
@@ -68,6 +71,30 @@
     });
   }
 
+  /* The wording of the public kinds (`template_texts`: a quotation's
+     terms), every key in force on a Malaysian day or none: a key the
+     database does not answer rejects, so nothing is drawn with its words
+     left out. Kept for the page's life by language, day and keys. */
+  var BOOKS = {};
+  function texts(keys, lang, at) {
+    var api = window.ADspaceAPI && window.ADspaceAPI.client;
+    var id = (lang || 'en') + '|' + (at || '') + '|' + keys.join(',');
+    if (BOOKS[id]) return BOOKS[id];
+    if (!api) return Promise.reject(new Error('no-client'));
+    BOOKS[id] = api.rpc('template_texts', { p_keys: keys, p_lang: lang || 'en', p_at: at || null }).then(function (r) {
+      var d = r && r.data;
+      if (r.error || !d || !d.ok) throw new Error((d && d.error) || (r.error && r.error.code) || 'failed');
+      var all = d.texts || {};
+      var row = function (k) { if (!all[k]) throw new Error('not-found ' + k); return all[k]; };
+      return {
+        say: function (k, values) { return fill(row(k).body, values).text; },
+        subject: function (k) { return row(k).subject; }
+      };
+    });
+    BOOKS[id].catch(function () { delete BOOKS[id]; });
+    return BOOKS[id];
+  }
+
   var SAID = {
     denied: 'You do not have permission to change templates. Please ask an admin.',
     'not-found': 'This template no longer exists.',
@@ -88,5 +115,5 @@
     return SAID[d.error] || W().en.notSaved;
   }
 
-  window.ADspaceTpl = { names: names, fill: fill, render: render, said: said };
+  window.ADspaceTpl = { names: names, fill: fill, render: render, said: said, texts: texts };
 })();
