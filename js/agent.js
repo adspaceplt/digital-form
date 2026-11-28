@@ -228,7 +228,7 @@
           .eq('client_id', c.id).is('archived_at', null).order('happened_at', { ascending: false }).limit(5).then(function (t) {
             out.calls_and_visits = (t.data || []).map(function (x) {
               return { kind: KIND[x.kind] || x.kind, on: dayWord(x.happened_at), with: mask(x.contact_name) || null, summary: mask(x.summary),
-                       next_action: x.next_action && !x.done_at ? mask(x.next_action) + (x.next_at ? ' by ' + dayWord(x.next_at) : '') : null, by: x.by_whom ? window.ADspaceAdmin.whoOf(x.by_whom_id, x.by_whom) : null };
+                       next_action: x.next_action && !x.done_at ? mask(x.next_action) + (x.next_at ? ' by ' + dayWord(x.next_at) : '') : null, by: x.by_whom ? bridge.whoIs(x.by_whom_id, x.by_whom) : null };
             });
           }));
         if (may('reports')) jobs.push(db.from('sm_reports').select('id, kind, period_start, period_end, status, sent_on, brand_name')

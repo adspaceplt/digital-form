@@ -546,7 +546,7 @@
      else the frame drawn from its shot; Add photo opens the camera on a
      phone, Remove takes the photo away with Undo. */
   function picOf(sc) {
-    if (sc.photo_url) return { url: sc.photo_url, tag: sc.photo_by ? 'Photo by ' + window.ADspaceAdmin.whoOf(sc.photo_by_id, sc.photo_by) : 'Photo', kind: 'photo' };
+    if (sc.photo_url) return { url: sc.photo_url, tag: sc.photo_by ? 'Photo by ' + bridge.whoIs(sc.photo_by_id, sc.photo_by) : 'Photo', kind: 'photo' };
     var drawn = sc.ai_frame && window.ADspaceFrames && window.ADspaceFrames.draw ? window.ADspaceFrames.draw(sc.ai_frame, st.open && st.open.aspect) : '';
     /* Where the scene names no shot, the shot Claude chose is said with it. */
     var chose = !sc.shot_size && !sc.camera_move && sc.ai_frame ? [sc.ai_frame.shot_size, sc.ai_frame.move !== 'static' && sc.ai_frame.move].filter(Boolean)

@@ -423,7 +423,7 @@
     box.innerHTML = '<div class="msg" id="hbHistMsg"></div>' + vers.map(function (v, i) {
       return '<div class="hb-verrow">' +
         '<span class="hb-name"><b>Version ' + v.version_no + (i === 0 ? ' <span class="tone">Current</span>' : '') + '</b>' +
-          '<small>' + esc([day(v.created_at), (window.ADspaceAdmin.whoOf ? window.ADspaceAdmin.whoOf(v.created_by_id, v.created_by) : whoName(v.created_by)), v.file_name, size(v.file_size)].filter(Boolean).join(' · ')) + '</small>' +
+          '<small>' + esc([day(v.created_at), bridge.whoIs(v.created_by_id, v.created_by), v.file_name, size(v.file_size)].filter(Boolean).join(' · ')) + '</small>' +
           (v.note ? '<small class="hb-note">' + esc(v.note) + '</small>' : '') + '</span>' +
         '<button class="btn btn-sm btn-icon" data-v="' + esc(v.id) + '" type="button" aria-label="Open version ' + v.version_no + '">Open ' + OUT + '</button>' +
       '</div>';

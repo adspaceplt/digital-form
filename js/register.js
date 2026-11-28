@@ -455,7 +455,7 @@
     /* The kind, and who issued it where the portal did. A row added by hand
        says nothing about how it arrived and names nobody: an import is not a
        person, and the fact is in the ⋯ (Edit is offered on it). */
-    var sub = [nameOf(d.kind), d.source === 'portal' ? window.ADspaceAdmin.whoOf(d.issued_by_id, d.issued_by) : ''].filter(Boolean).join(' · ');
+    var sub = [nameOf(d.kind), d.source === 'portal' ? bridge.whoIs(d.issued_by_id, d.issued_by) : ''].filter(Boolean).join(' · ');
     el.innerHTML =
       /* The reference is what somebody came to copy, so the reference is
          the control: one press, and it says Copied the way every other copy
@@ -539,8 +539,8 @@
         load: function () {
           return (DOCS && DOCS.codeOf ? DOCS.codeOf('document', d.id) : Promise.resolve('')).then(function (code) {
             return { id: code || '—', ref: d.serial, stateWord: d.voided_at ? ['Void', 'is-danger'] : ['Valid', 'is-ok'],
-              steps: [{ step: 'issued', at: d.created_at, by: window.ADspaceAdmin.whoOf(d.issued_by_id, d.issued_by) }].concat(d.voided_at
-                ? [{ step: 'voided', at: d.voided_at, by: window.ADspaceAdmin.whoOf(d.voided_by_id, d.voided_by), note: d.void_reason }] : []) };
+              steps: [{ step: 'issued', at: d.created_at, by: bridge.whoIs(d.issued_by_id, d.issued_by) }].concat(d.voided_at
+                ? [{ step: 'voided', at: d.voided_at, by: bridge.whoIs(d.voided_by_id, d.voided_by), note: d.void_reason }] : []) };
           });
         } });
     });

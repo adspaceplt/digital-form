@@ -39,7 +39,7 @@ Moved from `CLAUDE.md` §2, Writes, refusals, reversibility, on 2026-11-23: the 
   keeps its `{column}_id` beside it, stamped by `whom_ids` (the trigger's
   arguments are its pairs) from the caller alone; a new one joins its
   table's trigger in the same push, and a page shows it through
-  `ADspaceAdmin.whoOf(id, name)` (`whomidsql`).
+  `ADspaceAdmin.whoIs(id, name)` (`whomidsql`).
 - A uuid column naming one record holds a foreign key stating its `on delete`:
   cascade only where the row cannot stand without its parent, set null where
   the history must survive, restrict where the delete is refused; added `not
