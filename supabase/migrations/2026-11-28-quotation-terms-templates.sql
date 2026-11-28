@@ -10,10 +10,11 @@
 -- They move into the store word for word; nothing is rewritten.
 -- WHAT IT CHANGES
 --   * `template_fields('quotation-terms')`: the fields a quotation's terms
---     are filled with (agency, reference, date, buyer, days, days in words,
---     valid until, amount, items, prepay pct, fee pct, terms url, version,
---     term, term in words, currency, budget, fee, company). Every other
---     kind as it stood.
+--     are filled with (agency, document reference, document date, prepared
+--     for, days, days in words, valid until, amount, items, prepay percent,
+--     credit fee percent, service terms link, rate card version, minimum
+--     term, minimum term in words, currency, ad budget, credit fee, company
+--     name). Every other kind as it stood.
 --   * `template_texts(keys, lang, at)`: the live versions in force on a
 --     Malaysian day (a quotation's own issue day, so a copy redrawn later
 --     reads as issued), 中文 falling back to English, of the public kinds
@@ -22,7 +23,8 @@
 --     The quotation page is signed out: granted to anon and joins
 --     `open_to_anon` (FUNCTION HYGIENE, run that file first).
 --   * Seed: 57 versions (31 keys of the PDF in English, 13 of the page in
---     English and 中文), version 1, live from 2026-01-01, each only where
+--     English and 中文), version 1, live from 1970-01-01 (every quotation already issued reads
+--     them as it printed them), each only where
 --     its key and language hold no version. The wording is the code's as it
 --     stood in the public repository.
 -- ORDER: the hygiene file (2026-10-07-function-hygiene.sql), this file,
@@ -57,9 +59,9 @@ language sql immutable set search_path = public as $$
       'requested action', 'purpose', 'reason', 'document date', 'contact', 'sign-off', 'button']
     when 'feedback' then array['contact name', 'client name', 'link']
     when 'quote' then array['contact name', 'brand', 'reference', 'details', 'reply by', 'link']
-    when 'quotation-terms' then array['agency', 'reference', 'date', 'buyer', 'days', 'days in words', 'valid until',
-      'amount', 'items', 'prepay pct', 'fee pct', 'terms url', 'version', 'term', 'term in words', 'currency', 'budget',
-      'fee', 'company']
+    when 'quotation-terms' then array['agency', 'document reference', 'document date', 'prepared for', 'days', 'days in words',
+      'valid until', 'amount', 'items', 'prepay percent', 'credit fee percent', 'service terms link', 'rate card version',
+      'minimum term', 'minimum term in words', 'currency', 'ad budget', 'credit fee', 'company name']
   end $$;
 revoke all on function public.template_fields(text) from public, anon, authenticated;
 
@@ -100,12 +102,12 @@ grant execute on function public.template_texts(text[], text, date) to anon, aut
    a key and language holding no version alone: a first run, never a
    running list. */
 insert into public.templates (key, kind, language, version, subject, body, status, effective_from)
-select x.key, 'quotation-terms', x.language, 1, x.subject, x.body, 'live', date '2026-01-01'
+select x.key, 'quotation-terms', x.language, 1, x.subject, x.body, 'live', date '1970-01-01'
   from (values
     ('quotation.cover', 'en', 'QUOTATION FOR DIGITAL MARKETING SERVICES',
      'We are pleased to submit our quotation for your consideration. It has been prepared based on the scope and requirements discussed, with full details set out in the following pages.' || chr(10) || '' || chr(10) || 'Should you need any clarification or additional information, please do not hesitate to contact us. We would be pleased to provide further materials to support your evaluation.'),
     ('quotation.lead', 'en', '',
-     'Quotation {reference}, dated {date}, sets out the services and fees proposed for {buyer}.'),
+     'Quotation {document reference}, dated {document date}, sets out the services and fees proposed for {prepared for}.'),
     ('quotation.terms.validity', 'en', '',
      'This Quotation is valid for {days in words} ({days}) days from its date of issue and shall lapse on {valid until} unless accepted before that date.'),
     ('quotation.terms.fees', 'en', '',
@@ -121,7 +123,7 @@ select x.key, 'quotation-terms', x.language, 1, x.subject, x.body, 'live', date 
     ('quotation.terms.ads-excluded', 'en', '',
      'The Advertising Budget is not included in this Quotation.'),
     ('quotation.terms.ad-ways', 'en', '',
-     'The Advertising Budget is paid either by the Client''s own credit card through the Client''s own ad account, or in advance to {agency} each month before the ads run. Each following month is requested when about {prepay pct}% of the current budget is spent. Where it is instead invoiced on the payment terms of this Quotation, an Agency Credit Term Fee of {fee pct}% of the Advertising Budget applies.'),
+     'The Advertising Budget is paid either by the Client''s own credit card through the Client''s own ad account, or in advance to {agency} each month before the ads run. Each following month is requested when about {prepay percent}% of the current budget is spent. Where it is instead invoiced on the payment terms of this Quotation, an Agency Credit Term Fee of {credit fee percent}% of the Advertising Budget applies.'),
     ('quotation.terms.exclusions', 'en', '',
      'Additional footage, working files and raw footage are not included and shall be charged separately upon request.'),
     ('quotation.terms.on-request', 'en', '',
@@ -131,9 +133,9 @@ select x.key, 'quotation-terms', x.language, 1, x.subject, x.body, 'live', date 
     ('quotation.terms.agreement', 'en', '',
      'This Quotation shall become binding upon its acceptance and signature by the Client on the Acceptance of Quotation page. This Quotation shall constitute the contract between the parties.'),
     ('quotation.terms.agreement-terms', 'en', '',
-     'This Quotation shall become binding upon its acceptance and signature by the Client on the Acceptance of Quotation page. This Quotation, together with the {agency} Service Terms at {terms url}, shall constitute the contract between the parties.'),
+     'This Quotation shall become binding upon its acceptance and signature by the Client on the Acceptance of Quotation page. This Quotation, together with the {agency} Service Terms at {service terms link}, shall constitute the contract between the parties.'),
     ('quotation.terms.basis', 'en', '',
-     'All rates are based on the {agency} Rate Card Version {version}. E&OE.'),
+     'All rates are based on the {agency} Rate Card Version {rate card version}. E&OE.'),
     ('quotation.notes.validity', 'en', '',
      'This quotation is valid for {days in words} ({days}) days from its date of issue, until {valid until}.'),
     ('quotation.notes.includes', 'en', '',
@@ -143,15 +145,15 @@ select x.key, 'quotation-terms', x.language, 1, x.subject, x.body, 'live', date 
     ('quotation.notes.once-items', 'en', '',
      'the one-time items'),
     ('quotation.notes.ad-ways', 'en', '',
-     'It is paid by the client''s own credit card through the client''s own ad account, or prepaid to {agency} each month before the ads run. Each following month is requested when about {prepay pct}% of the current budget is spent. Where the advertising budget is invoiced on this quotation''s payment terms instead, an Agency Credit Term Fee of {fee pct}% of the advertising budget applies.'),
+     'It is paid by the client''s own credit card through the client''s own ad account, or prepaid to {agency} each month before the ads run. Each following month is requested when about {prepay percent}% of the current budget is spent. Where the advertising budget is invoiced on this quotation''s payment terms instead, an Agency Credit Term Fee of {credit fee percent}% of the advertising budget applies.'),
     ('quotation.notes.on-request', 'en', '',
      'The following are quoted on request: {items}.'),
     ('quotation.notes.budget-above', 'en', '',
      'an advertising budget above the highest tier of the {agency} Rate Card'),
     ('quotation.notes.commitment', 'en', '',
-     'The total commitment for {term in words} ({term}) months is {amount}.'),
+     'The total commitment for {minimum term in words} ({minimum term}) months is {amount}.'),
     ('quotation.notes.commitment-once', 'en', '',
-     'The total commitment for {term in words} ({term}) months is {amount}, one-time items included.'),
+     'The total commitment for {minimum term in words} ({minimum term}) months is {amount}, one-time items included.'),
     ('quotation.notes.commitment-own', 'en', '',
      'The total commitment over the months stated for each service is {amount}.'),
     ('quotation.notes.commitment-own-once', 'en', '',
@@ -159,11 +161,11 @@ select x.key, 'quotation-terms', x.language, 1, x.subject, x.body, 'live', date 
     ('quotation.notes.binding', 'en', '',
      'This quotation becomes binding once accepted and signed on its acceptance page.'),
     ('quotation.notes.binding-terms', 'en', '',
-     'This quotation becomes binding once accepted and signed on its acceptance page. Together with the {agency} Service Terms at {terms url}, it forms the contract between the parties.'),
+     'This quotation becomes binding once accepted and signed on its acceptance page. Together with the {agency} Service Terms at {service terms link}, it forms the contract between the parties.'),
     ('quotation.notes.basis', 'en', '',
-     'Rates are based on the {agency} Rate Card Version {version}. E&OE.'),
+     'Rates are based on the {agency} Rate Card Version {rate card version}. E&OE.'),
     ('quotation.acceptance', 'en', '',
-     'By signing below, the Client accepts Quotation {reference}, dated {date}, and agrees to be bound by the terms set out in this document.'),
+     'By signing below, the Client accepts Quotation {document reference}, dated {document date}, and agrees to be bound by the terms set out in this document.'),
     ('quote.ads.own.1', 'en', '',
      'Meta charges the ads directly to your own credit card.'),
     ('quote.ads.own.1', 'zh', '',
@@ -177,21 +179,21 @@ select x.key, 'quotation-terms', x.language, 1, x.subject, x.body, 'live', date 
     ('quote.ads.pre.1', 'zh', '',
      '首月广告预算须于广告开始投放前支付予 {agency}。'),
     ('quote.ads.pre.2', 'en', '',
-     'Each following month is requested when about {prepay pct}% of the current budget is spent.'),
+     'Each following month is requested when about {prepay percent}% of the current budget is spent.'),
     ('quote.ads.pre.2', 'zh', '',
-     '当月预算消耗约{prepay pct}%时，{agency} 将请款下月预算。'),
+     '当月预算消耗约{prepay percent}%时，{agency} 将请款下月预算。'),
     ('quote.ads.pre.3', 'en', '',
      'If payment is not received, the ads will be paused until payment is received.'),
     ('quote.ads.pre.3', 'zh', '',
      '如未收到款项，广告将暂停投放，直至收款为止。'),
     ('quote.ads.term', 'en', '',
-     'Where the advertising budget is billed with the invoice on the quotation''s payment terms instead of prepaid, an Agency Credit Term Fee of {fee pct}% will be added to the advertising budget.'),
+     'Where the advertising budget is billed with the invoice on the quotation''s payment terms instead of prepaid, an Agency Credit Term Fee of {credit fee percent}% will be added to the advertising budget.'),
     ('quote.ads.term', 'zh', '',
-     '如广告预算按报价单的付款期限随发票结算而非预付，将按广告预算另加收{fee pct}%的账期服务费（Agency Credit Term Fee）。'),
+     '如广告预算按报价单的付款期限随发票结算而非预付，将按广告预算另加收{credit fee percent}%的账期服务费（Agency Credit Term Fee）。'),
     ('quote.ads.example', 'en', '',
-     'For example, a budget of {currency}' || chr(160) || '{budget} carries a fee of {currency}' || chr(160) || '{fee}.'),
+     'For example, a budget of {currency}' || chr(160) || '{ad budget} carries a fee of {currency}' || chr(160) || '{credit fee}.'),
     ('quote.ads.example', 'zh', '',
-     '例如：广告预算 {currency}' || chr(160) || '{budget}，账期服务费为 {currency}' || chr(160) || '{fee}。'),
+     '例如：广告预算 {currency}' || chr(160) || '{ad budget}，账期服务费为 {currency}' || chr(160) || '{credit fee}。'),
     ('quote.notes.ads', 'en', '',
      'The advertising budget is paid to the advertising platforms on the Client''s behalf and is payable before the service commences.'),
     ('quote.notes.ads', 'zh', '',
@@ -205,17 +207,17 @@ select x.key, 'quotation-terms', x.language, 1, x.subject, x.body, 'live', date 
     ('quote.notes.pay-approve', 'zh', '',
      '付款期限为发票日期起{days}天内，须经 {agency} 批准。'),
     ('quote.notes.managed', 'en', '',
-     'The fees include the management of an advertising budget of up to {currency}' || chr(160) || '{budget} per month.'),
+     'The fees include the management of an advertising budget of up to {currency}' || chr(160) || '{ad budget} per month.'),
     ('quote.notes.managed', 'zh', '',
-     '费用包括代为管理每月最高 {currency}' || chr(160) || '{budget} 的广告预算。'),
+     '费用包括代为管理每月最高 {currency}' || chr(160) || '{ad budget} 的广告预算。'),
     ('quote.notes.basis', 'en', '',
-     'Rates are based on the {agency} Rate Card v.{version}.'),
+     'Rates are based on the {agency} Rate Card v.{rate card version}.'),
     ('quote.notes.basis', 'zh', '',
-     '价格依据 {agency} 价目表 v.{version}。'),
+     '价格依据 {agency} 价目表 v.{rate card version}。'),
     ('quote.sign.agree', 'en', '',
-     'I am authorised to sign on behalf of {company} and accept this quotation and the {agency} Service Terms.'),
+     'I am authorised to sign on behalf of {company name} and accept this quotation and the {agency} Service Terms.'),
     ('quote.sign.agree', 'zh', '',
-     '本人获授权代表 {company} 签署，并接受本报价及 {agency} 服务条款。')
+     '本人获授权代表 {company name} 签署，并接受本报价及 {agency} 服务条款。')
   ) as x (key, language, subject, body)
  where not exists (select 1 from public.templates t where t.key = x.key and t.language = x.language);
 

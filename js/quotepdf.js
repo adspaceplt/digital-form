@@ -87,7 +87,7 @@
   function adWays(q, formal) {
     var M = window.ADspaceMoney, at = q.issued_at || undefined;
     var pct = pctOf(M && M.setting ? M.setting('ad_prepay_pct', at) : 80), fee = pctOf(M && M.setting ? M.setting('ad_credit_fee_pct', at) : 20);
-    return say(formal ? 'quotation.terms.ad-ways' : 'quotation.notes.ad-ways', { 'prepay pct': pct, 'fee pct': fee });
+    return say(formal ? 'quotation.terms.ad-ways' : 'quotation.notes.ad-ways', { 'prepay percent': pct, 'credit fee percent': fee });
   }
   function longDay(iso) {
     var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
@@ -326,7 +326,7 @@
     heading('Quotation');
     /* Its validity is said once, in TERMS (the user, 2026-11-12: the PDF
        said too much twice). */
-    para(say('quotation.lead', { reference: q.ref, date: longDay(dayOf(q.issued_at)), buyer: buyer }), 11, 14.5);
+    para(say('quotation.lead', { 'document reference': q.ref, 'document date': longDay(dayOf(q.issued_at)), 'prepared for': buyer }), 11, 14.5);
     y -= 16;
     }
 
@@ -623,8 +623,8 @@
           return x === 'budget' ? say('quotation.terms.budget-above') : x;
         }).join(', ') }) : '']);
       grp('Special terms', (Array.isArray(t.terms) ? t.terms : []).map(function (x) { return String(x).trim(); }));
-      grp('Agreement', [termsUrl() ? say('quotation.terms.agreement-terms', { 'terms url': termsUrl() }) : say('quotation.terms.agreement'),
-        say('quotation.terms.basis', { version: q.version })]);
+      grp('Agreement', [termsUrl() ? say('quotation.terms.agreement-terms', { 'service terms link': termsUrl() }) : say('quotation.terms.agreement'),
+        say('quotation.terms.basis', { 'rate card version': q.version })]);
       /* TERMS under the rates, one numbered list (the user, 2026-11-12:
          "dont categorize my terms make it under the rates as usual"). */
       var all = [];
@@ -714,10 +714,10 @@
     }
     if (t.month) {
       notes.push(say('quotation.notes.commitment' + (own ? '-own' : '') + (t.once ? '-once' : ''),
-        { 'term in words': inWords(t.term), term: t.term, amount: amt(t.commitment, q) + incl }));
+        { 'minimum term in words': inWords(t.term), 'minimum term': t.term, amount: amt(t.commitment, q) + incl }));
     }
-    notes.push(termsUrl() ? say('quotation.notes.binding-terms', { 'terms url': termsUrl() }) : say('quotation.notes.binding'));
-    notes.push(say('quotation.notes.basis', { version: q.version }));
+    notes.push(termsUrl() ? say('quotation.notes.binding-terms', { 'service terms link': termsUrl() }) : say('quotation.notes.binding'));
+    notes.push(say('quotation.notes.basis', { 'rate card version': q.version }));
     room(30);
     y -= 8;
     text('TERMS', M, y, SM, book, mute);
@@ -749,7 +749,7 @@
       }
       y -= 6; text('Acceptance of Quotation', M, y, H1, reg, pn.strong); y -= 8;
     } else heading('Acceptance of Quotation');
-    para(say('quotation.acceptance', { reference: q.ref, date: longDay(dayOf(q.issued_at)) }), v2 ? 10.5 : 11, 14.5);
+    para(say('quotation.acceptance', { 'document reference': q.ref, 'document date': longDay(dayOf(q.issued_at)) }), v2 ? 10.5 : 11, 14.5);
     y -= v2 ? 22 : 12;
     if (v2) { text('Agreed figures', M, y, LBL, book, mute); y -= 6; }
     rule(y);

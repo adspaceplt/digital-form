@@ -711,7 +711,7 @@
     var w = t().ads, at = Q && Q.issued_at ? Q.issued_at : undefined, c = Q ? qc() : 'RM';
     var pct = MON.setting('ad_prepay_pct', at), fee = MON.setting('ad_credit_fee_pct', at);
     var x = Math.round(AD_EG * Number(fee)) / 100;
-    var pts = function (keys) { return '<ul class="adway-pts">' + keys.map(function (k) { return '<li>' + esc(tw(k, { 'prepay pct': pctWord(pct) })) + '</li>'; }).join('') + '</ul>'; };
+    var pts = function (keys) { return '<ul class="adway-pts">' + keys.map(function (k) { return '<li>' + esc(tw(k, { 'prepay percent': pctWord(pct) })) + '</li>'; }).join('') + '</ul>'; };
     $('adHeading').textContent = adw('adHow');
     $('adClose').setAttribute('aria-label', w.close);
     $('adClose').innerHTML = ic('close');
@@ -726,8 +726,8 @@
       '<div class="stepcard"><span class="stepcard-mark">' + ic('prepaid') + '</span><div class="adway-text">' +
         '<span class="adway-n">' + esc(f(w.opt, { n: 2 })) + '</span>' +
         '<p class="adway-name"><b>' + esc(w.pre) + '</b></p>' + pts(['quote.ads.pre.1', 'quote.ads.pre.2', 'quote.ads.pre.3']) +
-        '<div class="adway-sub"><h4>' + esc(w.termH) + '</h4><p>' + esc(tw('quote.ads.term', { 'fee pct': pctWord(fee) })) + '</p>' +
-          '<p>' + esc(tw('quote.ads.example', { currency: c, budget: n0(AD_EG), fee: x % 1 ? n2(x) : n0(x) })) + '</p></div></div></div></div>' +
+        '<div class="adway-sub"><h4>' + esc(w.termH) + '</h4><p>' + esc(tw('quote.ads.term', { 'credit fee percent': pctWord(fee) })) + '</p>' +
+          '<p>' + esc(tw('quote.ads.example', { currency: c, 'ad budget': n0(AD_EG), 'credit fee': x % 1 ? n2(x) : n0(x) })) + '</p></div></div></div></div>' +
       '<div class="adcmp-wrap"><table class="adcmp"><thead><tr><td></td><th scope="col">' + esc(f(w.opt, { n: 1 })) + '</th><th scope="col">' + esc(f(w.opt, { n: 2 })) + '</th></tr></thead><tbody>' +
         row(C.paid, C.paidA, C.paidB) + row(C.when, C.whenA, C.whenB) + row(C.fee, C.feeA, f(C.feeB, { fee: pctWord(fee) })) + '</tbody></table></div>';
   }
@@ -1159,7 +1159,7 @@
     if (adsOf(tt).length) notes.push(tw('quote.notes.ads'));
     else if (managed || Number(tt.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) {
       /* Not included, then How ad spend works under it (2026-11-27). */
-      if (managed) notes.push(tw('quote.notes.managed', { currency: qc(), budget: n0(qb(managed)) }));
+      if (managed) notes.push(tw('quote.notes.managed', { currency: qc(), 'ad budget': n0(qb(managed)) }));
       adAt = notes.push(adw('adNot')) - 1;
     }
     /* The validity is the status line's on screen; the PDF states it in its
@@ -1170,7 +1170,7 @@
       (Array.isArray(tt.terms) ? tt.terms : []).forEach(function (x) { if (String(x || '').trim()) notes.push(String(x).trim()); });
     }
     if (addonsOf(tt).length) notes.push(aoWord('aoTerm'));
-    notes.push(tw('quote.notes.basis', { version: q.version }));
+    notes.push(tw('quote.notes.basis', { 'rate card version': q.version }));
     var aside = '<aside class="qs-side" id="qsSide">' + sideHtml(q) + '</aside>';
     return '<div class="qs-quote" data-shown><section class="qs-main">' +
       ((st !== 'quote' && st !== 'ready') || q.revised || bn || q.change ? '' : '<button class="btn btn-quiet qs-change" type="button" data-a="change">' + window.ADspaceIcons.glyph('back', '', 'width="15" height="15"') + esc(t().change) + '</button>') +
@@ -1704,7 +1704,7 @@
           '<button class="btn btn-quiet btn-sm" type="button" data-a="signmode">' + esc(SG.mode === 'draw' ? s.typeIn : s.drawIn) + '</button></span></div>' +
           sig + '<span class="msg" id="sgPadMsg"></span></div>' +
         '<label class="qs-consent"><input type="checkbox" id="sgAgree"' + (SG.agree ? ' checked' : '') + '>' + MARK +
-          '<span class="qs-text">' + esc(tw('quote.sign.agree', { company: SG.co.legal_name })) + '</span></label><span class="msg" id="sgAgreeMsg"></span>' +
+          '<span class="qs-text">' + esc(tw('quote.sign.agree', { 'company name': SG.co.legal_name })) + '</span></label><span class="msg" id="sgAgreeMsg"></span>' +
         (cfg.serviceTermsUrl ? '<a class="btn btn-quiet btn-sm qs-terms" href="' + esc(window.ADspaceWords.absUrl(cfg.serviceTermsUrl)) + '" target="_blank" rel="noopener">' + esc(s.terms) + LEAVE + '</a>' : '') +
         '<div class="qs-cf" data-cf></div><p class="msg" id="qsSideMsg" role="status"></p>' + signFoot('signback', 'signcode') + '</form>';
     }
