@@ -284,6 +284,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     contact or is removed; 2026-10-13);
   - billing address.
   - Optional: old registration no., TIN, SST no., finance email.
+  - The BRN typed on Billing (a client's or an entity's) and on the details
+    form is read by `ADspaceWords.brnCheck` and `brn_check` in the
+    client's market (a Singapore client's UEN or BRN); a number held before and
+    left as it was is not judged again (ONE BRN RULE, 2026-11-28).
   - Bill in (`clients.bill_sgd`, `2026-10-22-bill-in-rm-or-sgd.sql`; the
     user, 2026-10-22: "follow RM as usual unless and optionally choose to
     have it in S$"): RM / S$ on Billing for a Singapore client alone, RM
