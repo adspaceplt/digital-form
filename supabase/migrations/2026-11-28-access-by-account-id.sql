@@ -30,9 +30,11 @@
 --   * Backfill: every confirmed login through `identity_link`, once per run.
 --   * Restated by the id, each refusal kept: `me`, `is_team`, `ops_me`,
 --     `abroad_who`, `allowed` (both), `ops_granted`, `my_access_expired`,
---     `team_super_ok`, `client_row_seen`, `client_row_seen_by`,
+--     `team_super_ok`, `client_row_seen_by`,
 --     `client_scope_free`, `clients_owner_guard`, `ai_draft_set_limit`,
---     `page_set`, `build_require`, the four name card functions,
+--     `page_set`, `build_require`, the two name card functions
+--     standing (`namecard_mine`, `namecard_save`; `_save_mine`, `_save_card`
+--     and `client_row_seen` were dropped by earlier bands and stay dropped),
 --     `team_keep_one_admin`, `team_access_guard`, `team_set_expiry_at`,
 --     `team_members_system_guard`, `team_admin_guard`, `issue_letter`,
 --     `verify_letter`, `override_service_state`, `issue_document`,
@@ -257,69 +259,6 @@ begin
   return jsonb_build_object('ok', true);
 end $$;
 
-create or replace function public.namecard_save_mine(p_mobile text, p_email text)
-returns jsonb language plpgsql security definer set search_path = public as $$
-declare
-  me_row public.team_members;
-  v_mobile text := nullif(btrim(coalesce(p_mobile, '')), '');
-begin
-  select * into me_row from public.team_members t
-   where t.auth_user_id = auth.uid() and t.active limit 1;
-  if me_row.id is null then return jsonb_build_object('error', 'not-team'); end if;
-  if v_mobile is not null and length(regexp_replace(v_mobile, '\D', '', 'g')) not between 8 and 15 then
-    return jsonb_build_object('error', 'bad-mobile');
-  end if;
-  if v_mobile is not distinct from me_row.mobile then return jsonb_build_object('ok', true); end if;
-  update public.team_members set mobile = v_mobile where id = me_row.id;
-  insert into public.activity_log (actor, action, subject, detail)
-  values (lower(me_row.email), 'team.edited', me_row.name,
-          'Mobile: ' || coalesce(me_row.mobile, 'not set') || ' → ' || coalesce(v_mobile, 'not set'));
-  return jsonb_build_object('ok', true);
-end $$;
-
-create or replace function public.namecard_save_card(p_mobile text, p_slug text)
-returns jsonb language plpgsql security definer set search_path = public as $$
-declare
-  me_row public.team_members;
-  v_mobile text := nullif(btrim(coalesce(p_mobile, '')), '');
-  v_slug text := lower(btrim(coalesce(p_slug, '')));
-  now_slug text;
-  said text := '';
-begin
-  select * into me_row from public.team_members t
-   where t.auth_user_id = auth.uid() and t.active limit 1;
-  if me_row.id is null then return jsonb_build_object('error', 'not-team'); end if;
-  if v_mobile is not null and length(regexp_replace(v_mobile, '\D', '', 'g')) not between 8 and 15 then
-    return jsonb_build_object('error', 'bad-mobile');
-  end if;
-  if v_slug <> '' and v_slug !~ '^[a-z0-9][a-z0-9._-]{0,79}$' then
-    return jsonb_build_object('error', 'slug-shape');
-  end if;
-  if v_mobile is not distinct from me_row.mobile and v_slug = coalesce(me_row.card_slug, '') then
-    return jsonb_build_object('ok', true, 'slug', me_row.card_slug);
-  end if;
-  begin
-    update public.team_members set mobile = v_mobile, card_slug = nullif(v_slug, '')
-     where id = me_row.id
-     returning card_slug into now_slug;
-  exception when others then
-    if sqlerrm in ('slug-taken', 'slug-shape') then return jsonb_build_object('error', sqlerrm); end if;
-    raise;
-  end;
-  if v_mobile is distinct from me_row.mobile then
-    said := 'Mobile: ' || coalesce(me_row.mobile, 'not set') || ' → ' || coalesce(v_mobile, 'not set');
-  end if;
-  if now_slug is distinct from me_row.card_slug then
-    said := said || case when said = '' then '' else '; ' end
-         || 'Short link: ' || coalesce(me_row.card_slug, 'not set') || ' → ' || coalesce(now_slug, 'not set');
-  end if;
-  if said <> '' then
-    insert into public.activity_log (actor, action, subject, detail)
-    values (lower(me_row.email), 'team.edited', me_row.name, said);
-  end if;
-  return jsonb_build_object('ok', true, 'slug', now_slug);
-end $$;
-
 create or replace function public.namecard_mine()
 returns jsonb language sql security definer stable set search_path = public as $$
   select coalesce((
@@ -381,30 +320,6 @@ begin
     values (lower(me_row.email), 'team.edited', me_row.name, said);
   end if;
   return jsonb_build_object('ok', true, 'slug', now_slug, 'show_mobile', v_show);
-end $$;
-
-create or replace function public.client_row_seen(p_stage text, p_owner text, p_level text)
-returns boolean language plpgsql security definer stable set search_path = public as $$
-declare
-  t public.team_members;
-  band text;
-begin
-  select * into t from public.team_members
-   where auth_user_id = auth.uid() and active limit 1;
-  if t.id is null or t.is_admin or t.role = 'admin' then return true; end if;
-  band := case when p_stage in ('lead', 'contacted', 'proposal') then 'clients.leads'
-               when p_stage = 'past' then 'clients.past' end;
-  if band is not null and public.level_rank(coalesce(t.access ->> band, t.access ->> 'clients'))
-                          < public.level_rank(p_level) then
-    return false;
-  end if;
-  if coalesce(t.client_scope, 'all') = 'own' then
-    if nullif(btrim(coalesce(p_owner, '')), '') is null then
-      return coalesce(band = 'clients.leads', false);
-    end if;
-    return lower(btrim(p_owner)) = lower(btrim(coalesce(t.name, '')));
-  end if;
-  return true;
 end $$;
 
 create or replace function public.client_scope_free(p_level text default 'view')
