@@ -34,6 +34,14 @@ window.ADspaceAgency = {
   ink_token: '--ink',
   accent_token: '--action',
   ground_token: '--page',
+  /* The agency's country (restructure release 18): its clock, its currency
+     and the tax its prices carry. */
+  time_zone: 'Asia/Kuala_Lumpur',
+  country: 'MY',
+  currency: 'MYR',
+  currency_sign: 'RM',
+  locale: 'en-MY',
+  tax_label: 'SST',
   email: 'advertise@adspacestudios.com'
 };
 

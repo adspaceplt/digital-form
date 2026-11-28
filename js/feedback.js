@@ -47,7 +47,7 @@
   function day(iso, named) {
     var C = window.ADspaceClock;
     if (C && C.date) return C.date(iso, { zh: lang === 'zh', long: true, named: named });
-    return new Date(iso).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-GB', { timeZone: 'Asia/Kuala_Lumpur', day: 'numeric', month: 'long', year: 'numeric' });
+    return new Date(iso).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-GB', { timeZone: window.ADspaceAgency.time_zone, day: 'numeric', month: 'long', year: 'numeric' });
   }
   /* A cover's glyph is drawn by js/maintenance.js, from `data-glyph` or its title. */
   function cover(glyph, title, text, extra) {

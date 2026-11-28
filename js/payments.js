@@ -46,8 +46,8 @@
   }
   function days(n) { return n == null ? '—' : (Math.round(Number(n) * 10) / 10) + (Number(n) === 1 ? ' day' : ' days'); }
   function pct(n) { return n == null ? '—' : Math.round(Number(n)) + '%'; }
-  function day(d) { return d && C ? C.date(d + 'T00:00:00+08:00') : ''; }
-  function short(d) { return d && C ? C.date(d + 'T00:00:00+08:00', { year: false }) : ''; }
+  function day(d) { return d && C ? C.date(d + 'T00:00:00' + window.ADspaceClock.SUFFIX) : ''; }
+  function short(d) { return d && C ? C.date(d + 'T00:00:00' + window.ADspaceClock.SUFFIX, { year: false }) : ''; }
   function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
   /* Better, Worse or Steady against the 12 months before (Analytics' one
      rule, `ADspaceSales.judge`). */

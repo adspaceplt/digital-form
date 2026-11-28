@@ -221,7 +221,7 @@
     var t = window.ADspaceMoney.money2(Number(n) || 0, cur === 'SGD' ? 'SG' : 'MY');
     return cur && cur !== 'MYR' && cur !== 'SGD' ? t.replace(/^RM/, cur) : t;
   }
-  function billDay(d) { return d ? window.ADspaceClock.date(d + 'T00:00:00+08:00') : ''; }
+  function billDay(d) { return d ? window.ADspaceClock.date(d + 'T00:00:00' + window.ADspaceClock.SUFFIX) : ''; }
   function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
   /* Paid once nothing stands; overdue once its due date has passed. */
   function billState(b, today) { return !(Number(b.balance) > 0) ? 'paid' : b.due < today ? 'overdue' : 'waiting'; }

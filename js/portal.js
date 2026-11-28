@@ -994,7 +994,7 @@
      time), whatever the device says, because it is booked in it: a client
      abroad read their own hour and no zone (the client pages refresh,
      2026-10-07). A Date shifted eight hours and read in UTC is that clock. */
-  function myt(d) { return new Date(new Date(d).getTime() + 8 * 3600000); }
+  function myt(d) { return new Date(new Date(d).getTime() + window.ADspaceClock.OFFSET); }
   /* Chinese reads 下午2:00, never pm (2026-10-20, POR-3). */
   function clock(d) {
     var h = d.getUTCHours(), m = d.getUTCMinutes(), hm = ((h % 12) || 12) + ':' + String(m).padStart(2, '0');

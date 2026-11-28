@@ -1950,7 +1950,7 @@
   function stampTime(s) {
     var d = new Date(s);
     if (isNaN(d)) return '';
-    var o = { timeZone: 'Asia/Kuala_Lumpur' };
+    var o = { timeZone: window.ADspaceAgency.time_zone };
     var day = d.toLocaleDateString('en-GB', { timeZone: o.timeZone, day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
     var at = d.toLocaleTimeString('en-GB', { timeZone: o.timeZone, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
     return day + ', ' + at + ' MYT';
@@ -2901,7 +2901,7 @@
             }
             return '<div><label class="field-label" for="rwS_' + f[0] + '">' + esc(f[1]) + '</label>' +
               '<input class="input" id="rwS_' + f[0] + '" data-key="' + f[0] + '" data-was="' + (v == null ? '' : v) + '" type="text" inputmode="decimal" autocomplete="off" value="' +
-              (v == null ? '' : f[2] === 'money' ? Number(v).toLocaleString('en-MY', { maximumFractionDigits: 2 }) : String(v)) + '"></div>';
+              (v == null ? '' : f[2] === 'money' ? Number(v).toLocaleString(window.ADspaceAgency.locale, { maximumFractionDigits: 2 }) : String(v)) + '"></div>';
           }).join('') + '</div>'
         : '<dl class="ovfacts">' + g[1].map(function (f) {
             return '<dt>' + esc(bare(f[1])) + '</dt><dd>' + esc(setValue(f[0], f[2], setAt(f[0], from))) + '</dd>';

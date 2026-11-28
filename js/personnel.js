@@ -714,7 +714,7 @@
     if (d && (d.error === 'code-needed' || d.error === 'locked')) { if (P().keepToken) P().keepToken(null); askCode(again); return true; }
     return false;
   }
-  function money(n) { return n == null ? '' : Number(n).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function money(n) { return n == null ? '' : Number(n).toLocaleString(window.ADspaceAgency.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function salaryOpen(opener) {
     var m = team.m;
     if (!m) return;

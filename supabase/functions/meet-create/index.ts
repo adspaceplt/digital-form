@@ -29,7 +29,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
 import { agencyProfile } from '../_shared/agency.ts';
 
-const TZ = 'Asia/Kuala_Lumpur';
 const CAL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
 
 /* A token for the shared account. The page is told which secret is missing
@@ -200,13 +199,14 @@ Deno.serve(async (req) => {
   /* An interview names its position alone: the calendar is shared, and a
      candidate's name stays with the people on the candidate. */
   const summary = kind === 'hire' ? `Interview · ${m.position}` : touch ? `${m.client_name} · Meeting` : `${m.client_name} · ${m.month_word} Content Discussion`;
-  /* The agency's trading name, from its profile (`_shared/agency.ts`). */
-  const agencyName = String((await agencyProfile()).trading_name || '');
+  /* The agency's trading name and time zone, from its profile (`_shared/agency.ts`). */
+  const profile = await agencyProfile();
+  const agencyName = String(profile.trading_name || ''), zone = String(profile.time_zone || '');
   const event: Record<string, unknown> = {
     summary,
     description: (kind === 'hire' ? 'Interview' : touch ? 'Meeting' : `${m.month_word} Content Discussion`) + (agencyName ? '\nBooked from the ' + agencyName + ' Digital Portal.' : ''),
-    start: { dateTime: start.toISOString(), timeZone: TZ },
-    end: { dateTime: end.toISOString(), timeZone: TZ }
+    start: { dateTime: start.toISOString(), ...(zone ? { timeZone: zone } : {}) },
+    end: { dateTime: end.toISOString(), ...(zone ? { timeZone: zone } : {}) }
   };
   /* An event the portal made earlier without its link (Google had not
      finished making the Meet when it answered) is asked for one again. */

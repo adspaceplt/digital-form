@@ -44,7 +44,24 @@
  */
 (function () {
   'use strict';
-  var OFF = 8 * 3600000;
+  /* The agency's own clock: the profile's time zone (js/config.js
+     `ADspaceAgency.time_zone`, restructure release 18), held as its offset
+     from UTC. A zone that moves for summer is not read yet: its offset is
+     the one it holds when the page loads. */
+  var ZONE = (window.ADspaceAgency || {}).time_zone;
+  if (!ZONE) throw new Error('ADspaceClock: the agency profile names no time zone (js/config.js).');
+  function offsetOf(zone) {
+    var t = Math.floor(Date.now() / 60000) * 60000, p = {};
+    new Intl.DateTimeFormat('en-US', { timeZone: zone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit' }).formatToParts(new Date(t)).forEach(function (x) { p[x.type] = Number(x.value); });
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute) - t;
+  }
+  var OFF = offsetOf(ZONE);
+  /* The offset as a moment's string writes it: +08:00. */
+  var SUFFIX = (function (m) {
+    var a = Math.abs(m);
+    return (m < 0 ? '-' : '+') + (a < 600 ? '0' : '') + Math.floor(a / 60) + ':' + (a % 60 < 10 ? '0' : '') + a % 60;
+  })(OFF / 60000);
   var DAY = 86400000;
   var DAY_ONLY = /^\d{4}-\d{2}-\d{2}$/;
   var NO_ZONE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/;
@@ -57,8 +74,8 @@
     else if (typeof v === 'number') t = v;
     else {
       var s = String(v).trim();
-      if (DAY_ONLY.test(s)) s += 'T00:00:00+08:00';
-      else if (NO_ZONE.test(s)) s += '+08:00';
+      if (DAY_ONLY.test(s)) s += 'T00:00:00' + SUFFIX;
+      else if (NO_ZONE.test(s)) s += SUFFIX;
       t = Date.parse(s.replace(/([+-]\d{2})(\d{2})$/, '$1:$2'));
     }
     return isNaN(t) ? null : t;
@@ -161,7 +178,7 @@
   function weekday(d) { var k = split(d); return k ? new Date(Date.UTC(k.y, k.mo, k.d)).getUTCDay() : null; }
 
   window.ADspaceClock = {
-    OFFSET: OFF, moment: moment, parts: parts, day: day, today: today, start: start,
+    ZONE: ZONE, OFFSET: OFF, SUFFIX: SUFFIX, moment: moment, parts: parts, day: day, today: today, start: start,
     at: at, time: time, addDays: addDays, addMonths: addMonths, periodEnd: periodEnd, between: between, weekday: weekday,
     date: date, due: due, clock: clock, month: month, MON: MON, LONG: LONG, WDAY: WDAY
   };

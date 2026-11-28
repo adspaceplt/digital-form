@@ -550,7 +550,7 @@
     });
   }
   function myDay(d) { return ADspaceClock.day(d); }
-  function myMoment(day, time, fallback) { return day ? day + 'T' + (time || fallback) + ':00+08:00' : null; }
+  function myMoment(day, time, fallback) { return day ? day + 'T' + (time || fallback) + ':00' + window.ADspaceClock.SUFFIX : null; }
   /* The window as typed: a time with no date is today's (it was dropped, so
      "10:00 pm" alone put the cover up at once), an empty start is now, and
      an empty end waits to be turned off. */
@@ -3742,7 +3742,7 @@
       if (isNaN(at)) return;
       var sha = String(v.commit || '').slice(0, 7);
       if (!build.loaded) build.loaded = buildOf(v);
-      var ver = new Date(at.getTime() + 8 * 3600000).toISOString().slice(2, 10).replace(/-/g, '');
+      var ver = new Date(at.getTime() + window.ADspaceClock.OFFSET).toISOString().slice(2, 10).replace(/-/g, '');
       /* The line shows the commit's last four characters (2026-11-11: room
          for the Handbook's mark); its name and hover hold all seven. */
       box.textContent = ver + (/^[0-9a-f]{7}$/.test(sha) ? '.' + sha.slice(-4) : '');

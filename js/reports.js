@@ -2252,7 +2252,7 @@
   function dueWord(iso) {
     var d = new Date(iso);
     if (isNaN(d)) return '';
-    var my = new Date(d.getTime() + 8 * 3600000);
+    var my = new Date(d.getTime() + window.ADspaceClock.OFFSET);
     return my.getUTCDate() + ' ' + MON[my.getUTCMonth()] + ' ' + my.getUTCFullYear();
   }
   function spanOf(m) {
@@ -3768,7 +3768,7 @@
     };
     var utc = wall - offOf(wall);
     utc = wall - offOf(utc);
-    var my = new Date(utc + 8 * 3600000);
+    var my = new Date(utc + window.ADspaceClock.OFFSET);
     return my.getUTCFullYear() + '-' + String(my.getUTCMonth() + 1).padStart(2, '0') + '-' + String(my.getUTCDate()).padStart(2, '0');
   }
   /* Rows and cells as a spreadsheet copies them: a cell holding line
@@ -6478,7 +6478,7 @@
     var at = new Date(iso);
     if (isNaN(at.getTime())) return '';
     try {
-      return at.toLocaleString('en-GB', { timeZone: 'Asia/Kuala_Lumpur', hour: 'numeric', minute: '2-digit', hour12: true })
+      return at.toLocaleString('en-GB', { timeZone: window.ADspaceAgency.time_zone, hour: 'numeric', minute: '2-digit', hour12: true })
         .replace(/\s?([ap])\.?m\.?$/i, function (x, c) { return ' ' + c.toLowerCase() + 'm'; });
     } catch (e) { return ''; }
   }

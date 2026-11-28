@@ -86,7 +86,7 @@
   function day(iso, named) {
     var C = window.ADspaceClock;
     if (C && C.date) return C.date(iso, { zh: lang === 'zh', long: true, named: named });
-    return new Date(iso).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-GB', { timeZone: 'Asia/Kuala_Lumpur', day: 'numeric', month: 'long', year: 'numeric' });
+    return new Date(iso).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-GB', { timeZone: window.ADspaceAgency.time_zone, day: 'numeric', month: 'long', year: 'numeric' });
   }
   function cover(title, text) {
     root().innerHTML = '<section class="cover" data-shown><div class="cover-inner"><div class="cover-panel"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p></div></div></section>';

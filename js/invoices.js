@@ -103,7 +103,7 @@
     return Object.keys(by).sort(function (a, b) { return a === 'MYR' ? -1 : b === 'MYR' ? 1 : a < b ? -1 : 1; })
       .map(function (c) { return money(by[c], c); });
   }
-  function day(d) { return d && C ? C.date(d.length === 10 ? d + 'T00:00:00+08:00' : d) : ''; }
+  function day(d) { return d && C ? C.date(d.length === 10 ? d + 'T00:00:00' + window.ADspaceClock.SUFFIX : d) : ''; }
   function when(iso) { return iso && C ? C.date(iso).replace(/ \d{4}$/, '') + ', ' + C.clock(iso) : ''; }
   var STATUS = { queued: ['Queued', 'is-warn'], cancelled: ['Cancelled', 'is-off'], sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-live'], delivered: ['Delivered', 'is-live'],
     opened: ['Opened', 'is-ok'], bounced: ['Bounced', 'is-danger'], complained: ['Marked as spam', 'is-danger'],

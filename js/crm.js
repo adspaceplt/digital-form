@@ -6378,7 +6378,7 @@
      content meeting uses. */
   var MEET_LINK = /^https:\/\/([a-z0-9-]+\.)*(meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com)\//i;
   /* Hours and minutes in Malaysia, wherever the browser is. */
-  function myt(d) { var x = new Date(d.getTime() + 8 * 3600000); return { h: x.getUTCHours(), m: x.getUTCMinutes() }; }
+  function myt(d) { var x = new Date(d.getTime() + window.ADspaceClock.OFFSET); return { h: x.getUTCHours(), m: x.getUTCMinutes() }; }
   function clockOf(d) { return window.ADspaceClock.clock(d); }
   function lengthWord(n) {
     n = Number(n) || 30;
@@ -6516,7 +6516,7 @@
       }
       var time = $('tcTime').value;
       /* The time is Malaysia's, wherever the colleague is. */
-      row.meet_at = time ? new Date(row.happened_at + 'T' + time + ':00+08:00').toISOString() : null;
+      row.meet_at = time ? new Date(row.happened_at + 'T' + time + ':00' + window.ADspaceClock.SUFFIX).toISOString() : null;
       row.meet_minutes = Number($('tcMins').value) || 30;
       row.meet_link = link || null;
     }
@@ -8399,11 +8399,11 @@
     if (!sp || !sp.role) return '';
     var r = sp.role;
     if (r === 'plan') return 'Plan ' + sp.plan + ' · ' + sp.platforms + ' platform' + (sp.platforms == 1 ? '' : 's') + ' · ' +
-      sp.contents + ' contents · ' + (sp.ads ? 'with ads to RM ' + Number(sp.ad_budget || 0).toLocaleString('en-MY') : 'without ads') +
+      sp.contents + ' contents · ' + (sp.ads ? 'with ads to ' + window.ADspaceAgency.currency_sign + ' ' + Number(sp.ad_budget || 0).toLocaleString(window.ADspaceAgency.locale) : 'without ads') +
       ' · ' + mixWord(sp.mix);
     if (r === 'platform') return 'Platform: ' + ({ meta: 'Meta', tiktok: 'TikTok', rednote: 'rednote', linkedin: 'LinkedIn' })[sp.platform];
-    if (r === 'ads') return 'Advertising to RM ' + Number(sp.budget).toLocaleString('en-MY');
-    if (r === 'booster') return 'Ads booster to RM ' + Number(sp.budget).toLocaleString('en-MY');
+    if (r === 'ads') return 'Advertising to ' + window.ADspaceAgency.currency_sign + ' ' + Number(sp.budget).toLocaleString(window.ADspaceAgency.locale);
+    if (r === 'booster') return 'Ads booster to ' + window.ADspaceAgency.currency_sign + ' ' + Number(sp.budget).toLocaleString(window.ADspaceAgency.locale);
     if (r === 'language') return 'Added language';
     if (r === 'content') return 'Content: ' + sp.kind;
     if (r === 'verify') return 'Verification' + (sp.fee ? ' · ' + sp.fee : '');

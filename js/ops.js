@@ -1340,7 +1340,7 @@
         (list || []).forEach(function (r) {
           var SM = window.ADspaceSmReport, MON = window.ADspaceMoney;
           var days = Number(MON.setting('report_due_days', r.period_end));
-          var due = r.period_end ? new Date(new Date(r.period_end + 'T23:59:59+08:00').getTime() + days * 86400000) : null;
+          var due = r.period_end ? new Date(new Date(r.period_end + 'T23:59:59' + window.ADspaceClock.SUFFIX).getTime() + days * 86400000) : null;
           var late = due && Date.now() > due.getTime();
           rows.push({ key: 'rep:' + r.id, section: 'reports', at: r.submitted_at, late: late, client: r.client_id,
             age: late ? lateWord(due) : '',
@@ -6234,7 +6234,7 @@
     }
     return out;
   }
-  function numWord(n) { return Number(n || 0).toLocaleString('en-MY'); }
+  function numWord(n) { return Number(n || 0).toLocaleString(window.ADspaceAgency.locale); }
   function askResults(t) {
     var whole = function (x) { var v = String(x == null ? '' : x).replace(/[,\s]/g, ''); return /^\d+$/.test(v) ? Number(v) : null; };
     ADspaceConfirm.ask({

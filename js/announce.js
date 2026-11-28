@@ -173,16 +173,16 @@
   /* ---- The console's list (Team: Announcements) ----------------------------- */
   var NAME = { team: 'Team', clients: 'Clients' };
   function myDay(d) {
-    return new Date(d.getTime() + 8 * 3600000).toISOString().slice(0, 10);
+    return new Date(d.getTime() + window.ADspaceClock.OFFSET).toISOString().slice(0, 10);
   }
   function myTime(d) {
-    return new Date(d.getTime() + 8 * 3600000).toISOString().slice(11, 16);
+    return new Date(d.getTime() + window.ADspaceClock.OFFSET).toISOString().slice(11, 16);
   }
   /* A day and an optional time in Malaysia, as one moment; none for neither. */
   function moment(day, time, fallback) {
     if (!day && !time) return null;
     var d = day || myDay(new Date());
-    return new Date(d + 'T' + (time || fallback) + ':00+08:00').toISOString();
+    return new Date(d + 'T' + (time || fallback) + ':00' + window.ADspaceClock.SUFFIX).toISOString();
   }
   function when(iso) {
     var M = window.ADspaceMaintenance;

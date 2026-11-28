@@ -94,7 +94,7 @@
   /* To the cent as quote_fx_snap rounds (a half away from nought; the audit
      of 2026-10-26, finding 13). */
   function cv(n) { return FX ? MON.cents(Number(n) / FX) : Number(n); }
-  function whole(n) { return Number(FX ? Math.round(Number(n) / FX) : n).toLocaleString('en-MY'); }
+  function whole(n) { return Number(FX ? Math.round(Number(n) / FX) : n).toLocaleString(window.ADspaceAgency.locale); }
   function acct(n) { n = Number(n || 0); return n < 0 ? '(' + rm(-n) + ')' : rm(n); }
 
   /* What a quotation is now, worked out on every read: removed, a Letter of
@@ -2372,7 +2372,7 @@
         else if (ticked.length < p.spec.platforms) add = f > meta ? f - meta : '';
         else add = f;
       }
-      i.parentNode.querySelector('.qb-rate').textContent = add ? '+' + cv(add).toLocaleString('en-MY') : '';
+      i.parentNode.querySelector('.qb-rate').textContent = add ? '+' + cv(add).toLocaleString(window.ADspaceAgency.locale) : '';
     });
   }
   /* A plan needs a platform: Meta is ticked for it where none is, and can
@@ -2699,7 +2699,7 @@
   }
   /* The version live on a day: the newest published by its end (MYT). */
   function cardOn(day) {
-    var end = Date.parse(day + 'T23:59:59+08:00');
+    var end = Date.parse(day + 'T23:59:59' + window.ADspaceClock.SUFFIX);
     var hit = (B && B.versions || []).filter(function (v) { return Date.parse(v.published_at) <= end; })[0];
     return hit ? hit.version : ((B && B.versions || []).slice(-1)[0] || {}).version;
   }
@@ -2849,7 +2849,7 @@
     var p = planOf(), tr = svcs(B.card, 'language')[0];
     var n = p ? p.spec.contents + (Number($('qbGraphic').value) || 0) + (Number($('qbReel').value) || 0) : 0;
     var langs = document.querySelectorAll('#qbLangs input:checked').length;
-    $('qbTrRate').textContent = p && tr && langs > 1 ? n * (langs - 1) + ' × ' + cv(tr.rate).toLocaleString('en-MY') : '';
+    $('qbTrRate').textContent = p && tr && langs > 1 ? n * (langs - 1) + ' × ' + cv(tr.rate).toLocaleString(window.ADspaceAgency.locale) : '';
     /* The files asked beyond the pieces the selection makes (QUOTE FILES
        CAPPED, 2026-11-25; quote_preview `files_over`, the one count): the
        team is warned, never stopped, since more may be agreed by hand. */

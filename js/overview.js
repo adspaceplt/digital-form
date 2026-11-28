@@ -1801,7 +1801,7 @@
      of the time is gone), red once late. Nothing is drawn with no date. */
   function ringOf(t) {
     if (!t || !t.finalAt || !t.from) return '';
-    var from = Date.parse(t.from), end = Date.parse(CK.day(t.finalAt) + 'T23:59:59+08:00');
+    var from = Date.parse(t.from), end = Date.parse(CK.day(t.finalAt) + 'T23:59:59' + window.ADspaceClock.SUFFIX);
     if (isNaN(from) || isNaN(end)) return '';
     var used = end > from ? (Date.now() - from) / (end - from) : 1;
     used = Math.max(0, Math.min(1, used));
@@ -2382,8 +2382,8 @@
       while (days.length < 5) { var wd = CK.weekday(dd); if (wd !== 0 && wd !== 6) days.push(dd); dd = CK.addDays(dd, 1); }
       card.querySelector('.ovw-today-n').textContent = CK.date(days[0], { year: false }) + ' to ' + CK.date(days[4], { year: false });
       var meet = may('ops', 'view') && me ? Promise.resolve().then(function () { return db.from('ops_engagements').select('id, meeting_at, meeting_channel, clients(name)')
-        .eq('meeting_owner_id', me.id).gte('meeting_at', new Date(days[0] + 'T00:00:00+08:00').toISOString())
-        .lte('meeting_at', new Date(days[4] + 'T23:59:59+08:00').toISOString()); }).then(rows).catch(function () { return null; }) : Promise.resolve([]);
+        .eq('meeting_owner_id', me.id).gte('meeting_at', new Date(days[0] + 'T00:00:00' + window.ADspaceClock.SUFFIX).toISOString())
+        .lte('meeting_at', new Date(days[4] + 'T23:59:59' + window.ADspaceClock.SUFFIX).toISOString()); }).then(rows).catch(function () { return null; }) : Promise.resolve([]);
       meet.then(function (ms) {
         var any = false;
         var html = days.map(function (day, i) {

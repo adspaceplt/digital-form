@@ -92,10 +92,10 @@
     }
     try {
       if (zh()) {
-        return d.toLocaleString('zh-CN', { timeZone: 'Asia/Kuala_Lumpur', year: 'numeric', month: 'long',
+        return d.toLocaleString('zh-CN', { timeZone: window.ADspaceAgency.time_zone, year: 'numeric', month: 'long',
           day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
       }
-      return d.toLocaleString('en-GB', { timeZone: 'Asia/Kuala_Lumpur', day: 'numeric', month: 'short',
+      return d.toLocaleString('en-GB', { timeZone: window.ADspaceAgency.time_zone, day: 'numeric', month: 'short',
         year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
         .replace(/\bSep\b/, 'Sept').replace(/\s?([ap])\.?m\.?$/i, function (m, x) { return x.toLowerCase() + 'm'; });
     } catch (e) { return d.toISOString(); }

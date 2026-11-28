@@ -14,11 +14,20 @@
  * applies at all, for a client who is genuinely exempt.
  */
 (function () {
+  /* The agency's own country, its currency, locale, time zone and tax
+     label, are its profile's (js/config.js `ADspaceAgency`, restructure
+     release 18); read at the call, so a page that sets the profile later
+     is read as it stands. */
+  function ag(k) { return (window.ADspaceAgency || {})[k]; }
   // Currency only. The tax below is ours, not the market's.
   var MARKETS = {
-    MY: { code: 'MYR', sign: 'RM', locale: 'en-MY' },
     SG: { code: 'SGD', sign: 'S$', locale: 'en-SG' }
   };
+  function home() {
+    var c = String(ag('country') || '').toUpperCase();
+    if (c && !MARKETS[c]) MARKETS[c] = { code: ag('currency'), sign: ag('currency_sign'), locale: ag('locale') };
+    return c;
+  }
 
   /* THE FIGURES ARE SETTINGS (2026-10-05). SST and the term percentages are
      an admin's to change from a day on (`app_settings`, read through
@@ -55,7 +64,7 @@
   var ROWS = [];
   var loading = null;
   function today() {
-    try { return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }); }
+    try { return new Date().toLocaleDateString('en-CA', { timeZone: ag('time_zone') }); }
     catch (e) { return new Date().toISOString().slice(0, 10); }
   }
   /* A day is read in Malaysia: a timestamp (an issued letter's) becomes its
@@ -64,7 +73,7 @@
     if (!at) return today();
     var s = String(at);
     if (s.length <= 10) return s;
-    try { return new Date(s).toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }); }
+    try { return new Date(s).toLocaleDateString('en-CA', { timeZone: ag('time_zone') }); }
     catch (e) { return s.slice(0, 10); }
   }
   function setting(key, at) {
@@ -152,9 +161,9 @@
     return hit[0] || null;
   }
   // Malaysian service tax. One rate, because we are one entity.
-  var TAX = { label: 'SST ' + FIRST.sst_pct + '%', rate: FIRST.sst_pct / 100 };
+  var TAX = { label: ag('tax_label') + ' ' + FIRST.sst_pct + '%', rate: FIRST.sst_pct / 100 };
 
-  function market(m) { return MARKETS[String(m || 'MY').toUpperCase()] || MARKETS.MY; }
+  function market(m) { var h = home(); return MARKETS[String(m || h).toUpperCase()] || MARKETS[h]; }
 
   /* A rate is a whole number of dollars or ringgit; a total carries cents.
      Both line up in a column, which is why the caller pairs them with
@@ -297,16 +306,16 @@
   // Named the same wherever it is charged, because it is the same tax.
   function taxLabel(m, at) {
     var p = setting('sst_pct', at);
-    return 'SST ' + (Math.round(p * 100) / 100) + '%';
+    return ag('tax_label') + ' ' + (Math.round(p * 100) / 100) + '%';
   }
   function signOf(m) { return market(m).sign; }
   /* The market a client's figures are written in (2026-10-22): SG only for
      a Singapore client billed in S$. A payload's `bill_market` is the
      database's own answer; a client row carries `market` and `bill_sgd`. */
   function curOf(c) {
-    if (!c) return 'MY';
-    if (c.bill_market) return String(c.bill_market).toUpperCase() === 'SG' ? 'SG' : 'MY';
-    return String(c.market || '').toUpperCase() === 'SG' && c.bill_sgd ? 'SG' : 'MY';
+    if (!c) return home();
+    if (c.bill_market) return String(c.bill_market).toUpperCase() === 'SG' ? 'SG' : home();
+    return String(c.market || '').toUpperCase() === 'SG' && c.bill_sgd ? 'SG' : home();
   }
   /* A Singapore client billed in RM reads the S$ it comes to beside a
      total, at the rate set in Tax and terms (`fx_sgd`, RM to S$1):
@@ -334,7 +343,7 @@
      SST not applicable, no figure says incl. or excl. SST, and the row
      before SST is left out, since it is the total. */
   function sstApplies(pct) { return Number(pct) > 0; }
-  var SST_NONE = 'SST not applicable';
+  var SST_NONE = ag('tax_label') + ' not applicable';
   /* The SST of a set of lines, each at its own tax code's rate where it
      carries one (a quotation line's `sst`, a letter line's `tax_pct`), else
      `dflt` (2026-10-22): whether any is charged, the row's words (one rate
@@ -347,14 +356,15 @@
     };
     var all = (lines || []).map(rateOf).filter(function (v, i, a) { return a.indexOf(v) === i; });
     var on = all.filter(function (v) { return v > 0; });
-    var word = function (v) { return 'SST ' + (Math.round(v * 100) / 100) + '%'; };
+    var T = ag('tax_label');
+    var word = function (v) { return T + ' ' + (Math.round(v * 100) / 100) + '%'; };
     return {
       on: on.length > 0,
-      word: !on.length ? SST_NONE : on.length === 1 ? word(on[0]) : 'SST',
+      word: !on.length ? SST_NONE : on.length === 1 ? word(on[0]) : T,
       tag: function (l) {
         if (all.length < 2) return '';
         var v = Math.round(rateOf(l) * 100) / 100;
-        return v > 0 ? '(+' + v + '% SST)' : '(0% SST)';
+        return v > 0 ? '(+' + v + '% ' + T + ')' : '(0% ' + T + ')';
       }
     };
   }
@@ -437,8 +447,8 @@
      the card's unit after the figure, a unit ending ", from" read first
      ("Per trip, from" prints "from RM 450.00 per trip"). `zh` the Chinese. */
   function addonParts(r, cur) {
-    var sign = String(cur || '').toUpperCase() === 'SGD' ? 'S$' : 'RM';
-    var fig = sign + ' ' + Number(r && r.rate || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var sign = String(cur || '').toUpperCase() === MARKETS.SG.code ? MARKETS.SG.sign : market().sign;
+    var fig = sign + ' ' + Number(r && r.rate || 0).toLocaleString(market().locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     var unit = String((r && r.unit) || '').trim(), from = /,\s*from$/i.test(unit);
     unit = unit.replace(/,\s*from$/i, '');
     return { from: from, fig: fig, unit: unit };

@@ -254,7 +254,7 @@
         if (only) q = q.in('id', only.slice(0, 400));
         if (a.client_id) q = q.eq('client_id', a.client_id);
         var t = today();
-        if (a.show === 'done_this_month') q = q.gte('completed_at', t.slice(0, 7) + '-01T00:00:00+08:00').order('completed_at', { ascending: false });
+        if (a.show === 'done_this_month') q = q.gte('completed_at', t.slice(0, 7) + '-01T00:00:00' + window.ADspaceClock.SUFFIX).order('completed_at', { ascending: false });
         else {
           q = q.is('completed_at', null);
           if (a.show === 'past_due') q = q.lt('current_final_due_at', t + 'T00:00:00Z');
