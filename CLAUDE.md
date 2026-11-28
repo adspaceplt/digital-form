@@ -267,6 +267,7 @@ edit of its script; no page keeps a copy of its own.
 - `js/clock.js` is Malaysia's clock: every page reads a day, a month and today from it: `docs/rules/mechanisms.md`.
 - `js/otp.js` is the code from an email typed as a box a digit: `docs/rules/mechanisms.md`.
 - `js/copy.js` says Copied one way: `docs/rules/mechanisms.md`.
+- `js/tpl.js` is the template store's page engine (`template_render` the database's): `docs/rules/mechanisms.md`.
 - `js/icons.js` is the client pages' one icon set and the booking's one step track: `docs/rules/mechanisms.md`.
 - `js/guide.js` is the only first-visit guide: `docs/rules/guide.md`.
 - `js/state.js` owns loading, empty and failed. **A failed read is never drawn as an empty list.** `docs/rules/cmdbar.md`.
@@ -406,7 +407,7 @@ only a one-line pointer to it.
 | Media and the media pass | `docs/rules/media.md` | `js/media.js`, `supabase/functions/media-pass` |
 | The demo | `docs/rules/demo.md` | `js/demo.js`, `demo/` |
 | Overseas access | `docs/rules/overseas.md` | none (grep `abroad`) |
-| Shared mechanisms (Supabase client, money, acts, clock, code boxes, icons, words, Turnstile, decide, swipe, chart) | `docs/rules/mechanisms.md` | `js/api.js`, `js/money.js`, `js/acts.js`, `js/clock.js`, `js/otp.js`, `js/copy.js`, `js/icons.js`, `js/words.js`, `js/captcha.js`, `js/decide.js`, `js/swipe.js`, `js/chart.js` |
+| Shared mechanisms (Supabase client, money, acts, clock, code boxes, icons, words, Turnstile, decide, swipe, chart, templates) | `docs/rules/mechanisms.md` | `js/api.js`, `js/money.js`, `js/acts.js`, `js/clock.js`, `js/otp.js`, `js/copy.js`, `js/icons.js`, `js/words.js`, `js/captcha.js`, `js/decide.js`, `js/swipe.js`, `js/chart.js`, `js/tpl.js` |
 | Menus, sheets, questions, typed boxes | `docs/rules/sheets.md` | `js/menu.js`, `js/sheet.js`, `js/confirm.js`, `js/ask.js`, `js/grow.js` |
 | The first-visit guide | `docs/rules/guide.md` | `js/guide.js` |
 | Loading states, directory cards, the command bar | `docs/rules/cmdbar.md` | `js/state.js`, `js/group.js`, `js/cmdbar.js` |
