@@ -200,9 +200,11 @@ Deno.serve(async (req) => {
   /* An interview names its position alone: the calendar is shared, and a
      candidate's name stays with the people on the candidate. */
   const summary = kind === 'hire' ? `Interview · ${m.position}` : touch ? `${m.client_name} · Meeting` : `${m.client_name} · ${m.month_word} Content Discussion`;
+  /* The agency's trading name, from its profile (`_shared/agency.ts`). */
+  const agencyName = String((await agencyProfile()).trading_name || '');
   const event: Record<string, unknown> = {
     summary,
-    description: (kind === 'hire' ? 'Interview' : touch ? 'Meeting' : `${m.month_word} Content Discussion`) + '\nBooked from the ' + ((await agencyProfile()).trading_name || '') + ' Digital Portal.',
+    description: (kind === 'hire' ? 'Interview' : touch ? 'Meeting' : `${m.month_word} Content Discussion`) + (agencyName ? '\nBooked from the ' + agencyName + ' Digital Portal.' : ''),
     start: { dateTime: start.toISOString(), timeZone: TZ },
     end: { dateTime: end.toISOString(), timeZone: TZ }
   };
