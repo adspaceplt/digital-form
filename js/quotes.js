@@ -109,9 +109,9 @@
     /* Signed on its link or on paper, then checked, submitted and reviewed
        (QUOTATION SIGNING, 2026-10-31): the signing outranks the date, since
        a signed quotation is held to as signed. */
-    if (q.reviewed_at) return ['Accepted', 'is-ok', 'Reviewed by ' + (q.reviewed_by || '')];
+    if (q.reviewed_at) return ['Accepted', 'is-ok', 'Reviewed by ' + window.ADspaceAdmin.whoIs(q.reviewed_by_id, q.reviewed_by)];
     if (q.signed_at) {
-      if (q.returned_at) return ['Sent back', 'is-danger', 'By ' + (q.returned_by || '')];
+      if (q.returned_at) return ['Sent back', 'is-danger', 'By ' + window.ADspaceAdmin.whoIs(q.returned_by_id, q.returned_by)];
       if (q.submitted_at) return ['In review', 'is-warn', q.reviewer_name || ''];
       return ['Signed', 'is-warn', 'By ' + (((q.signed || {}).signer || {}).name || '')];
     }
@@ -218,7 +218,7 @@
     'valid_until, made_by, made_by_id, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, released_at, reply_due, ' +
     'signed_at, signed, submitted_at, submitted_by, reviewer_id, reviewer_name, reviewed_at, reviewed_by, reviewed_role, returned_at, return_note, returned_by, sign_history, sent_out_at, ' +
     'sealed_at, seal_sha, seal_pages_sha, sealed_by, signed_words, declined_at, decline_reason, withdrawn_at, withdrawn_on, withdrawn_reason, withdrawn_by, commence_on, change_request, change_requested_at, ' +
-    'confirmed_at, confirmed_by, revises, request_ref, ' +
+    'confirmed_at, confirmed_by, revises, request_ref, removed_by_id, reviewed_by_id, returned_by_id, ' +
     'details_ask, details_asked_at, details_asked_by, details_due, details_at, details, not_quoted, match, match_taken';
   /* Two short lines (2026-10-26, the user: "too many info"): what it is, then
      where it came from and when. */
@@ -477,7 +477,7 @@
         /* One that reached the client or was signed stays, Void (2026-11-26). */
         if (maySet && !q.sent_out_at && !q.signed_at) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="delete" data-need="clients.quotes:manage" type="button" role="menuitem">Delete</button>');
         return '<div class="qt-gonerow" data-id="' + esc(q.id) + '"><span class="qt-gonename"><b class="qt-ref">' + window.ADspaceCopy.ref(refOf(q)) + '</b>' +
-          '<small>' + wholeDays(esc(metaOf(q) + ' · Removed ' + window.ADspaceClock.date(q.removed_at) + (q.removed_by ? ' by ' + q.removed_by : ''))) + '</small></span>' +
+          '<small>' + wholeDays(esc(metaOf(q) + ' · Removed ' + window.ADspaceClock.date(q.removed_at) + (q.removed_by ? ' by ' + window.ADspaceAdmin.whoIs(q.removed_by_id, q.removed_by) : ''))) + '</small></span>' +
           '<span class="qt-goneacts">' + (maySet ? '<button class="btn btn-sm" data-a="restore" type="button">Restore</button>' : '') +
           '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS +
           '</button><div class="kmenu" data-menu hidden>' + items.join('') + '</div></span></span></div>';
@@ -1267,7 +1267,7 @@
     $('qsgCheckFor').textContent = q.ref + ' · ' + q.brand;
     var back = $('qsgCheckBack');
     back.hidden = !q.returned_at;
-    back.textContent = q.returned_at ? 'Sent back by ' + (q.returned_by || '') + ' on ' + when(q.returned_at) + ': ' + (q.return_note || '') : '';
+    back.textContent = q.returned_at ? 'Sent back by ' + window.ADspaceAdmin.whoIs(q.returned_by_id, q.returned_by) + ' on ' + when(q.returned_at) + ': ' + (q.return_note || '') : '';
     paintCheck();
     sheetMsg('qsgCheckMsg', '');
     var sel = $('qsgReviewer');

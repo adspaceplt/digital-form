@@ -274,7 +274,7 @@
   function quoteRows(then) {
     if (!mayFamily('quotation', 'view') || !window.ADspaceAPI || !window.ADspaceAPI.readPages) { then([]); return; }
     var COLS = 'id, ref, client_id, brand, status, source, issued_at, valid_until, contact, signed_at, signed, reviewed_at, reviewed_by, ' +
-      'submitted_at, reviewer_name, returned_at, returned_by, removed_at, sent_out_at, released_at, replaces, sealed_at, declined_at, withdrawn_at, withdrawn_on, confirmed_at';
+      'submitted_at, reviewer_name, returned_at, returned_by, reviewed_by_id, returned_by_id, removed_at, sent_out_at, released_at, replaces, sealed_at, declined_at, withdrawn_at, withdrawn_on, confirmed_at';
     window.ADspaceAPI.readPages(function () {
       return db.from('quotations').select(COLS).order('issued_at', { ascending: false });
     }).then(function (r) {
@@ -455,7 +455,7 @@
     /* The kind, and who issued it where the portal did. A row added by hand
        says nothing about how it arrived and names nobody: an import is not a
        person, and the fact is in the ⋯ (Edit is offered on it). */
-    var sub = [nameOf(d.kind), d.source === 'portal' ? d.issued_by : ''].filter(Boolean).join(' · ');
+    var sub = [nameOf(d.kind), d.source === 'portal' ? bridge.whoIs(d.issued_by_id, d.issued_by) : ''].filter(Boolean).join(' · ');
     el.innerHTML =
       /* The reference is what somebody came to copy, so the reference is
          the control: one press, and it says Copied the way every other copy
@@ -539,8 +539,8 @@
         load: function () {
           return (DOCS && DOCS.codeOf ? DOCS.codeOf('document', d.id) : Promise.resolve('')).then(function (code) {
             return { id: code || '—', ref: d.serial, stateWord: d.voided_at ? ['Void', 'is-danger'] : ['Valid', 'is-ok'],
-              steps: [{ step: 'issued', at: d.created_at, by: d.issued_by }].concat(d.voided_at
-                ? [{ step: 'voided', at: d.voided_at, by: d.voided_by, note: d.void_reason }] : []) };
+              steps: [{ step: 'issued', at: d.created_at, by: bridge.whoIs(d.issued_by_id, d.issued_by) }].concat(d.voided_at
+                ? [{ step: 'voided', at: d.voided_at, by: bridge.whoIs(d.voided_by_id, d.voided_by), note: d.void_reason }] : []) };
           });
         } });
     });

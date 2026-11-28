@@ -224,11 +224,11 @@
             var list = t.data || [];
             return ownersOf(list.map(function (x) { return x.id; })).then(function (o) { out.open_tasks = list.map(function (x) { return taskRow(x, o); }); });
           }));
-        if (may('clients.calls')) jobs.push(db.from('client_touches').select('kind, happened_at, contact_name, summary, next_action, next_at, by_whom, done_at')
+        if (may('clients.calls')) jobs.push(db.from('client_touches').select('kind, happened_at, contact_name, summary, next_action, next_at, by_whom, by_whom_id, done_at')
           .eq('client_id', c.id).is('archived_at', null).order('happened_at', { ascending: false }).limit(5).then(function (t) {
             out.calls_and_visits = (t.data || []).map(function (x) {
               return { kind: KIND[x.kind] || x.kind, on: dayWord(x.happened_at), with: mask(x.contact_name) || null, summary: mask(x.summary),
-                       next_action: x.next_action && !x.done_at ? mask(x.next_action) + (x.next_at ? ' by ' + dayWord(x.next_at) : '') : null, by: x.by_whom || null };
+                       next_action: x.next_action && !x.done_at ? mask(x.next_action) + (x.next_at ? ' by ' + dayWord(x.next_at) : '') : null, by: x.by_whom ? bridge.whoIs(x.by_whom_id, x.by_whom) : null };
             });
           }));
         if (may('reports')) jobs.push(db.from('sm_reports').select('id, kind, period_start, period_end, status, sent_on, brand_name')

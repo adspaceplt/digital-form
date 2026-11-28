@@ -581,7 +581,7 @@
       db.from('sm_reports').select('*').eq('id', id).maybeSingle(),
       db.from('sm_report_platforms').select('*').eq('report_id', id).order('position', { ascending: true }),
       db.from('sm_report_posts').select('*').eq('report_id', id).order('posted_on', { ascending: true }).order('position', { ascending: true }),
-      db.from('sm_report_versions').select('id, version_no, published_at, published_by, withdrawn_at, withdrawn_by, withdraw_reason, file_key, file_at').eq('report_id', id).order('version_no', { ascending: false })
+      db.from('sm_report_versions').select('id, version_no, published_at, published_by, published_by_id, withdrawn_at, withdrawn_by, withdrawn_by_id, withdraw_reason, file_key, file_at').eq('report_id', id).order('version_no', { ascending: false })
     ]).then(function (got) {
       var box = host.querySelector('.rp-editbox');
       var bad = got.filter(function (r) { return r.error; })[0];
@@ -2444,7 +2444,7 @@
       ['report.submitted', r.status !== 'draft' && r.submitted_at, nameOf(r.submitted_by), r.reviewer_id && nameOf(r.reviewer_id) ? 'Reviewer: ' + nameOf(r.reviewer_id) : ''],
       ['report.confirmed', r.confirmed_at, nameOf(r.confirmed_by), ''],
       /* A version keeps who published it by name. */
-      ['report.published', live && r.status === 'published' && live.published_at, (live && live.published_by) || '', '']
+      ['report.published', live && r.status === 'published' && live.published_at, (live && live.published_by && bridge.whoIs(live.published_by_id, live.published_by)) || '', '']
     ].filter(function (x) { return x[1]; });
   }
   function keyDates(r) {
@@ -2926,7 +2926,7 @@
     var canRestore = may('work') && (r.status === 'draft' || r.status === 'published');
     var canDelete = function (v) { return may('manage') && !(live && v.id === live.id); };
     host.innerHTML = '<div class="rp-vlist">' + vers.map(function (v) {
-      var meta = [nb('Published ' + stampWord(v.published_at)) + (v.published_by ? ' ' + nb('by ' + v.published_by) : '')];
+      var meta = [nb('Published ' + stampWord(v.published_at)) + (v.published_by ? ' ' + nb('by ' + bridge.whoIs(v.published_by_id, v.published_by)) : '')];
       if (v.withdrawn_at) meta.push(nb('Unpublished ' + stampWord(v.withdrawn_at)) + (v.withdraw_reason ? ': ' + esc(v.withdraw_reason) : ''));
       else if (live && v.id === live.id) meta.push(nb('On the client portal'));
       var acts = [canRestore ? 'Restore' : '', canDelete(v) ? 'Delete' : ''].filter(Boolean);

@@ -911,7 +911,7 @@
           var d = histDiff(h.before, h.after);
           return '<div class="lhist-row">' +
             '<div class="lhist-head"><span class="lhist-when">' + esc(niceStamp(h.created_at)) + '</span>' +
-              '<span class="lhist-who">' + esc(h.actor || '') + (h.source === 'creator' ? ' <span class="tone">Creator</span>' : '') + '</span>' +
+              '<span class="lhist-who">' + esc(bridge.whoIs(h.actor_id, h.actor)) + (h.source === 'creator' ? ' <span class="tone">Creator</span>' : '') + '</span>' +
               '<button class="btn btn-sm" type="button" data-restore="' + esc(h.id) + '">Restore</button></div>' +
             '<ul class="lhist-diff">' + d.map(function (x) {
               return '<li><span class="tone ' + x.tone + '">' + x.word + '</span> ' +
