@@ -666,7 +666,7 @@
             var winMs = queued ? (Number(queued.seconds) || 60) * 1000 : 0;
             state.pane = 'scores';
             load().then(function () {
-              msg('hirRecMsg', 'Decided.' +
+              msg('hirRecMsg', (queued && !mailOff(o) ? 'Decided. The candidate will be emailed.' : 'Decided.') +
                 (kept ? MEET_KEPT : '') + (wait && !handled ? ' The email was not sent. Use Email candidate to send it.' : ''),
                 kept || (wait && !handled) ? 'warn' : 'ok');
               if (bridge.undoHere) bridge.undoHere(queued ? mailBar(c, queued.seconds) : 'Decided: ' + REC[o] + '.', function () {
@@ -1595,7 +1595,7 @@
           return (wait ? fnCall('hiring-mail', { candidateId: c.id, kind: 'outcome' }) : Promise.resolve({})).then(function (qd) {
             var queued = wait && qd && !qd.error ? qd.queued || null : null, handled = Boolean(wait && qd && !qd.error);
             load().then(function () {
-              msg('hirRecMsg', 'Application closed.' +
+              msg('hirRecMsg', (queued && !mailOff('missed') ? 'Application closed. The candidate will be emailed.' : 'Application closed.') +
                 (kept ? MEET_KEPT : '') + (wait && !handled ? ' The email was not sent. Use Email candidate to send it.' : ''),
                 kept || (wait && !handled) ? 'warn' : 'ok');
               if (bridge.undoHere) bridge.undoHere(queued ? mailBar(c, queued.seconds) : 'Application closed.', function () {
