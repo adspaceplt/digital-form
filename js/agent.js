@@ -1085,6 +1085,7 @@
           if (a.person_in_charge && !nameOf(a.person_in_charge)) throw new Error('That colleague could not be found. Ask again with their name.');
           a._client = c; a._title = title; a._slots = slots;
           a._owner = a.person_in_charge ? nameOf(a.person_in_charge) : (me() || {}).name || '';
+          a._ownerId = a.person_in_charge || (me() || {}).id || null;
           return [['Client', c.name + (c.client_code ? ' · ' + c.client_code : '')], ['Title', title], ['Creators', String(slots)],
                   ['Person in charge', a.person_in_charge && a.person_in_charge !== (me() || {}).id ? a._owner : 'You'],
                   ['Format', FORMAT[a.format] || 'Site visit'], ['State', 'Draft · No creators']];
@@ -1095,7 +1096,7 @@
         return db.from('campaigns').insert({
           id: cid, client_id: a._client.id, title: a._title, purpose: null, slots: a._slots, deadline: null,
           push_format: FORMAT[a.format] ? a.format : 'site_visit', deliverable: a.deliverable === 'graphic' ? 'graphic' : 'video',
-          owner: a._owner || null, backups_open: false, access_token: API.accessToken(), state: 'draft',
+          owner_id: a._ownerId || null, backups_open: false, access_token: API.accessToken(), state: 'draft',
           created_by: (bridge.actor && bridge.actor()) || null
         }).select('id').then(function (r) {
           if (!madeOnce(r)) after(function () {
