@@ -6,7 +6,8 @@
  * candidate's page behind their emailed code.
  *
  *   ADspaceHrDocs.draw(doc, pay, opts) → Promise of { pdf, pages, fonts, PDF }
- *     doc: { kind, serial, sent_at, terms, name, signatory, signed }
+ *     doc: { kind, serial, sent_at, terms, name, signatory, signed, wording }
+ *       (wording: the HR wording in force on its day, below)
  *     pay: { basic, probation }
  *     opts.draft: DRAFT (INTERNAL USE ONLY) over every page;
  *     opts.extraPages: the Record page to come (a sealed copy).
@@ -16,6 +17,8 @@
  *     Record of this Document appended (js/seal.js), then the whole hashed,
  *     as a quotation is sealed.
  *   ADspaceHrDocs.fileName(doc) → "ADHR-OFR2611001 Employment Offer.pdf".
+ *   ADspaceHrDocs.declare(wording) → the declaration the candidate ticks;
+ *   ADspaceHrDocs.say(wording, key, values) → one template's words, filled.
  */
 (function () {
   'use strict';
@@ -74,108 +77,59 @@
   function fileName(doc) {
     return String(doc.serial || 'PREVIEW').replace(/\//g, '-') + ' ' + (doc.kind === 'contract' ? 'Employment Contract' : 'Employment Offer') + '.pdf';
   }
+  /* The words: the template store's HR wording in force on the day the
+     document went out (release 14, 2026-11-28-hr-wording.sql; kind
+     `hr-document`), handed in as `doc.wording` { key: { subject, body } }
+     by `hiring_doc_wording` (the console) or `careers_doc_json` (the
+     candidate's page). The order of the clauses and which apply stay here;
+     every sentence is the store's. A key missing refuses the draw: no
+     contract goes out short of a clause. A field with no value prints
+     nothing (no field mark is left in print). */
+  function words0(w, key) {
+    var t = w && w[key];
+    if (!t || !t.body) throw new Error(window.ADspaceWords.line.notYet);
+    return t;
+  }
+  function say(w, key, vals) {
+    var f = window.ADspaceTpl.fill(words0(w, key).body, vals || {}), out = f.text;
+    f.missing.forEach(function (m) { out = out.split('{' + m + '}').join(''); });
+    return out;
+  }
+  function paras(w, key, vals) { return say(w, key, vals).split(/\n[ \t]*\n/); }
   /* The candidate's one declaration, the contract's and their page's alike. */
-  var DECLARE = 'I have read and fully understood the contents of this offer letter and contract, and I accept all the terms and conditions herein.';
+  function declare(w) { return say(w, 'hr.declare'); }
 
-  /* The contract's clauses: a heading, then its paragraphs; items read
-     [a], [b] … as the template does. */
+  /* The contract's clauses: a heading (the template's subject), then its
+     paragraphs; items read [a], [b] … as the template does. */
   function clauses(doc, pay) {
-    var t = doc.terms || {}, type = t.type || 'permanent', months = Number(t.probation_months) || 0, D = DOCS();
-    var start = t.start ? D.letterDate(t.start) : '';
+    var t = doc.terms || {}, type = t.type || 'permanent', months = Number(t.probation_months) || 0, D = DOCS(), w = doc.wording;
     var position = String(t.position || '').toUpperCase() + ' (' + (TYPE[type] || TYPE.permanent)[1] + ')';
-    var salary = pay && pay.basic ? (months && pay.probation
-      ? 'The basic salary at the commencement of the employment will be ' + ringgit(pay.probation) + ' (' + rm(pay.probation) + ') per month during probationary period; ' +
-        ringgit(pay.basic) + ' (' + rm(pay.basic) + ') after completion of probation, payable on or before the 7th day after each calendar month.'
-      : 'The basic salary at the commencement of the employment will be ' + ringgit(pay.basic) + ' (' + rm(pay.basic) + ') per month, payable on or before the 7th day after each calendar month.')
-      : 'The basic salary is stated in the copy sent to you.';
+    var vals = { 'agency name': AGENCY.trading_name, position: position, duties: String(t.duties || ''), start: t.start ? D.letterDate(t.start) : '',
+      end: t.end ? D.letterDate(t.end) : '', place: t.place || '', probation: months ? NUM[months] + ' (' + months + ') month' + (months === 1 ? '' : 's') : '' };
+    if (pay && pay.basic) { vals.salary = rm(pay.basic); vals['salary in words'] = ringgit(pay.basic); }
+    if (pay && pay.probation) { vals['probation salary'] = rm(pay.probation); vals['probation salary in words'] = ringgit(pay.probation); }
     var C = [];
-    var head = function (h) { C.push({ h: h, p: [] }); };
-    var para = function (s) { C[C.length - 1].p.push(s); };
-    head('NATURE OF WORKS');
-    para(String(t.duties || '') + ' In addition to normal duties, you may from time to time be required to render such other duties and services as may be necessary to meet the needs of the company’s business.');
-    head('DATE OF COMMENCEMENT');
-    para('Your employment shall commence on ' + start + '.' + (t.end ? ' This contract ends on ' + D.letterDate(t.end) + '.' : ''));
-    head('WORKING HOURS');
-    para('Normal hours of work are 8 hours per day for five days a week and one hour lunch break. The nature of the work may require you to extend your service beyond the normal working hours in fulfilment of your duties and responsibilities.');
-    para('You will not receive overtime payments in respect of any such working time unless provided for in law or you are eligible for overtime pay under the Company’s policies or guidelines.');
-    para('The Company additionally reserves its right to change or substitute your scheduled work hours or workdays/off days to meet business needs. The Company reserves the right to exclude office holiday(s) to staff depending on their workload / work schedule and/or programs.');
-    head('PLACE OF EMPLOYMENT');
-    para(t.place ? 'Your place of employment will be at ' + t.place + ' but this location may change from time to time.' : 'Your place of employment will be at the ' + AGENCY.trading_name + ' registered office but this location may change from time to time.');
-    para('During the term of your employment, the Management reserves the right to transfer you to other location/position within the ' + AGENCY.trading_name + ' group of companies, departments, and associated companies.');
-    if (months) {
-      head('PROBATIONARY PERIOD');
-      if (type === 'intern') para('(For “Internship” position, this is equivalent to your Internship Programme)');
-      para('You are required to serve a probationary period of ' + NUM[months] + ' (' + months + ') month' + (months === 1 ? '' : 's') + ' during which time your employment may be terminated by either party giving the other FOURTEEN (14) days\' notice of termination or equivalent to FOURTEEN (14) days\' salary in lieu of the notice.');
-      para('This probationary period may be extended on reasonable grounds.');
-      para('You are not entitled to paid annual leave during probationary period. If you have been absent from work for more than 3 consecutive working days without prior approval or leave from the company and without valid reason, your employment with the Company will be deemed terminated.');
-    }
-    head('SALARY, BONUS AND ADVANCE WAGES');
-    para(salary);
-    para('No advance wages will be payable.');
-    para('Payment of bonus and annual increment (if any) is based on your performance, the Company’s profit and the overall market/economic condition and is solely at the absolute discretion of the Company.');
-    head('DEDUCTIONS');
+    /* A clause: its heading, the paragraphs a choice puts first (`lead`),
+       then its own; `join` ends its last paragraph. */
+    var clause = function (key, o) {
+      o = o || {};
+      var p = (o.lead || []).concat(paras(w, key, vals));
+      if (o.join) p[p.length - 1] += ' ' + o.join;
+      C.push({ h: words0(w, key).subject, p: p });
+    };
+    clause('hr.contract.nature');
+    clause('hr.contract.commencement', { join: t.end ? say(w, 'hr.contract.ends', vals) : '' });
+    clause('hr.contract.hours');
+    clause('hr.contract.place', { lead: [say(w, t.place ? 'hr.contract.place-named' : 'hr.contract.place-office', vals)] });
+    if (months) clause('hr.contract.probation', { lead: type === 'intern' ? [say(w, 'hr.contract.probation-intern', vals)] : [] });
+    clause('hr.contract.salary', { lead: [say(w, pay && pay.basic ? (months && pay.probation ? 'hr.contract.salary-probation' : 'hr.contract.salary-basic') : 'hr.contract.salary-unset', vals)] });
     /* Internship and Part-time carry no statutory contributions (the user,
        2026-11-20: "intern and part time contracts, all no statutories epf,
        socso eis"); a full-time contract's deduction is unchanged. */
-    var noStatutory = type === 'intern' || type === 'part_time';
-    para('The Company reserves the right in its absolute discretion to deduct from your pay ' +
-      (noStatutory ? '' : 'the Employee’s contribution to Employees’ Provident Fund (EPF), Social Security Organisation (SOCSO), Employment Insurance System (EIS) and ') +
-      'any sums which you may owe to the Company including, but without limitation, any overpayments or losses suffered by the Company as a result of your negligence or breach of the Company’s rules or terms.');
-    if (noStatutory) para('The Employee shall not be entitled to contributions under the Employees Provident Fund Act 1991, the Employees’ Social Security Act 1969 or the Employment Insurance System Act 2017.');
-    head('REST DAYS AND PUBLIC HOLIDAYS');
-    para('You are entitled to ELEVEN (11) paid public holidays that are gazetted under the Public Holidays Ordinance and five of which, namely the National Day, Malaysia Day, the Birthday of the Yang Di-Pertuan Agong, the Birthday of Sultan of Johor and Labour Day are compulsory.');
-    para('The remainder will be determined by the Company. You may refer to the Company’s internal list of public holidays for more information.');
-    head('ANNUAL LEAVE');
-    para('Upon confirmation as permanent employee, you are entitled to paid annual leave of:');
-    para('[a] eight (8) days for every twelve (12) months of continuous service with the Company for the first two (2) years with the Company;');
-    para('[b] twelve (12) days for every twelve (12) months of continuous service with the Company from the third year onwards; and');
-    para('[c] sixteen (16) days for every twelve (12) months of continuous service with the Company from the sixth year onwards.');
-    para('If your employment commences or terminates part way through the year, your entitlement to the annual leave during the year will be assessed on a pro-rata basis and deductions from final salary due to your termination of employment will be made in respect of the annual leaves taken in excess of entitlement.');
-    para('Annual leave must be taken at times convenient to the Company and at least seven (7) days’ advance notice to take annual leave must be given to the Company. No more than seven (7) days’ annual leave may be taken at any one time unless permission is given by the Company through the Employee’s Direct Manager.');
-    para('Emergency Leave is strictly for emergency and limited to unavoidable circumstances such as family member in serious illness or funeral. Disciplinary action will be taken against those who do not have a valid reason for their emergency leave. You are required to inform your Direct Manager personally at the earliest time of the day.');
-    head('SICK LEAVE');
-    para('You shall, after examination by a registered medical practitioner duly appointed by the Company; or a medical officer of the General Hospital or Government Clinic, be entitled to paid sick leave of a maximum of fourteen (14) days in the aggregate in each calendar year.');
-    para('The Company does not provide medical expenses reimbursements in respect of the hospitalization, dental treatments, specialists, and/or Chinese Physician treatments.');
-    head('NOTIFICATION OF SICKNESS OR OTHER ABSENCE');
-    para('If you are unable to attend work for any reason and the absence has not previously been authorized by the Company, you must inform the Company of the fact of your absence and the full reasons for it on each working day of absence until the Company is provided with a medical certificate, failing which you shall be deemed as absent without reason and may be subject to disciplinary action.');
-    para('If you are absent from work without any reason, that shall be considered taking unpaid leave without prejudice to the Company’s right to impose disciplinary action against you.');
-    head('PATERNITY / MATERNITY LEAVE');
-    para('You are entitled to a paid maternity leave of 98 days or paternity leave of 7 days consecutively including the public holidays and weekends/rest days during the period of childbirth in accordance with Section 37 and Section 60FA of the Employment Act.');
-    head('NOTICE OF TERMINATION');
-    para('If your employment continues after the end of the probationary period, your employment with the Company may be terminated by giving the Company at least TWO (2) months’ notice or equivalent of TWO (2) months’ salary in lieu of the notice.');
-    head('BREACH AND TERMINATION');
-    para('This contract is breached and terminated when you are found guilty of misconduct, whether in the course of your duties or not, inconsistent with the fulfilment of the express or implied conditions of this contract, including but not limited to the following:');
-    ['[a] For dishonesty particularly the misappropriation of the Company’s assets of any kind;', '[b] For stealing and/or taking goods without authorization of the Company;',
-     '[c] Indecent and immoral acts during working hours;', '[d] Guilty of any criminal offences;',
-     '[e] For wilful disobedience to lawful orders and instructions given by the Company and or insubordination;',
-     '[f] For lack of skill which you have expressly or impliedly warrant yourself to possess;',
-     '[g] For absence from work without leave from the Company or absence without any reasonable excuse.'].forEach(para);
-    head('CONFLICT OF INTEREST');
-    para('You must devote the whole of your time, attention and abilities during the hours of work for the Company to your duties for the Company. You may not, under any circumstances, whether directly or indirectly undertake any other duties, of whatever kind during the hours of work for the Company.');
-    para('You may not without the knowledge and prior written consent of the Company engage, whether directly or indirectly, in any business or employment which could or might reasonably be considered by others to impair your ability to act at all times in the best interests of the Company.');
-    para('You must not own shares in a non-listed competitor.');
-    head('CONFIDENTIALITY');
-    para('You must not at any time during or after your employment, in any fashion, form, or manner, either directly or indirectly divulge, disclose, or communicate to any person, firm or corporation in any manner whatsoever any information of any kind, nature or description concerning any matters affecting or relating to the business of the Company or any information concerning the business of the Company, its manner of operation, or its plans, processes, or other facts of any kind, nature, or description without regard to whether any or all of the foregoing matters would be deemed confidential, material, or important.');
-    para('The parties hereby stipulate that as between them, the foregoing matters are important, material, and confidential and gravely affect the effectiveness and successful conduct of the business of the Company, and its goodwill, and that any breach of the terms of this section is a material breach of this contract.');
-    head('NON-COMPETE CLAUSE');
-    para('You agree that, during your employment with the Company and for a period of two (2) years following the termination of your employment, regardless of the reason for termination, you shall not, directly or indirectly, within Malaysia:');
-    ['[a] Engage in or render services to any business in direct competition with the Company;',
-     '[b] Solicit, divert, or appropriate, or attempt to solicit, divert, or appropriate, any customer or client of the Company with whom you had material contact during your employment;',
-     '[c] Solicit, encourage, or induce any employee, consultant, or contractor of the Company to terminate or modify their relationship with the Company.'].forEach(para);
-    para('This restriction shall not prevent you from working for a non-competitive organization or engaging in activities not directly related to the business of the Company.');
-    head('COMPLIANCE WITH COMPANY POLICIES AND GUIDELINES');
-    para('[a] Compliance with Company Policies');
-    para('You agree to adhere and comply with all policies, guidelines, procedures, rules, and regulations established by the Company (collectively referred as the “Company Policies”), as may be updated or amended from time to time at the Company’s sole discretion.');
-    para('[b] Duty to Stay Informed');
-    para('It is your responsibility to familiarize yourself with the Company Policies and any subsequent updates or amendments. Failure to comply with the Company Policies may result in disciplinary action, up to and including termination of employment.');
-    para('[c] Binding Nature');
-    para('Compliance with the Company Policies is a condition of your continued employment. Any violation may constitute grounds for disciplinary measures, including but not limited to termination.');
-    head('COMPENSATION');
-    para('You shall be responsible to indemnify the Company for any loss or damages against the Company’s Property as a result of your wilful acts and/or negligence.');
-    head('CHANGES TO THE TERMS OF EMPLOYMENT');
-    para('The Company reserves the right to make reasonable changes to any of the terms and conditions of employment and will notify you in writing of such changes at the earliest opportunity and, in any event, within one month after such changes have taken effect.');
-    para('Such changes will be deemed to be accepted unless you notify the Company of any objection in writing before the expiry of the notice period.');
-    return { position: position, list: C };
+    clause(type === 'intern' || type === 'part_time' ? 'hr.contract.deductions-no-statutory' : 'hr.contract.deductions');
+    ['rest-days', 'annual-leave', 'sick-leave', 'absence', 'parental-leave', 'notice', 'breach', 'conflict', 'confidentiality',
+      'non-compete', 'policies', 'compensation', 'changes'].forEach(function (k) { clause('hr.contract.' + k); });
+    return { position: position, list: C, vals: vals };
   }
 
   function draw(doc, pay, opts) {
@@ -222,7 +176,8 @@
         y -= LH;
 
         if (!contract) {
-          para(AGENCY.trading_name + ' is pleased to offer you employment, subject to the terms and conditions of the employment contract.');
+          var wv = { 'agency name': AGENCY.trading_name };
+          paras(doc.wording, 'hr.offer.lead', wv).forEach(function (s) { para(s); });
           var months = Number(t.probation_months) || 0;
           var facts = [['Employment', (TYPE[t.type] || TYPE.permanent)[0]], ['Position', t.position || ''], ['Job scope', t.scope || '']];
           if (months) facts.push(['Probation', months + ' month' + (months === 1 ? '' : 's') + ' (' + monthOf(t.start, 0) + ' to ' + monthOf(t.start, months - 1) + ')']);
@@ -239,20 +194,17 @@
             y -= 6;
           });
           y -= 8;
-          para('Kindly indicate your acceptance of this offer on your application page within ' + (t.reply_days || 3) + ' day' + (Number(t.reply_days) === 1 ? '' : 's') +
-            ' from the date of this letter. Please note that this is not an employment contract. A formal employment contract will be issued upon confirmation of acceptance.');
-          para('Thank you.');
+          wv['reply days'] = (t.reply_days || 3) + ' day' + (Number(t.reply_days) === 1 ? '' : 's');
+          paras(doc.wording, 'hr.offer.reply', wv).forEach(function (s) { para(s); });
         } else {
           var cl = clauses(doc, pay);
-          para('With reference to your recent application and interviews, ' + AGENCY.trading_name + ' is pleased to offer you employment as ' + cl.position +
-            ' on the following terms and conditions:');
+          paras(doc.wording, 'hr.contract.lead', cl.vals).forEach(function (s) { para(s); });
           cl.list.forEach(function (c) {
             y -= 4; need(LH * 3);
             line(c.h, med);
             c.p.forEach(function (s) { var m = /^\[([a-z])\] (.*)$/.exec(s); if (m) { need(LH); text('[' + m[1] + ']', M, y, BODY); para(m[2], font, M + 22); } else para(s); });
           });
-          para('If the above terms and conditions are agreeable to you, please sign this contract on your application page as soon as possible.');
-          para('This letter, when signed by the applicant, will constitute a binding contract.');
+          paras(doc.wording, 'hr.contract.close', cl.vals).forEach(function (s) { para(s); });
         }
 
         // The company's closing and its signatory.
@@ -275,11 +227,11 @@
         pn.rule(y + 6); y -= 10;
         if (!contract) {
           line('ACCEPTANCE', bold);
-          para(s ? 'I accept this Employment Offer.' : 'Acceptance is given on the application page.');
+          paras(doc.wording, s ? 'hr.offer.accepted' : 'hr.offer.pending').forEach(function (x) { para(x); });
           if (s && s.name) { text('Name:', M, y, BODY); text(s.name, M + 72, y, BODY); y -= LH; }
         } else {
           line('For Applicant', bold);
-          para(DECLARE);
+          para(declare(doc.wording));
           var boxH = 64, boxW = 220;
           need(boxH + LH * 4);
           text('Signatory:', M, y, BODY);
@@ -327,5 +279,5 @@
     return draw(doc, pay, opts).then(function (d) { return d.pdf.save(); });
   }
 
-  window.ADspaceHrDocs = { draw: draw, bytes: bytes, seal: seal, fileName: fileName, words: words, ringgit: ringgit, titleOf: titleOf, declare: DECLARE };
+  window.ADspaceHrDocs = { draw: draw, bytes: bytes, seal: seal, fileName: fileName, words: words, ringgit: ringgit, titleOf: titleOf, declare: declare, say: say };
 })();

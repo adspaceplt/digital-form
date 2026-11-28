@@ -262,6 +262,7 @@
     }
     Array.prototype.forEach.call(box.querySelectorAll('[data-docx]'), function (b) { b.addEventListener('click', function () { docAct(b.getAttribute('data-docx'), b); }); });
   }
+  function notOpened() { return 'The document could not be opened. Please try again, or contact ' + AGENCY.trading_name + '.'; }
   var TYPEWORD = { permanent: 'Permanent, full-time', contract: 'Contract, full-time', intern: 'Internship', part_time: 'Part-time' };
   function money(n) { return window.ADspaceMoney && window.ADspaceMoney.money2 ? window.ADspaceMoney.money2(n, 'MY') : 'RM ' + Number(n || 0).toFixed(2); }
   function docView(d) {
@@ -278,13 +279,18 @@
     var dl = '<div class="qs-foot cr-doc-dl"><button class="btn" type="button" data-docx="pdf">' + (window.ADspaceIcons ? window.ADspaceIcons.svg('file') : '') + 'Download</button></div>';
     if (d.returned_note) facts = '<p class="msg warn">' + AGENCY.trading_name + ' has returned this document with the following note: ' + esc(d.returned_note) + '</p>' + facts;
     if (d.state !== 'sent') return facts + dl + (d.state === 'signed' ? '<p class="cr-next">' + AGENCY.trading_name + ' will confirm the document and inform you by email.</p>' : '');
+    /* What the candidate agrees to: the template store's words in force on
+       the day the document went out (careers_doc_json `wording`). */
+    var agree = '';
+    try { agree = window.ADspaceHrDocs.say(d.wording, d.kind === 'offer' ? 'hr.offer.accepted' : 'hr.declare'); } catch (e) { agree = ''; }
+    if (!agree) return facts + dl + '<p class="msg err">' + esc(notOpened()) + '</p>';
     var tick = function (id, text) {
       return '<label class="qs-consent cr-agree"><input type="checkbox" id="' + id + '">' + MARK + '<span class="qs-text">' + esc(text) + '</span></label>';
     };
     if (d.kind === 'offer') {
       return facts + dl + '<div class="cr-answer qs-form"><h3 class="cr-doc-h">Reply to the offer</h3>' +
         '<div class="field"><label class="field-label" for="crName">Full name</label><input class="input" id="crName" autocomplete="name" maxlength="120" value="' + esc(d.name || '') + '"></div>' +
-        tick('crAgree', 'I accept this Employment Offer.') +
+        tick('crAgree', agree) +
         '<div class="field" id="crDeclineBox" hidden><label class="field-label" for="crDecline">Reason</label><textarea class="textarea" id="crDecline" rows="2" maxlength="500" placeholder="Optional"></textarea></div>' +
         '<p class="msg" id="crDocMsg"></p>' +
         '<div class="qs-foot"><button class="btn" type="button" data-docx="decline">Decline</button><button class="btn btn-primary" type="button" data-docx="accept">Accept offer</button></div></div>';
@@ -295,7 +301,7 @@
       '<div class="field"><div class="qs-sig-head"><span class="field-label">Signature</span><span class="qs-sig-acts"><button class="btn btn-quiet btn-sm" type="button" data-docx="clear" hidden>Clear</button></span></div>' +
         '<div class="qs-pad" id="crPad" role="img" aria-label="Signature box"><span class="qs-pad-line" aria-hidden="true"></span><span class="qs-pad-hint">Sign here</span>' +
         window.ADspaceIcons.drawing('0 0 300 100', '<path d=""/>', 'preserveAspectRatio="none" aria-hidden="true"') + '</div></div>' +
-      tick('crAgree', window.ADspaceHrDocs.declare) +
+      tick('crAgree', agree) +
       '<p class="msg" id="crDocMsg"></p>' +
       '<div class="qs-foot"><button class="btn btn-primary" type="button" data-docx="sign">Sign contract</button></div></div>';
   }
@@ -361,14 +367,14 @@
         if (r.error) throw r.error;
         if (x.error) { docSay(DOCSAID[x.error] || W.notSentAdspace); return; }
         keepView(id, x.view); openDoc.data = x; openDoc.step = 'caution'; docBody();
-      }).catch(function () { btn.disabled = false; docSay('The document could not be opened. Please try again, or contact ' + AGENCY.trading_name + '.'); });
+      }).catch(function () { btn.disabled = false; docSay(notOpened()); });
       return;
     }
     if (a === 'pdf') {
       if (!window.ADspaceHrDocs) return;
       btn.disabled = true;
       var d = openDoc.data;
-      window.ADspaceHrDocs.bytes({ id: openDoc.id, kind: d.kind, serial: d.serial, sent_at: d.sent_at, terms: d.terms, name: d.name, signatory: d.signatory },
+      window.ADspaceHrDocs.bytes({ id: openDoc.id, kind: d.kind, serial: d.serial, sent_at: d.sent_at, terms: d.terms, name: d.name, signatory: d.signatory, wording: d.wording },
         d.pay, { key: key }).then(function (b) {
         btn.disabled = false;
         return window.ADspaceDocs.save(new Blob([b], { type: 'application/pdf' }), window.ADspaceHrDocs.fileName(d), window.ADspaceDocs.tabFor && window.ADspaceDocs.tabFor());

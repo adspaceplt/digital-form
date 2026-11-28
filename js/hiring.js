@@ -1060,8 +1060,9 @@
   }
   function docPreview(d, b) {
     var tab = window.ADspaceDocs.previewTab ? window.ADspaceDocs.previewTab() : null;
-    unlocked().then(function (tok) { return payOf(d, tok); }).then(function (p) {
-      return window.ADspaceHrDocs.bytes(docInfo(d), p, { draft: d.state === 'draft' });
+    var info = docInfo(d);
+    wordingOf(d).then(function (w) { info.wording = w; return unlocked(); }).then(function (tok) { return payOf(d, tok); }).then(function (p) {
+      return window.ADspaceHrDocs.bytes(info, p, { draft: d.state === 'draft' });
     }).then(function (bytes) {
       return window.ADspaceDocs.save(new Blob([bytes], { type: 'application/pdf' }), window.ADspaceHrDocs.fileName(d), tab);
     }).catch(function (e) { if (tab && tab.close) try { tab.close(); } catch (x) {} msg('hirRecMsg', e && e.message ? e.message : 'The document could not be generated. Please try again.', 'err'); });
@@ -1177,13 +1178,12 @@
      open the kept file. */
   function docSealed(d, b) {
     if (d.seal_path) { openPath(d.seal_path, b); return; }
-    var c = state.rec, rec;
+    var c = state.rec, rec, info = docInfo(d);
     rpc('hiring_doc_record', { p_doc: d.id }).then(function (r) {
       if (r.error || (r.data || {}).error) throw new Error(docSaid(r));
       rec = r.data;
-      return unlocked();
-    }).then(function (tok) { return payOf(d, tok); }).then(function (p) {
-      var info = docInfo(d);
+      return wordingOf(d);
+    }).then(function (w) { info.wording = w; return unlocked(); }).then(function (tok) { return payOf(d, tok); }).then(function (p) {
       return signedOf(d).then(function (s) { info.signed = s; return window.ADspaceHrDocs.seal(info, p, rec); });
     }).then(function (blob) {
       var path = c.id + '/sealed-' + d.id + '.pdf';
@@ -1195,6 +1195,15 @@
         openRec(c.id).then(function () { msg('hirRecMsg', 'Sealed.', 'ok'); });
       });
     }).catch(function (e) { if (e && e.message) msg('hirRecMsg', e.message, 'err'); });
+  }
+  /* The document's words: the HR wording in force on the day it went out
+     (today for a draft), read from the template store at the press. */
+  function wordingOf(d) {
+    return rpc('hiring_doc_wording', { p_doc: d.id }).then(function (r) {
+      var x = r.data || {};
+      if (r.error || x.error) throw new Error(docSaid(r));
+      return x.wording;
+    });
   }
   /* The candidate's signing as the PDF prints it (the signature drawn and
      the record), read with the salary's unlock. */

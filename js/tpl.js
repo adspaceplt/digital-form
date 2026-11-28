@@ -11,8 +11,9 @@
  * A placeholder is `{field}`, read in any case and spacing. Each value is
  * escaped where it is inserted (ADspaceWords.esc), the words around it
  * too; a field with no value is kept as `{field}` and named in `missing`,
- * never left blank. No page loads this yet: Settings › Messages moves onto
- * the store in release 12. */
+ * never left blank. The HR documents fill their clauses with it (release
+ * 14: js/hrdocs.js on /careers/ and the console); Settings › Messages moves
+ * onto the store in release 12. */
 (function () {
   'use strict';
   var W = function () { return window.ADspaceWords; };
