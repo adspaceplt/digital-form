@@ -149,15 +149,16 @@
      they wrote. An address with no team row at all — a legacy entry, a
      colleague whose row was deleted, `unknown` — keeps the address, because
      the point is to say who and not to hide that we cannot. */
-  var whoBy = null;
+  var whoBy = null, whoById = {};
   function loadWho(then) {
-    db.from('team_members').select('email, name').then(function (r) {
-      var by = {};
+    db.from('team_members').select('id, email, name').then(function (r) {
+      var by = {}, ids = {};
       (r.data || []).forEach(function (t) {
         var e = String(t.email || '').trim().toLowerCase();
         if (e && t.name) by[e] = t.name;
+        if (t.id && t.name) ids[t.id] = t.name;
       });
-      whoBy = by;
+      whoBy = by; whoById = ids;
       if (then) then();
     }, function () { whoBy = whoBy || {}; if (then) then(); });
   }
@@ -168,6 +169,9 @@
     if (!e || !whoBy) return e;
     return whoBy[e.toLowerCase()] || e;
   }
+  /* A "by whom" field read by its id (BY WHOM BY ID, 2026-11-28): the
+     colleague's name today, else the name or address the row kept. */
+  function whoOf(id, held) { return (id && whoById[id]) || whoName(held); }
 
   function thisMonth() {
     return ADspaceClock.month(ADspaceClock.today(), { long: true }) + ' Content';
@@ -3992,7 +3996,7 @@
       var parts = detail.split(' \u00b7 ');
       lead = parts[0]; rest = parts.slice(1).join(' \u00b7 ');
     }
-    return { at: a.created_at, who: a._who || whoName(a.actor) || 'System', what: meta[0], on: a.subject || '',
+    return { at: a.created_at, who: a._who || whoOf(a.actor_id, a.actor) || 'System', what: meta[0], on: a.subject || '',
              key: keyOf(a), detail: detail, lead: lead, rest: rest,
              tone: meta[1] === 'is-danger' ? 'is-danger' : '', sticky: stickyOf(a), facts: factsOf(a) };
   }
@@ -7344,6 +7348,7 @@
        they resolve a logged address through the same map rather than keeping
        a second one that would answer differently. */
     whoName: whoName,
+    whoOf: whoOf,
     // The signed PUT to S3, so an invoice PDF travels the same road as media.
     putToS3: putToS3,
     // A file's extension as sign-upload reads it: its type first, then its name, then its type's own name.

@@ -116,7 +116,7 @@
     if (!st.loaded && window.ADspaceState) window.ADspaceState.skeleton(box, 4);
     return Promise.all([
       db.from('handbook_docs').select('id, title, category, summary, link_url, current_version, archived_at, created_at, updated_at, required').order('title'),
-      db.from('handbook_versions').select('id, doc_id, version_no, file_path, file_name, file_size, mime, note, created_at, created_by').order('version_no', { ascending: false })
+      db.from('handbook_versions').select('id, doc_id, version_no, file_path, file_name, file_size, mime, note, created_at, created_by, created_by_id').order('version_no', { ascending: false })
     ]).then(function (res) {
       if (res[0].error) throw res[0].error;
       if (res[1].error) throw res[1].error;
@@ -423,7 +423,7 @@
     box.innerHTML = '<div class="msg" id="hbHistMsg"></div>' + vers.map(function (v, i) {
       return '<div class="hb-verrow">' +
         '<span class="hb-name"><b>Version ' + v.version_no + (i === 0 ? ' <span class="tone">Current</span>' : '') + '</b>' +
-          '<small>' + esc([day(v.created_at), whoName(v.created_by), v.file_name, size(v.file_size)].filter(Boolean).join(' · ')) + '</small>' +
+          '<small>' + esc([day(v.created_at), (window.ADspaceAdmin.whoOf ? window.ADspaceAdmin.whoOf(v.created_by_id, v.created_by) : whoName(v.created_by)), v.file_name, size(v.file_size)].filter(Boolean).join(' · ')) + '</small>' +
           (v.note ? '<small class="hb-note">' + esc(v.note) + '</small>' : '') + '</span>' +
         '<button class="btn btn-sm btn-icon" data-v="' + esc(v.id) + '" type="button" aria-label="Open version ' + v.version_no + '">Open ' + OUT + '</button>' +
       '</div>';
