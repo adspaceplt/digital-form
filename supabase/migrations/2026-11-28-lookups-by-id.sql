@@ -520,7 +520,7 @@ begin
   select * into me from public.team_members where lower(email) = who and active limit 1;
 
   -- A letter is signed by a person. issued_by is this row's name, so a team
-  -- row named "Superadmin" printed that word under ADSPACE PLT on a client's
+  -- row named "Superadmin" printed that word under the issuer's name on a client's
   -- letterhead. Refuse rather than draw a permission as a signatory.
   if not public.issuer_name_ok(me.name) then
     return jsonb_build_object('error', 'issuer-name', 'name', coalesce(me.name, ''));

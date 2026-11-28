@@ -1613,8 +1613,6 @@
     // A second Enter while the first is saving is the same press (audit 2026-11-04, 6).
     if (btn && btn.disabled) return;
     if (btn) btn.disabled = true;
-    /* An industry is saved and deleted by its id; the row's name only finds
-       it on the screen (restructure release 3, 2026-11-28). */
     var held = was ? indOne(was) : null;
     db.rpc('industry_save', { p_id: (held && held.id) || null, p_name: name, p_name_zh: (zh.value || '').trim() || null }).then(function (r) {
       var said = indSaid(r);

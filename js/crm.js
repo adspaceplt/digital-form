@@ -226,10 +226,8 @@
     }
     return industries.asked;
   }
-  /* The picker holds the list, and the one this client holds where the
-     list no longer does, so a save never clears it. An industry is chosen
-     by its id, its name only what it reads (restructure release 3,
-     2026-11-28). */
+  /* The list, and the one this client holds where the list no longer
+     does, so a save never clears it; chosen by id. */
   function fillIndustry(keep, keepName) {
     var on = (industries.rows || []).map(function (i) { return [i.id, i.name]; });
     if (keep && !on.some(function (i) { return i[0] === keep; })) on.push([keep, keepName || keep]);
@@ -440,10 +438,8 @@
      keyed by hand is a name spelled two ways by Friday. A value already on a
      record that is no longer on the team is kept as its own option, so opening
      an old record and saving it cannot quietly unassign the person who owns
-     it. Used for the client's and the campaign's Person in charge alike.
-     The option is the colleague's id, the name only what it reads
-     (restructure release 2, 2026-11-28): a renamed colleague keeps their
-     clients, and two of one name are never one. */
+     it. Used for the client's and the campaign's Person in charge alike;
+     the option is the colleague's id. */
   function peopleSelect(el, team, current, currentName) {
     if (!el) return;
     var keep = current != null ? current : el.value;
@@ -7162,8 +7158,6 @@
      stays shown on the line that holds it. */
   function fillTax(l) {
     var sel = $('svTax'), c = state.client || {};
-    /* A code is chosen by its id, the code only what it reads (restructure
-       release 3, 2026-11-28). */
     var mine = l && l.tax_code ? l.tax_code : '', mineId = (l && l.tax_code_id) || '';
     var paint = function (list) {
       /* The client's SST as Bukku names it, never twice (2026-11-12). */
