@@ -173939,7 +173939,8 @@ select public.functions_tidy();
 --     from 1900 to this year, the next two the entity code, a company 01,
 --     02 or 04 and a sole proprietorship or partnership 03 (`p_kind`
 --     `company` or `soleprop` holds the code to the choice; none takes any
---     of the four). Singapore (`SG`): a UEN. No market given: either.
+--     of the four). A Singapore client (`SG`) bills through either
+--     country's company, so a UEN or a BRN; no market given, the same.
 --   * `quote_intake_check` reads it (refusals unchanged).
 --   * `client_details_read` answers the client's `market`, and
 --     `client_details_submit` refuses `bad-company_no` by its rule.
@@ -173967,8 +173968,7 @@ declare
   v_code text;
 begin
   v_uen := v ~ '^([0-9]{8,9}[A-Z]|[TSR][0-9]{2}[A-Z]{2}[0-9]{4}[A-Z])$';
-  if p_market = 'SG' then return case when v_uen then null else 'bad-brn' end; end if;
-  if p_market is null and v_uen then return null; end if;
+  if (p_market is null or p_market = 'SG') and v_uen then return null; end if;
   if v !~ '^[0-9]{12}$' then return 'bad-brn'; end if;
   if left(v, 4)::int < 1900 or left(v, 4)::int > extract(year from (now() at time zone 'Asia/Kuala_Lumpur'))::int then
     return 'bad-brn';
@@ -174073,8 +174073,8 @@ begin
   -- The billing details form is a quotation's step: Sales by alone
   -- (CLIENT REPRESENTATIVE, 2026-11-27).
   select * into m from public.team_members x where x.id = public.client_rep(v_cl.id, 'sales');
-  -- The market picks the registration's shape: a Singapore client's UEN,
-  -- every other client's 12-digit BRN (ONE BRN RULE, 2026-11-28).
+  -- The market picks the registration's shape: a Singapore client's UEN
+  -- or BRN, every other client's 12-digit BRN (ONE BRN RULE, 2026-11-28).
   return jsonb_build_object('ok', true, 'brand', v_cl.name, 'expires_at', v_f.expires_at,
     'market', case when v_cl.market = 'SG' then 'SG' else 'MY' end,
     'rep', case when m.id is null then null else jsonb_build_object('name', m.name, 'title', nullif(btrim(coalesce(m.designation, '')), ''),

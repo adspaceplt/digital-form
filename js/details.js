@@ -24,8 +24,7 @@
       contact: 'Billing contact', sal: 'Salutation', name: 'Name', phone: 'Mobile number', email: 'Email',
       optional: 'Optional', consent: 'I confirm that these details are correct and consent to ADspace keeping them for business purposes.',
       submit: 'Submit',
-      req: { legal_name: 'Enter the Registered Company Name.', company_no: 'Enter the Business Registration Number.',
-        billing_address: 'Enter the billing address.', contact_name: 'Enter the billing contact\'s name.',
+      req: { legal_name: 'Enter the Registered Company Name.', billing_address: 'Enter the billing address.', contact_name: 'Enter the billing contact\'s name.',
         contact_phone: 'Enter the mobile number.', contact_email: 'Enter the email address.' },
       badEmail: 'Enter a valid email address.', 
       badAddr: 'Enter the full billing address.', badCode: 'Enter {a} to {b} letters or digits, as registered.',
@@ -45,7 +44,7 @@
       contact: '账单联系人', sal: '称谓', name: '姓名', phone: '手机号码', email: '邮箱',
       optional: '选填', consent: '我确认以上资料无误，并同意 ADspace 保存这些资料作业务用途。',
       submit: '提交',
-      req: { legal_name: '请填写公司注册名称。', company_no: '请填写商业注册号码。', billing_address: '请填写账单地址。',
+      req: { legal_name: '请填写公司注册名称。', billing_address: '请填写账单地址。',
         contact_name: '请填写账单联系人姓名。', contact_phone: '请填写手机号码。', contact_email: '请填写邮箱地址。' },
       badEmail: '请输入有效的邮箱地址。', 
       badAddr: '请填写完整的账单地址。', badCode: '请按注册资料填写{a}至{b}位字母或数字。',
@@ -117,7 +116,7 @@
         // A name that may outrun its width wraps in the one-line box, in the capitals it is kept in.
         field('dfLegal', w.legal, true, '<textarea class="input qs-caps" id="dfLegal" data-k="legal_name" data-oneline aria-required="true" rows="1" maxlength="160" autocomplete="organization" placeholder="COMPANY NAME SDN BHD">' + esc(typed.legal_name || '') + '</textarea>') +
         field('dfBrn', w.brn, true, input('dfBrn', 'company_no', true, sg() ? 'maxlength="24" inputmode="text" autocapitalize="characters"'
-          : 'data-shape="############" inputmode="numeric" placeholder="' + esc(w.brnPh) + '"')) +
+          : 'maxlength="24" inputmode="numeric" placeholder="' + esc(w.brnPh) + '"')) +
         field('dfOld', w.old, false, input('dfOld', 'company_no_old', false, 'maxlength="24" autocapitalize="characters" placeholder="' + esc(w.optional) + '"')) +
         field('dfTin', w.tin, false, input('dfTin', 'tin', false, 'maxlength="24" autocapitalize="characters" placeholder="' + esc(w.optional) + '"')) +
         field('dfSst', w.sst, false, input('dfSst', 'sst_no', false, 'maxlength="30" autocapitalize="characters" placeholder="' + esc(w.optional) + '"')) +
@@ -211,7 +210,7 @@
     var v = function (k) { return String(typed[k] || '').trim(); };
     if (v('legal_name').length < 2) bad('legal_name', w.req.legal_name);
     var brn = v('company_no').replace(/\s+/g, '');
-    if (!brn) bad('company_no', w.req.company_no); else if (ADspaceWords.brnCheck(brn, sg() ? 'SG' : 'MY')) bad('company_no', fault('company_no'));
+    if (!brn || ADspaceWords.brnCheck(brn, sg() ? 'SG' : 'MY')) bad('company_no', fault('company_no'));
     // The lengths client_details_submit holds each number to, so the page names what the database would refuse.
     Object.keys(CODE).forEach(function (k) {
       var x = v(k).replace(/\s+/g, '');
@@ -259,7 +258,8 @@
     return false;
   }
   /* The client's market picks the registration's shape: a Singapore
-     client's UEN, every other client's 12-digit BRN (`client_details_read`). */
+     client's UEN or BRN, every other client's 12-digit BRN
+     (`client_details_read`). */
   function sg() { return !!(info && info.market === 'SG'); }
   var CODE = { company_no_old: [4, 20], tin: [6, 20], sst_no: [6, 25] };
   /* What a field's refusal says: its own fault, never "This is required." under an optional field. */

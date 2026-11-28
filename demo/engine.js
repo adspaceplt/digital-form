@@ -773,8 +773,7 @@
   function brnCheck(no, market, kind) {
     var v = String(no == null ? '' : no).replace(/[\s-]+/g, '').toUpperCase();
     var uen = /^([0-9]{8,9}[A-Z]|[TSR][0-9]{2}[A-Z]{2}[0-9]{4}[A-Z])$/.test(v);
-    if (market === 'SG') return uen ? null : 'bad-brn';
-    if (market == null && uen) return null;
+    if ((market === 'SG' || market == null) && uen) return null;
     var now = Number(new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 4)), y = Number(v.slice(0, 4)), code = v.slice(4, 6);
     if (!/^\d{12}$/.test(v) || y < 1900 || y > now || ['01', '02', '03', '04'].indexOf(code) < 0) return 'bad-brn';
     if (kind === 'soleprop' && code !== '03') return 'brn-kind';

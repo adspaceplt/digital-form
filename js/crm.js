@@ -3932,9 +3932,7 @@
     if (on) $('crmBillInRow').hidden = true;
     if (!on) $('crmBillTitle').textContent = 'Billing details';
   }
-  /* The registration no. typed on Billing, read by the one rule
-     (`ADspaceWords.brnCheck`, the client's market picking BRN or UEN); a
-     number held before and left as it was is not judged again. */
+  /* A number held before and left as it was is not judged again. */
   function brnRefused(v, held) {
     if (!v || ADspaceWords.brnDigits(v) === ADspaceWords.brnDigits(held)) return false;
     var sg = state.client && state.client.market === 'SG';
