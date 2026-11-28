@@ -1646,7 +1646,7 @@
       /* One line an entry, the client named once by the record itself. */
       box.innerHTML = '<div class="softpanel recpanel"></div>';
       R.paint(box.firstChild, rows.map(recordOf), pg.more && !rows.length ? { empty: R.none(pg.days) } : null);
-      if (pg.more) R.earlier(box, more);
+      if (pg.more) R.earlier(box.firstChild, more);
     }
     function took(r, retry) {
       if (r.error) { UI.failLine(box, 'Activity', r.error.message, retry); return; }

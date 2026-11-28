@@ -829,7 +829,7 @@
         if (e.key == null) e.key = 'creator';
         return e;
       }), { empty: R.none(pg.days) });
-      if (pg.more) R.earlier(host, more);
+      if (pg.more) R.earlier(host.firstChild, more);
     }
     function took(r, retry) {
       if ($('crRecPane') !== host) return;
@@ -3850,7 +3850,7 @@
         if (r.key == null) r.key = 'campaign';
         return r;
       }), pg.more && !rows.length ? { empty: R.none(pg.days) } : null);
-      if (pg.more) R.earlier(box, more);
+      if (pg.more) R.earlier(box.firstChild, more);
     }
     function took(r, retry) {
       if (r.error) { fail(r.error.message, retry); return; }
