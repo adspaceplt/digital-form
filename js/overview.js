@@ -2419,7 +2419,7 @@
        of whose month is this month, done of all and late. */
     function clients(col) {
       var me = bridge.me && bridge.me();
-      if (!me || !may('ops', 'view') || !me.name) return;
+      if (!me || !may('ops', 'view') || !me.id) return;
       var card = document.createElement('section');
       card.className = 'chartcard ovw-card ovw-mycl';
       card.id = 'ovwMyClients';
@@ -2430,7 +2430,7 @@
         UI.skeleton(host, 2);
         Promise.resolve().then(function () {
           return db.from('ops_engagements').select('id, client_id, status, clients!inner(name, slug, owner, stage)').eq('period', CK.today().slice(0, 7))
-            .eq('clients.owner', me.name);
+            .eq('clients.owner_id', me.id);
         }).then(rows).then(function (eng) {
             eng = (eng || []).filter(function (e) { return e.status !== 'cancelled'; });
             if (!eng.length) { card.remove(); return; }

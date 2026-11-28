@@ -433,15 +433,25 @@
      keyed by hand is a name spelled two ways by Friday. A value already on a
      record that is no longer on the team is kept as its own option, so opening
      an old record and saving it cannot quietly unassign the person who owns
-     it. Used for the client's and the campaign's Person in charge alike. */
-  function peopleSelect(el, team, current) {
+     it. Used for the client's and the campaign's Person in charge alike.
+     The option is the colleague's id, the name only what it reads
+     (restructure release 2, 2026-11-28): a renamed colleague keeps their
+     clients, and two of one name are never one. */
+  function peopleSelect(el, team, current, currentName) {
     if (!el) return;
     var keep = current != null ? current : el.value;
     var list = window.ADspaceAdmin.pickFrom(team, state.offerIds, keep).slice().sort(F.byStaff);
-    if (keep && !list.some(function (m) { return m.name === keep; })) list.push({ name: keep });
+    if (keep && !list.some(function (m) { return m.id === keep; })) list.push({ id: keep, name: currentName || 'Former colleague' });
     el.innerHTML = '<option value="">Unassigned</option>' +
-      list.map(function (m) { return '<option value="' + esc(m.name) + '">' + esc(F.named(m.staff_code, m.name)) + '</option>'; }).join('');
+      list.map(function (m) { return '<option value="' + esc(m.id) + '">' + esc(F.named(m.staff_code, m.name)) + '</option>'; }).join('');
     el.value = keep || '';
+  }
+  /* The Person in charge's name, read from the team by id; the record's own
+     copy where the colleague has left. */
+  function ownerName(id, held) {
+    if (!id) return '';
+    var m = (state.team || []).filter(function (x) { return x.id === id; })[0];
+    return m ? m.name : (held || 'Former colleague');
   }
 
   /* Sales by (2026-10-23): a colleague by id, Not set first; one who has
@@ -484,7 +494,7 @@
       if (first && state.client) { paintFacts(state.client); paintIdentity(state.client); }
       else if (first && state.clients.length) paintList();
       peopleSelect($('crmOwnerPick'), state.team);
-      fillSelect($('crmOwner'), state.team.slice().sort(F.byStaff).map(function (m) { return [m.name, F.named(m.staff_code, m.name)]; }), 'All people');
+      fillSelect($('crmOwner'), state.team.slice().sort(F.byStaff).map(function (m) { return [m.id, F.named(m.staff_code, m.name)]; }), 'All people');
       /* Sales by is a colleague's id (2026-11-09, the user: the filter was missing). */
       fillSelect($('crmSales'), state.team.slice().sort(F.byStaff).map(function (m) { return [m.id, F.named(m.staff_code, m.name)]; }), 'All people');
       if (state.due) paintDue();
@@ -632,7 +642,7 @@
                String(c.legal_name || '').toLowerCase().indexOf(q) < 0 &&
                String(c.client_code || '').toLowerCase().indexOf(q) < 0) return false;
       if (stage !== 'all' && (c.stage || 'lead') !== stage) return false;
-      if (owner !== 'all' && (c.owner || '') !== owner) return false;
+      if (owner !== 'all' && (c.owner_id || '') !== owner) return false;
       if (sales !== 'all' && (c.sales_by || '') !== sales) return false;
       return true;
     });
@@ -883,18 +893,18 @@
     $('crmBulkOwner').hidden = !n;
   }
   /* Each client in turn, so a refusal is named against its client. */
-  function setOwners(list, nameOf, then) {
+  function setOwners(list, idOf, then) {
     var out = { ok: [], bad: [] };
     list.reduce(function (p, c) {
       return p.then(function () {
-        var to = nameOf(c);
-        return writeClient(c.id, { owner: to || null }).then(function (r) {
+        var to = idOf(c) || null;
+        return writeClient(c.id, { owner_id: to }).then(function (r) {
           if (r.error || !(r.data || []).length) { out.bad.push({ c: c, err: r.error ? r.error.message : 'refused' }); return; }
-          var was = c.owner || '';
+          var was = c.owner_id || '', wasName = c.owner || '', toName = to ? ownerName(to) : null;
           var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
-          if (mine) mine.owner = to || null;
-          c.owner = to || null;
-          log('client.edited', c, 'Person in charge: ' + (was || 'not set') + ' → ' + (to || 'not set'));
+          if (mine) { mine.owner_id = to; mine.owner = toName; }
+          c.owner_id = to; c.owner = toName;
+          log('client.edited', c, 'Person in charge: ' + (wasName || 'not set') + ' → ' + (toName || 'not set'));
           out.ok.push({ c: c, was: was });
         }).catch(function (e) { out.bad.push({ c: c, err: (e && e.message) || 'refused' }); });
       });
@@ -907,12 +917,13 @@
     window.ADspaceConfirm.ask({
       title: 'Reassign?', go: 'Reassign',
       field: { label: 'Person in charge', value: '', need: 'Choose a colleague.',
-        choices: [['', 'Choose a colleague']].concat(people.map(function (m) { return [m.name, F.named(m.staff_code, m.name)]; })) }
+        choices: [['', 'Choose a colleague']].concat(people.map(function (m) { return [m.id, F.named(m.staff_code, m.name)]; })) }
     }, function (v) {
       var to = (v && typeof v === 'object' ? v[0] : v) || '';
       if (!to) return;
-      var moving = list.filter(function (c) { return (c.owner || '') !== to; });
-      if (!moving.length) { msg('crmBulkMsg', 'No change. These clients are already assigned to ' + to + '.', 'ok'); return; }
+      var toName = ownerName(to);
+      var moving = list.filter(function (c) { return (c.owner_id || '') !== to; });
+      if (!moving.length) { msg('crmBulkMsg', 'No change. These clients are already assigned to ' + toName + '.', 'ok'); return; }
       setOwners(moving, function () { return to; }, function (out) {
         setPicking(false);
         var badWord = out.bad.length ? ' ' + out.bad.length + ' not: ' + out.bad.slice(0, 3).map(function (x) {
@@ -920,7 +931,7 @@
         }).join(', ') + (out.bad.length > 3 ? '…' : '') + '.' : '';
         msg('crmBulkMsg', badWord.trim(), out.bad.length ? 'warn' : '');
         if (!out.ok.length) return;
-        undoBar(out.ok.length + (out.ok.length === 1 ? ' client' : ' clients') + ' now with ' + to + '.', function () {
+        undoBar(out.ok.length + (out.ok.length === 1 ? ' client' : ' clients') + ' now with ' + toName + '.', function () {
           var back = {};
           out.ok.forEach(function (x) { back[x.c.id] = x.was; });
           setOwners(out.ok.map(function (x) { return x.c; }), function (c) { return back[c.id]; }, function (res) {
@@ -980,7 +991,7 @@
   // ---- Create and edit ----------------------------------------------------
   /* The head of the record: who they are and where they came from. */
   var FORM = [
-    ['crmName', 'name'], ['crmIndustry', 'industry'], ['crmOwnerPick', 'owner'],
+    ['crmName', 'name'], ['crmIndustry', 'industry'], ['crmOwnerPick', 'owner_id'],
     ['crmSource', 'source'], ['crmCommence', 'commence'], ['crmClientCode', 'client_code']
   ];
   /* The database's own words on the two rules it holds about a Client ID. */
@@ -1075,16 +1086,16 @@
     /* A new lead starts in the hands of whoever keys it in; they change it
        where someone else takes it (the user, 2026-10-01). */
     var self = bridge.me && bridge.me();
-    peopleSelect($('crmOwnerPick'), state.team, c ? (c.owner || '') : ((self && self.name) || ''));
+    peopleSelect($('crmOwnerPick'), state.team, c ? (c.owner_id || '') : ((self && self.id) || ''), c && c.owner);
     /* Person in charge moves from one colleague to another at Clients Full
        Access (`clients_owner_guard`); a record nobody holds may be given. */
-    $('crmOwnerPick').disabled = Boolean(c && String(c.owner || '').trim() && !mayPart('clients', 'manage'));
+    $('crmOwnerPick').disabled = Boolean(c && (c.owner_id || String(c.owner || '').trim()) && !mayPart('clients', 'manage'));
     /* Own clients only: a lead handed to someone else would leave the
        colleague's sight the moment it is saved (`client_row_seen`), so the
        one who keys it in holds it, and a lead nobody holds is taken with
        Take lead. */
     if (self && self.client_scope === 'own' && !self.is_admin) {
-      if (!c) $('crmOwnerPick').value = self.name || '';
+      if (!c) $('crmOwnerPick').value = self.id || '';
       $('crmOwnerPick').disabled = true;
     }
     /* Sales by: whoever keys a lead in brought it, and only Clients Full
@@ -1200,7 +1211,7 @@
         }
         var moved = changed(state.editing, patch, [
           ['name', 'Brand name'], ['client_code', 'Client ID'], ['industry', 'Industry'], ['market', 'Market'],
-          ['owner', 'Person in charge'], ['sales_by', 'Sales by', salesByName], ['source', 'Source'], ['commence', 'Urgency to commence', commenceWord],
+          ['owner_id', 'Person in charge', function (v) { return ownerName(v, state.editing && state.editing.owner); }], ['sales_by', 'Sales by', salesByName], ['source', 'Source'], ['commence', 'Urgency to commence', commenceWord],
           ['deal_note', 'Enquiry']]);
         if (moved) log('client.edited', { name: name, id: id }, moved);
         shutForm();
@@ -1363,7 +1374,7 @@
     /* A lead nobody holds is anybody's to take who may work leads; one the
        salesperson brought in (Sales by) is held, its Person in charge left
        for whoever runs the account (the user, 2026-11-06). */
-    $('crmTake').hidden = !(bandKey(c.stage) === 'clients.leads' && !String(c.owner || '').trim() && !c.sales_by &&
+    $('crmTake').hidden = !(bandKey(c.stage) === 'clients.leads' && !c.owner_id && !String(c.owner || '').trim() && !c.sales_by &&
                             bandMay(c.stage, 'work') && bridge.me && bridge.me() && bridge.me().name);
     /* Edit and Brand's Edit change the record, so they ask its band at Work
        as the database does; a View group was offered both, and its save was
