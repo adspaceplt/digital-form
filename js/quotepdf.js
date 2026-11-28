@@ -24,8 +24,8 @@
      every PDF reads them (the demo's sample agency on sample data). */
   function CFG() { return window.ADSPACE_CONFIG || {}; }
   var KEPT = null;
-  function agency() { return (KEPT && KEPT.a) || CFG().agencyName || 'ADspace'; }
-  function issuer() { return (window.ADSPACE_ORG || {}).name || 'ADSPACE PLT'; }
+  function agency() { return (KEPT && KEPT.a) || CFG().agencyName; }
+  function issuer() { return window.ADSPACE_ORG.name; }
   /* The Service Terms clause, left out where none is set. */
   function termsAt(lead) { var u = KEPT ? KEPT.t : CFG().serviceTermsUrl; return u ? lead + agency() + ' Service Terms at ' + u : ''; }
   var FLOOR = 76;

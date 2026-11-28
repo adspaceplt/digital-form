@@ -27,7 +27,7 @@
   var CFG = window.ADSPACE_CONFIG || {};
   /* The wordmark's words: the agency's own name (the demo's sample agency
      on sample data), read at the draw. */
-  function agency() { return (window.ADSPACE_CONFIG || {}).agencyName || 'ADspace'; }
+  function agency() { return window.ADSPACE_CONFIG.agencyName; }
   var bridge = window.ADspaceAdmin || {};
   var log = bridge.log || function () {};
   var actor = bridge.actorName || bridge.actor || function () { return ''; };
@@ -809,7 +809,7 @@
     var closeH = LH * 2 + (doc.signed ? 60 : 0) + (named ? LH * 2 : 0);
     need(closeH);
     if (String(doc.closing || '').trim()) { text(doc.closing, M, y, BODY); y -= LH; }
-    text(ORG.name || 'ADSPACE PLT', M, y, BODY, med, pn.strong); y -= LH;
+    text(ORG.name, M, y, BODY, med, pn.strong); y -= LH;
     if (doc.signed) y -= 60;
     else if (named) y -= LH * 0.5;
     if (named) {
@@ -1204,7 +1204,7 @@
       var closeH = LH * (doc.issued_by ? 3 : 2) + 16;
       need(closeH);
       text('Yours sincerely,', M, y, BODY); y -= LH;
-      text(ORG.name || 'ADSPACE PLT', M, y, BODY, med, pn.strong); y -= LH;
+      text(ORG.name, M, y, BODY, med, pn.strong); y -= LH;
       /* The name of the person who issued it, and nothing else. It is never a
          permission: issue_letter refuses a team row named for a role, so
          "Superadmin" cannot reach a client's letterhead. */

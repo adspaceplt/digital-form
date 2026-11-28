@@ -97,7 +97,7 @@
   function row(st) {
     var party = 'the ' + String(st.party || 'Client').toLowerCase(), by;
     /* The agency's own name (the demo's sample agency on sample data). */
-    var ag = (window.ADSPACE_CONFIG || {}).agencyName || 'ADspace';
+    var ag = window.ADSPACE_CONFIG.agencyName;
     if (st.team) by = (st.by || ag) + (st.role ? ', ' + st.role : '') + (st.by && st.by !== ag ? ', ' + ag : '');
     else by = st.step === 'signed' && st.by ? st.by + (st.role ? ', ' + st.role : '') : party;
     var rest = st.step === 'code' ? 'to ' + (st.email || '') :

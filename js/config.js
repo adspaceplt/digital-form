@@ -10,18 +10,61 @@
  * The anon key is safe to publish. Every table is protected by row level
  * security and clients can only reach data through the token-checked functions.
  */
-/* The issuer printed on the Letter of Intent. Blank lines are left out. */
-window.ADSPACE_ORG = {
-  name: 'ADSPACE PLT',
-  regno: '202304002162',      // business registration no.
-  sst: 'J31-2401-32100002',        // SST registration no.
+/* The agency profile (restructure release 6, 2026-11-28): every value that
+   names the agency, the install's own copy and the pages' one read of it.
+   The database holds the same profile (`agency_profile`, read by `agency()`
+   and `agency_profile_read()`; the edge functions through
+   supabase/functions/_shared/agency.ts); `tests/agencysql.js` holds this
+   copy equal to its seed. ADSPACE_ORG and ADSPACE_CONFIG below read their
+   agency fields from here, never a copy of their own. */
+window.ADspaceAgency = {
+  trading_name: 'ADspace',
+  legal_name: 'ADSPACE PLT',
+  reg_no: '202304002162',            // business registration no.
+  tax_no: 'J31-2401-32100002',       // SST registration no.
   address: '61-02 Jalan Mutiara Emas 2A\nTaman Mount Austin\n81100 Johor Bahru\nJohor, Malaysia',
-  email: 'advertise@adspacestudios.com',
   phone: '60187625233',
   website: 'adspacestudios.com',
   // The office on Google Maps, through our own short link (2026-11-19):
   // a candidate's Get directions and a namecard's address open it.
-  map: 'https://hi.adspace.me/map',
+  map_url: 'https://hi.adspace.me/map',
+  portal_domain: 'digital.adspace.me',
+  link_domain: 'hi.adspace.me',
+  sender_domain: 'sc.adspace.me',
+  cdn_base: 'https://mycdn.adspace.me',
+  // The header wordmark, and the letterhead's monogram (the letterhead only).
+  wordmark_url: 'https://mycdn.adspace.me/adspace-brandname.png',
+  monogram_url: '/css/adspace-mark.png',
+  favicon_url: '/favicon.ico',
+  touch_icon_url: '/img/apple-touch-icon.png',
+  icon_url: '/img/icon-512.png',
+  // The public page a letter's footer points to.
+  verify_url: 'digital.adspace.me/verify',
+  // The agency's Service Terms, named by every quotation (its PDF and
+  // /quote/). Blank leaves the clause out.
+  service_terms_url: 'hi.adspace.me/svc-terms',
+  // The brand's colours are the stylesheet's tokens, named here, never new.
+  ink_token: '--ink',
+  accent_token: '--action',
+  ground_token: '--page',
+  // The General reply-to mailbox (the database's `mail_boxes` `general`,
+  // answered by the profile as `email`): the issuer's address on a letter.
+  email: 'advertise@adspacestudios.com'
+};
+
+/* A field of `obj` that reads and writes the profile's `key`: one copy, so
+   a value set anywhere (the demo's own name) is the value read everywhere. */
+window.ADspaceAgency.alias = function (obj, map) {
+  var A = window.ADspaceAgency;
+  Object.keys(map).forEach(function (f) {
+    Object.defineProperty(obj, f, { enumerable: true, configurable: true,
+      get: function () { return A[map[f]]; }, set: function (v) { A[map[f]] = v; } });
+  });
+  return obj;
+};
+
+/* The issuer printed on the Letter of Intent. Blank lines are left out. */
+window.ADSPACE_ORG = window.ADspaceAgency.alias({
   bank: '',       // bank, account number and account name, on one line
   // The KOC job form a creator fills in for payment, named on their own page
   // once their work has been approved.
@@ -31,7 +74,6 @@ window.ADSPACE_ORG = {
   // Regular.
   // Files, not font names, same origin or served with CORS. A blank mark
   // uses brandLogo below; blank fonts fall back to Helvetica.
-  logo: '/css/adspace-mark.png',
   font: '/css/SlateBook.TTF',
   fontBold: '/css/SlateRg.TTF',
   fontMark: '/css/OPTIMA.TTF',
@@ -42,10 +84,9 @@ window.ADSPACE_ORG = {
   // Slate carries no Chinese, so a letter with a Chinese block embeds this
   // face for that block alone. Fetched only when a Chinese block is drawn,
   // and refused by name when it cannot be, rather than drawing boxes.
-  fontCjk: '/css/NotoSansSC-Regular.ttf',
-  // The public page a letter's footer points to.
-  verifyUrl: 'digital.adspace.me/verify'
-};
+  fontCjk: '/css/NotoSansSC-Regular.ttf'
+}, { name: 'legal_name', regno: 'reg_no', sst: 'tax_no', address: 'address', email: 'email', phone: 'phone',
+     website: 'website', map: 'map_url', logo: 'monogram_url', verifyUrl: 'verify_url' });
 
 window.ADSPACE_CONFIG = {
   supabaseUrl: 'https://hwwuigvdfubuymchsvyx.supabase.co',
@@ -64,7 +105,7 @@ window.ADSPACE_CONFIG = {
   // the reference after `?s=` (js/quotes.js, js/hiring.js, js/hrdocs.js).
   // The address is ADSPACE_ORG.verifyUrl's, so a sealed copy, its QR code
   // and every letter's foot name one page.
-  verify: { passMinutes: 30, page: 'https://' + window.ADSPACE_ORG.verifyUrl + '/' },
+  verify: { passMinutes: 30, page: 'https://' + window.ADspaceAgency.verify_url + '/' },
 
   // Supabase caps uploads per plan. Free is 50 MB and cannot be raised.
   // On Pro you can raise it in Dashboard > Storage > Settings, then change
@@ -123,21 +164,10 @@ window.ADSPACE_CONFIG = {
      Blank hides the Drive section in admin. */
   googleApiKey: 'AIzaSyDKzn17TE3wimfU-nKlikwKta4pi8RKtNc',
 
-  brandLogo: 'https://mycdn.adspace.me/adspace-brandname.png',
-  agencyName: 'ADspace',
-  /* The agency's Service Terms, named by every quotation (its PDF and
-     /quote/). Blank leaves the clause out. */
-  serviceTermsUrl: 'hi.adspace.me/svc-terms',
-  supportEmail: 'advertise@adspacestudios.com',
-
-  // Reply-to on anything the portal sends on the team's behalf.
-  accountEmail: 'advertise@adspacestudios.com',
-
-  /* The host a new short link is written under. It was typed into js/admin.js
-     and again into the console's markup, so changing it meant finding both.
-     go.adspace.me is retired (2026-11-26); this value decides what the
-     next link is built with. */
-  linkHost: 'hi.adspace.me',
+  /* brandLogo, agencyName, serviceTermsUrl, supportEmail, accountEmail
+     (the reply-to on anything sent on the team's behalf) and linkHost (the
+     host a new short link is written under; go.adspace.me retired
+     2026-11-26) are the agency profile's, aliased after this object. */
   /* The script, selection and creator links are written as short links
      (/s/, /c/, /p/ on the host above), answered by the links Worker
      (workers/links/worker.js, live 2026-10-13); false writes the long link. */
@@ -176,3 +206,5 @@ window.ADSPACE_CONFIG = {
      to set it. The Supabase anon key and the Google key above are not secrets:
      both are meant to be public and are held back by their own restrictions. */
 };
+window.ADspaceAgency.alias(window.ADSPACE_CONFIG, { brandLogo: 'wordmark_url', agencyName: 'trading_name',
+  serviceTermsUrl: 'service_terms_url', supportEmail: 'email', accountEmail: 'email', linkHost: 'link_domain' });

@@ -16,7 +16,7 @@
 
   function esc(s) { return window.ADspaceWords.esc(s); }
   /* The wordmark's words: ours, or the demo's sample agency (js/demo.js). */
-  function word() { return esc((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.agencyName) || 'ADspace'); }
+  function word() { return esc(window.ADSPACE_CONFIG.agencyName); }
 
   /* A number with its country code: ADspaceAPI's one reading. */
   function digits(raw) { return window.ADspaceAPI.waNumber(raw); }
@@ -52,7 +52,7 @@
   function vcf(card) {
     var v = function (s) { return String(s || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1'); };
     var lines = ['BEGIN:VCARD', 'VERSION:3.0',
-      'N:;' + v(card.name) + ';;;', 'FN:' + v(card.name), 'ORG:' + v((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.agencyName) || 'ADspace')];
+      'N:;' + v(card.name) + ';;;', 'FN:' + v(card.name), 'ORG:' + v(window.ADSPACE_CONFIG.agencyName)];
     if (card.designation) lines.push('TITLE:' + v(card.designation));
     if (card.mobile) lines.push('TEL;TYPE=CELL:+' + digits(card.mobile));
     if (ORG.phone) lines.push('TEL;TYPE=WORK:+' + digits(ORG.phone));
@@ -66,7 +66,7 @@
     var blob = new Blob([vcf(card)], { type: 'text/vcard;charset=utf-8' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = String(card.name || 'ADspace').replace(/[\\/:*?"<>|]+/g, '') + '.vcf';
+    a.download = String(card.name || window.ADSPACE_CONFIG.agencyName).replace(/[\\/:*?"<>|]+/g, '') + '.vcf';
     document.body.appendChild(a);
     a.click();
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);

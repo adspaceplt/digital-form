@@ -343,7 +343,7 @@
         });
         return yy;
       };
-      var y1 = party(M, 'For and on behalf of ' + (ORG.name || 'ADSPACE PLT'), String(sig.name || ''), sig.designation || '');
+      var y1 = party(M, 'For and on behalf of ' + ORG.name, String(sig.name || ''), sig.designation || '');
       var y2 = party(M + colW + 30, 'For and on behalf of ' + (p1.legal_name || 'the Supplier'), '', '');
       y = Math.min(y1, y2);
 
