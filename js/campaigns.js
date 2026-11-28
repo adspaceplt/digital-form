@@ -2241,14 +2241,15 @@
   /* The same list, the same rule, as the client record's Person in charge: the
      team is chosen from, never typed, and a name already on a campaign that has
      since left the team stays as its own option rather than being cleared by
-     the next save. */
-  function peopleSelect(el, team, current) {
+     the next save. The option is the colleague's id, the name only what it
+     reads (restructure release 2, 2026-11-28). */
+  function peopleSelect(el, team, current, currentName) {
     if (!el) return;
     var keep = current != null ? current : el.value;
     var list = window.ADspaceAdmin.pickFrom(team, state.offerIds, keep).slice().sort(F.byStaff);
-    if (keep && !list.some(function (m) { return m.name === keep; })) list.push({ name: keep });
+    if (keep && !list.some(function (m) { return m.id === keep; })) list.push({ id: keep, name: currentName || 'Former colleague' });
     el.innerHTML = '<option value="">Unassigned</option>' +
-      list.map(function (m) { return '<option value="' + esc(m.name) + '">' + esc(F.named(m.staff_code, m.name)) + '</option>'; }).join('');
+      list.map(function (m) { return '<option value="' + esc(m.id) + '">' + esc(F.named(m.staff_code, m.name)) + '</option>'; }).join('');
     el.value = keep || '';
   }
 
@@ -2524,7 +2525,7 @@
     $('campBackups').checked = c ? Boolean(c.backups_open) : false;
     /* A new campaign starts in the hands of whoever makes it (2026-10-01). */
     var self = bridge.me && bridge.me();
-    peopleSelect($('campOwner'), state.team, c ? (c.owner || '') : ((self && self.name) || ''));
+    peopleSelect($('campOwner'), state.team, c ? (c.owner_id || '') : ((self && self.id) || ''), c && c.owner);
     msg('campMsg', '');
     window.ADspaceSheet.show($('addCampBox'), { opener: c ? $('campMenuBtn') : $('showAddCamp') });
     if (!restoring) campDraft.note({ editing: c ? c.id : null });
@@ -2654,7 +2655,7 @@
       deadline: $('campDeadline').value || null,
       push_format: $('campFormat').value,
       deliverable: $('campDeliverable').value,
-      owner: ($('campOwner').value || '').trim() || null,
+      owner_id: $('campOwner').value || null,
       backups_open: $('campBackups').checked
     };
     /* Only what moved from the copy the sheet opened on is sent. */
@@ -2683,7 +2684,7 @@
       deadline: $('campDeadline').value || null,
       push_format: $('campFormat').value,
       deliverable: $('campDeliverable').value,
-      owner: ($('campOwner').value || '').trim() || null,
+      owner_id: $('campOwner').value || null,
       backups_open: $('campBackups').checked,
       access_token: token(),
       // Stated rather than left to the column default. The object we go on to

@@ -2,7 +2,7 @@
 (function () {
 
   var LIVE_COLS = {
-    activity_log: 'id actor action subject detail created_at ref client_id campaign_id creator_id',
+    activity_log: 'id actor action subject detail created_at ref client_id campaign_id creator_id actor_id member_id',
     agent_schedules: 'id team_member_id kind run_at title payload condition condition_ref state result created_at ran_at cancelled_at',
     ai_drafts: 'id report_id team_member_id outcome created_at client_id kind period_start period_end purpose result basis version_no brand_id batch_id input_tokens output_tokens model script_id web_searches agent_steps',
     brand_analyses: 'id client_id version analysis sources basis hypothesis model press_id created_by created_at confirmed_by confirmed_at',
@@ -17,7 +17,7 @@
     campaign_confirmations: 'id campaign_id kind person source note created_at idem snapshot campaign_title client_id',
     campaign_deliverables: 'id option_id url name kind bytes round uploaded_at removed_at hidden_at hidden_by',
     campaign_options: 'id campaign_id creator_id rate platforms position is_replacement state drop_reason goodwill added_at visit_date visit_time visit_location visit_pic visit_pic_phone tracking_no draft_url revision_round planned_publish confirmed_at confirmed_by notes draft_caption submitted_at changes_by submission_due creator_rating qc_second_wanted completed_at released_round earlier_job posted_on pay_by',
-    campaigns: 'id client_id title title_zh invoice_no slots deadline owner push_format deliverable brief brief_zh state access_token passcode created_by created_at updated_at invoice_url invoice_uploaded_at purpose purpose_zh backups_open state_log selection_closed_at moved_token campaign_code bukku_invoice_id invoice_claimed_at invoice_claimed_by',
+    campaigns: 'id client_id title title_zh invoice_no slots deadline owner owner_id push_format deliverable brief brief_zh state access_token passcode created_by created_at updated_at invoice_url invoice_uploaded_at purpose purpose_zh backups_open state_log selection_closed_at moved_token campaign_code bukku_invoice_id invoice_claimed_at invoice_claimed_by',
     client_contacts: 'id client_id salutation name role phone email whatsapp lang is_primary notes created_at archived_at portal_access portal_login_at',
     client_document_deletions: 'id document_id number client_id actor reason service_ids deleted_at',
     client_document_seq: 'client_id ym next_val',
@@ -34,7 +34,7 @@
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
     quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by made_by_id submitted_by_id contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines doc_code commence_on',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
-    clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id commence_on portal_kept_at portal_kept_by stage_next stage_next_on stage_next_reason stage_next_note',
+    clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner owner_id market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id commence_on portal_kept_at portal_kept_by stage_next stage_next_on stage_next_reason stage_next_note',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
     creator_profiles: 'id creator_id platform url handle created_at',
     creators: 'id name followers cost_rate client_rate industries notes active created_by created_at updated_at access_code code_issued_at whatsapp creator_code inactive_reason',
@@ -878,7 +878,7 @@
     }
   });
 
-  (DB.clients || []).forEach(function (c) { c.owner_id = ownerStamp(c, null); });
+  stampHandOwners();
 
   (function () {
     var oneOf = function (nm) {
@@ -1305,19 +1305,36 @@
 
   function ownerIdOf(name) {
     var n = String(name || '').trim().toLowerCase(); if (!n) return null;
-    var hit = (DB.team_members || []).filter(function (t) { return !t.removed_at && String(t.name || '').trim().toLowerCase() === n; })
-      .sort(function (a, b) { return (b.active !== false) - (a.active !== false); })[0];
-    return hit ? hit.id : null;
+    var hits = (DB.team_members || []).filter(function (t) { return !t.removed_at && String(t.name || '').trim().toLowerCase() === n; });
+    return hits.length === 1 ? hits[0].id : null;
   }
-  function ownerStamp(nw, old) {
-    var n = String(nw.owner || '').trim(); if (!n) return null;
-    if (old && nw.owner === old.owner && nw.owner_id === old.owner_id && nw.owner_id) return nw.owner_id;
-    if (nw.owner_id && (DB.team_members || []).some(function (t) { return t.id === nw.owner_id && String(t.name || '').trim().toLowerCase() === n.toLowerCase(); })) return nw.owner_id;
-    return ownerIdOf(n);
+  function memberName(id) { var t = (DB.team_members || []).filter(function (x) { return x.id === id; })[0]; return t ? t.name : null; }
+  function ownerFix(nw, old) {
+    if (old && (nw.owner || null) === (old.owner || null) && (nw.owner_id || null) === (old.owner_id || null)) return nw;
+    if (nw.owner_id) {
+      var nm = memberName(nw.owner_id);
+      if (!old || nw.owner_id !== old.owner_id ||
+          String(nw.owner || '').trim().toLowerCase() === String(nm || '').trim().toLowerCase()) { nw.owner = nm || nw.owner; return nw; }
+    } else if (old && old.owner_id) { nw.owner = null; nw.owner_id = null; return nw; }
+    if (!String(nw.owner || '').trim()) { nw.owner = null; nw.owner_id = null; return nw; }
+    nw.owner_id = ownerIdOf(nw.owner);
+    return nw;
+  }
+  function ownerStamp(nw, old) { return ownerFix(Object.assign({}, nw), old).owner_id || null; }
+
+  function stampHandOwners() {
+    ['clients', 'campaigns'].forEach(function (tb) {
+      (DB[tb] || []).forEach(function (r) {
+        var nm = String(r.owner || '').trim().toLowerCase();
+        if (!nm) { if (r.owner_id === undefined) r.owner_id = null; return; }
+        if (r.owner_id && String(memberName(r.owner_id) || '').trim().toLowerCase() === nm) return;
+        r.owner_id = ownerIdOf(r.owner);
+      });
+    });
   }
   function withOwner(table, r, pending) {
     var nx = Object.assign({}, r, pending);
-    if (table === 'clients' && ('owner' in pending || 'owner_id' in pending)) nx.owner_id = ownerStamp(nx, r);
+    if ((table === 'clients' || table === 'campaigns') && ('owner' in pending || 'owner_id' in pending)) ownerFix(nx, r);
     return nx;
   }
   function scopeRowOk(stage, owner, ownerId, level, salesBy) {
@@ -1352,9 +1369,10 @@
   }
 
   function ownerChangeRefused(table, r, patch) {
-    if (table !== 'clients' || !patch || !('owner' in patch)) return false;
-    var was = String(r.owner || '').trim(), now = String(patch.owner || '').trim();
-    return Boolean(was) && was !== now && Boolean(opsMe()) &&
+    if (table !== 'clients' || !patch || !('owner' in patch || 'owner_id' in patch)) return false;
+    var was = String(r.owner || '').trim(), now = String('owner' in patch ? patch.owner || '' : r.owner || '').trim();
+    var moved = ('owner_id' in patch && (patch.owner_id || null) !== (r.owner_id || null)) || ('owner' in patch && was !== now);
+    return Boolean(was || r.owner_id) && moved && Boolean(opsMe()) &&
       !opsAllowed('clients', 'manage') && !opsAllowed('team', 'manage');
   }
 
@@ -1364,7 +1382,7 @@
     if (!r) return !(patch.sales_by == null || patch.sales_by === m.id);
 
     if (!r.sales_by && patch.sales_by === m.id && ['lead', 'contacted', 'proposal'].indexOf(r.stage) >= 0 &&
-        !String(r.owner || '').trim() && opsAllowed('clients.leads', 'work')) return false;
+        !r.owner_id && !String(r.owner || '').trim() && opsAllowed('clients.leads', 'work')) return false;
     return (patch.sales_by || null) !== (r.sales_by || null);
   }
   function scopeTaskMine(t) {
@@ -1445,6 +1463,7 @@
   }
 
   function builder(table) {
+    if (table === 'clients' || table === 'campaigns') stampHandOwners();
 
     if (table === 'batches') DB.batches.forEach(function (x) {
       if (!('period' in x)) x.period = x.created_at ? new Date(new Date(x.created_at).getTime() + 8 * 3600e3).toISOString().slice(0, 7) : null;
@@ -1973,10 +1992,8 @@
               ['clients', 'campaigns'].forEach(function (tb) {
                 (DB[tb] || []).forEach(function (x) {
 
-                  if (tb === 'clients' ? ownerStamp(x, null) !== r.id
-                                       : String(x.owner || '').trim().toLowerCase() !== rnOld) return;
+                  if (x.owner_id !== r.id) return;
                   x.owner = rnNew;
-                  if (tb === 'clients') x.owner_id = r.id;
                   DB.activity_log.push({ id: nid('a'), actor: rnBy, action: tb === 'clients' ? 'client.edited' : 'campaign.edited',
                     subject: x.name || x.title, client_id: tb === 'clients' ? x.id : null, campaign_id: tb === 'campaigns' ? x.id : null, detail: 'Person in charge: ' + String(r.name).trim() + ' to ' + rnNew, created_at: rnAt });
                 });
@@ -2133,7 +2150,7 @@
           });
           if (dup) err = { message: 'duplicate key value violates unique constraint' };
         }
-        if (table === 'clients') x.owner_id = ownerStamp(x, null);
+        if (table === 'clients' || table === 'campaigns') ownerFix(x, null);
 
         if (table === 'quotations') {
           var qMe = opsMe(), qBy = String(x.made_by || '').trim();
@@ -19856,6 +19873,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: pgOut, error: null });
     }
     if (name === 'team_work_held' || name === 'team_hand_over' || name === 'team_member_remove') {
+      stampHandOwners();
       var hoOut = (function () {
         var hoRef = window.__refuseRpc && window.__refuseRpc[name];
         if (hoRef) return { error: hoRef };
@@ -19868,8 +19886,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           return a.team_member_id === hoM.id && a.responsibility === 'owner' && !a.ended_at && openTask(taskOf(a.task_id)); }); };
         var openMonth = function (e) { return ['completed', 'cancelled'].indexOf(e.status) < 0; };
 
-        var hoKey = String(hoM.name || '').trim().toLowerCase();
-        var ownsIt = function (x) { return hoKey && String(x.owner || '').trim().toLowerCase() === hoKey; };
+        var ownsIt = function (x) { return x.owner_id === hoM.id; };
         var kinds = {
           clients: function () { return (DB.clients || []).filter(ownsIt); },
           campaigns: function () { return (DB.campaigns || []).filter(function (g) { return ownsIt(g) && g.state !== 'completed'; }); },
@@ -19915,7 +19932,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
               if (k === 'clients' || k === 'campaigns') {
                 DB.activity_log.push({ id: nid('a'), actor: me0.name, action: k === 'clients' ? 'client.edited' : 'campaign.edited',
                   subject: row.name || row.title, detail: 'Person in charge: ' + hoM.name + ' to ' + who.name, created_at: now });
-                row.owner = who.name;
+                row.owner = who.name; row.owner_id = who.id;
               } else if (k === 'tasks') {
                 row.ended_at = now;
                 DB.ops_task_assignees.push({ id: nid('as'), task_id: row.task_id, team_member_id: who.id, responsibility: 'owner', assigned_by: me0.id, assigned_at: now, ended_at: null });

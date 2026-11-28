@@ -865,7 +865,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     itself, in the transaction that deletes (audit R1); the page files
     nothing.
   - Paused and Past are the everyday exits.
-- Person in charge (`owner` holds a name as text):
+- Person in charge is the colleague's id (`owner_id`; a campaign's alike), picked from the team and written by id; `owner` is the name as a snapshot the database writes from it (`owner_id_stamp`), never matched (`2026-11-28-owners-by-id.sql`):
   - Changed from one colleague to another only at Clients Full Access, or by
     Team Full Access carrying a stand-down or a rename (`clients_owner_guard`,
     `owner-change`). A lead is sold, not run: during the lead stages only

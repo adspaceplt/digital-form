@@ -955,8 +955,8 @@ create or replace function public.clients_owner_guard()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
   if pg_trigger_depth() > 1 then return new; end if;
-  if nullif(btrim(coalesce(old.owner, '')), '') is not null
-     and coalesce(btrim(new.owner), '') is distinct from btrim(old.owner)
+  if (old.owner_id is not null or nullif(btrim(coalesce(old.owner, '')), '') is not null)
+     and (new.owner_id is distinct from old.owner_id or coalesce(btrim(new.owner), '') is distinct from coalesce(btrim(old.owner), ''))
      and (select t.id from public.team_members t
            where t.auth_user_id = auth.uid() and t.active limit 1) is not null
      and not public.allowed('clients', 'manage') and not public.allowed('team', 'manage') then
