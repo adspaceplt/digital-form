@@ -59,6 +59,13 @@ Moved from `CLAUDE.md` §1 on 2026-11-23. Read whole before changing a suite or 
     read date literals and `current_date` in MYT (2026-10-21).
   - Postgres suites build cut-down tables, so a new column goes into their
     fixture too.
+  - A Postgres suite loading the whole schema signs in through
+    `tests/sqlsignin.js` (`signIn(email)`: a confirmed login, linked by the
+    schema's `identity_link`, its sign-in stamped, `sub` in the claims); a
+    cut-down fixture gives its team table `auth_user_id` from the address's
+    md5 and stubs `auth.uid()` (`uidOf`, `UID_COL`, `UID_FN`). A check that
+    a function's last definition is its band's accepts the identity band's
+    restatement through `tests/identityband.js` (`sameButCaller`).
   - A function body is parsed only where a suite makes it with bodies
     checked: `auditfix` loads the whole schema as the live database does and
     fails a syntax error or a function the schema makes that never got

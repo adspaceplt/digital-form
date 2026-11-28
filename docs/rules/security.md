@@ -69,6 +69,10 @@ Moved from `CLAUDE.md` §2, Sign-in, security, secrets, on 2026-11-23. Secrets a
   failure; every Claude call is `maxRetries: 0` with a timeout of what is
   left of the function's budget (`max(5000, budget - elapsed)`), never a
   fresh limit per call (the review of 2026-11-25).
+- An edge function asks the calling colleague by the login it is linked to
+  (`team_members.auth_user_id = user.id`), never by `user.email`
+  (`sign-upload`, `sign-download`, `media-pass`, `invite-member`; ACCESS BY
+  ACCOUNT ID, 2026-11-28); a page tells a change of person by `user.id`.
 - An email is matched as itself in every edge function (`exactEmail`: `_`
   and `%` are letters, never wildcards; audit P2, 2026-10-10).
 - A colleague's upload names its purpose and record, and `sign-upload`

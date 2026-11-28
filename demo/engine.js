@@ -2233,12 +2233,22 @@
   var session = null, listener = null;
 
   var SESS = {}, sessSeq = 0;
+
+  function uidOf(email) {
+    var e = String(email || '').toLowerCase(), h = '';
+    for (var k = 0; h.length < 32; k++) {
+      var x = 5381 + k * 131;
+      for (var i = 0; i < e.length; i++) x = ((x * 33) ^ e.charCodeAt(i)) >>> 0;
+      h += ('00000000' + x.toString(16)).slice(-8);
+    }
+    return h.slice(0, 8) + '-' + h.slice(8, 12) + '-4' + h.slice(13, 16) + '-8' + h.slice(17, 20) + '-' + h.slice(20, 32);
+  }
   function mkSession(email, amr) {
     sessSeq += 1;
 
     var sid = window.__sessionMine || ('5e55' + ('0000' + sessSeq).slice(-4) + '-0000-4000-8000-' + ('000000000000' + Date.now()).slice(-12));
-    var claims = btoa(JSON.stringify({ sub: email, session_id: sid })).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
-    var s = { user: { email: email }, amr: amr || [], access_token: 'eyJhbGciOiJIUzI1NiJ9.' + claims + '.at-' + sessSeq, refresh_token: 'rt-' + sessSeq };
+    var claims = btoa(JSON.stringify({ sub: uidOf(email), session_id: sid })).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+    var s = { user: { id: uidOf(email), email: email }, amr: amr || [], access_token: 'eyJhbGciOiJIUzI1NiJ9.' + claims + '.at-' + sessSeq, refresh_token: 'rt-' + sessSeq };
     SESS[s.refresh_token] = s;
     return s;
   }
