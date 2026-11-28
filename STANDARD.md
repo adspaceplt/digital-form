@@ -73,6 +73,7 @@ Found by a test in code a release did not touch: `docs/rules/logged-defects.md` 
   three guards, and release 4, foreign keys on single-target ids, are
   built; release 6, the agency profile, is live; release 7, its page side,
   and release 8, the server's agency values, are built on their draft PRs;
+  release 18, the country on the profile, is built (its queue in HANDOVER.md);
   the rest are open, in the map's order.
 - Open at the handover of 2026-11-25 (the user moves to another account;
   a session opening here picks these up, oldest first, before new work):

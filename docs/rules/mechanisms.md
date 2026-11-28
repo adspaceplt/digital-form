@@ -29,6 +29,14 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   `codeEmail` are async), and the links Worker its own settings
   (`PORTAL_URL`, `HOME_URL`, `AGENCY_NAME`, `WORDMARK_URL`), set equal to
   the profile because the public key it reads with is not answered it.
+  The country is the profile's too (release 18, 2026-11-28): `time_zone`,
+  `country`, `currency`, `currency_sign`, `locale`, `tax_label`. A
+  function's day and hour read `agency_tz()` (`docs/rules/database.md`),
+  `js/clock.js` its offset from `ADspaceAgency.time_zone` (`ADspaceClock.ZONE`,
+  `OFFSET`, `SUFFIX`), `js/money.js` the home currency, locale, the tax's
+  name and its zone, and a page never types the zone, `+08:00`,
+  `8 * 3600000` or `en-MY` (it reads `ADspaceClock.SUFFIX`, `.OFFSET`,
+  `ADspaceAgency.time_zone`, `.locale`).
 - `js/api.js` is the only Supabase client. Demo content is only for a copy
   with no database configured: a configured page whose database library
   failed to load reads Unable to load and records nothing, and a review
@@ -123,7 +131,7 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   go. A new act joins the table, never a screen (`tests/acts.js`).
 - `js/clock.js` (`ADspaceClock`: `day`, `today`, `parts`, `start`, `at`,
   `time`, `addDays`, `addMonths`, `between`, `weekday`; the words `date`,
-  `clock`, `month`, English and Chinese) is Malaysia's clock (2026-10-12),
+  `clock`, `month`, English and Chinese) is the agency's clock (2026-10-12; its zone the profile's since 2026-11-28),
   loaded by the console and every client page: every page reads a day, a
   month, a weekday, a time of day and "today" from it, never from a Date's
   own getters, `setHours`, `new Date(y, m, d)`, `toLocaleDateString`

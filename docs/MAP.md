@@ -80,7 +80,7 @@ Schema lines are `supabase/schema.sql` (last definition cited). Checked at HEAD 
 | SST rate | `app_setting('sst_pct', day)` schema.sql:101929, :110121, :110648, :143851, :146344 (261 `'sst_pct'` hits); js/money.js:23-31, :151 | Tax % by date | SETTING (`app_settings`) | money.js `FIRST.sst_pct: 8` is the fallback when the read fails (CODE) |
 | SST per client | `clients.sst_applies`, `sst_no` schema.sql:44-47; js/crm.js:3548, :4163 | Per-record flag | Record | — |
 | SST tax codes | `tax_codes_list` js/money.js:120-150; bukku-sync `SV8` (3 hits) | Codes (SV8) | SETTING (table) | `SV8` appears as a literal in 3 bukku-sync and 2 money.js spots (CODE) |
-| SST wording | js/money.js:296, :333-353 | Label "SST n%" | CODE | Rate read from the setting |
+| SST wording | js/money.js reads `tax_label` from the profile (release 18); other screens, PDFs and SQL text still type "SST" | Label "SST n%" | SETTING (money.js) / CODE (rest) | Rate read from the setting |
 | SST no. format | js/supplierform.js:234 `^[A-Za-z]\d{2}-\d{4}-\d{8}$` | Validation | CODE | Supplier form only |
 | Issuer SST/BRN | js/config.js:14-17 `ADSPACE_ORG` | Issuer facts | CONFIG | — |
 | e-Invoice (MyInvois) | bukku-sync/index.ts:897, :1031, :1067 `myinvois_action:'NORMAL'`; :238 LHDN list | Draft invoice flag | CODE | — |
@@ -90,14 +90,14 @@ Schema lines are `supabase/schema.sql` (last definition cited). Checked at HEAD 
 | SG UEN / reg. no. | js/quote.js:1751-1752 | Validation | CODE | — |
 | NRIC / IC / passport | js/supplierform.js:232 (`^\d{12}$`); js/personnel.js:49-51, :290 (masked fields); schema 124 hits | Field / validation | CODE | Masked in the DB (#1580) |
 | EPF / SOCSO / EIS / PCB | js/personnel.js:86-87, :866-886 (payroll export header) | Fields, export | CODE | Stored and exported only; no calculation |
-| Currency RM/S$ | js/money.js:19-20 (MYR/RM/en-MY, SGD/S$/en-SG); `clients.market` MY/SG schema.sql:45; `clients.bill_sgd` :73527 | Formatter | CODE (map) + Record | — |
+| Currency RM/S$ | js/money.js: the home market from the profile (`country`, `currency`, `currency_sign`, `locale`), SGD/S$/en-SG typed as the second market; `clients.market` MY/SG; `clients.bill_sgd` | Formatter | SETTING (profile) + CODE (SG) + Record | Release 18 |
 | FX RM→S$ | `fx_sgd` schema.sql:53124 (397 hits); js/money.js:307-322 | Rate | SETTING | — |
 | Market literals | schema.sql `'MY'` 163, `'SG'` 138 | Branching | CODE | — |
 | Bukku doc currency | schema.sql:132203 default `'MYR'` | Default | CODE | — |
-| Locales | `en-MY` / `en-SG` in 12 spots across 6 files (crm 3, money 3, quotes 3, ops, perf, personnel) | `toLocale` | CODE | — |
-| Malaysia time (SQL) | `Asia/Kuala_Lumpur` ×1298 in schema.sql | `at time zone` | CODE | — |
-| Malaysia time (JS) | js/clock.js:47 (`OFF = 8*3600000`), :60-61 (`+08:00`); `+08:00` in 11 files (overview 3, payments 2, clock 2, others 1 each); money.js:54, :63 timeZone | Clock | CODE | One copy in `ADspaceClock` (54 files use it); some files bypass it |
-| Malaysia time (functions) | bukku-sync 2, brand-analysis 1, meet-create 1 | TZ | CODE | — |
+| Locales | `ADspaceAgency.locale` (release 18); `en-SG` in money.js's SG market | `toLocale` | SETTING (profile) | — |
+| Malaysia time (SQL) | `agency_tz()` (the profile's `time_zone`) in every function's last definition, three defaults and two jobs; the literal stays only in bands before 2026-11-28 | `at time zone` | SETTING (profile) | Release 18, 2026-11-28: 205 functions restated (`tests/tzroute.js`, `countrysql`) |
+| Malaysia time (JS) | js/clock.js reads `ADspaceAgency.time_zone` (`ZONE`, `OFFSET`, `SUFFIX`); the 17 scripts that typed `+08:00`, `8 * 3600000` or the zone read them | Clock | SETTING (profile) | Release 18. Open: a zone that moves for summer (the offset is held at load); demo/engine.js still types it |
+| Malaysia time (functions) | meet-create reads the profile's `time_zone`; brand-analysis maps a client's market to a zone | TZ | SETTING / CODE | Release 18 |
 | Public holidays | `public_holidays` schema.sql:47131; edited in js/settings.js (21 hits); read by js/ops.js (8) | Table | SETTING | Seed is Johor 2026-2027, schema.sql:47223-47229 (CODE seed). No per-state column |
 | Phone | js/api.js:359-378 (`waNumber`, `phoneWord`: 0→60, 8 digits→65, +60/+65 formats); SQL `wa_number(p_raw, p_market)` schema.sql:39656 | Normalise / format | CODE | — |
 | Malaysian states | bukku-sync/index.ts:235-236 (16-state list); address parse :244-282 | Address split for Bukku | CODE | — |
@@ -200,7 +200,7 @@ One area per release. Sizes: **S** under half a day, **M** a day, **L** two or m
 | 15 | Consent and privacy lines (careers, supplier, details, personnel); Health agreement, feedback questions and checklist template get their editor | 3 | S | Ride-along per page |
 | 16 | First-visit guides (`admin.js` GUIDES), performance categories (`perf.js`), ad-report explainer (`smreport.js`) | 3 | S each | Ride-along |
 | 17 | AI prompts (8 functions) into the store, read by `_shared` | 3 | M | After 11 |
-| 18 | Country: time zone, currency, locale, tax labels and registration formats as profile settings; one BRN validator (one since 2026-11-28) | 2 | M | Last; only when a non-Malaysian install is sold. The BRN fix rides along with Clients |
+| 18 | Country: time zone, currency, locale, tax labels and registration formats as profile settings; one BRN validator (one since 2026-11-28) | 2 | M | Built 2026-11-28 (the user: "build it together just in case"): the profile's country keys, `agency_tz()` in every function, the clock and money; registration formats, the "SST" words outside money.js, cron hours and summer time queued (HANDOVER) |
 
 Releases 1, 5, 6 and 11 carry migrations and are major releases on their own PR (CLAUDE.md §3). Everything else is a train item.
 

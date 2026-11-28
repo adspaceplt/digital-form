@@ -65,14 +65,16 @@ Moved from `CLAUDE.md` §2, Writes, refusals, reversibility, on 2026-11-23: the 
   loop's targets are scalars alone: a row variable among them fails at run
   time, never at create time (2026-11-12, `review_revert_confirm`, caught
   live before it was applied).
-- A function's today, and a column's default day, is Malaysia's, `(now() at time zone 'Asia/Kuala_Lumpur')::date`,
+- A function's today, and a column's default day, is the agency's, `(now() at time zone public.agency_tz())::date`,
+  the zone read from the profile and never typed (`agency_tz()`, immutable so a plan folds it to the literal;
+  `tests/countrysql.js` fails a last definition typing a zone; 2026-11-28, release 18), and
   never `current_date` or `now()::date` (`tests/sql.js` reads every
   column's default; 2026-10-22, BE-9) (the database runs on UTC: yesterday
   until 8am; 2026-10-17, `tests/sql.js` reads every function's last
   definition). The database's TimeZone stays UTC: PostgREST writes timestamps
   in it and the pages read them so. Months are taken off Malaysia's local
   time before it is made a moment (`(date_trunc('month', now() at time zone
-  'Asia/Kuala_Lumpur') - interval '3 months') at time zone 'Asia/Kuala_Lumpur'`):
+  public.agency_tz()) - interval '3 months') at time zone public.agency_tz()`):
   `at time zone` binds before `-`, so the other order counts on UTC's
   calendar (2026-10-17, `portal_meetings`).
 - A day a function writes in words is `register_day` of its Malaysian day
