@@ -442,7 +442,7 @@
        not arrive in red where any did not. */
     var sent = all.filter(function (x) { return x.source !== 'signing'; });
     var bad = sent.filter(function (x) { return /^(bounced|complained|failed)$/.test(x.status); }).length;
-    ml.sub = [[sent.filter(function (x) { return x.status !== 'sending' && x.status !== 'failed'; }).length, 'sent'],
+    ml.sub = [[sent.filter(function (x) { return !/^(queued|sending|failed|cancelled)$/.test(x.status); }).length, 'sent'],
       [sent.filter(function (x) { return x.status === 'delivered' || x.status === 'opened'; }).length, 'delivered'],
       [sent.filter(function (x) { return x.status === 'opened'; }).length, 'opened'],
       bad ? [bad, 'not delivered', 'late'] : null];
