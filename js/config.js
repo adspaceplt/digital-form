@@ -10,50 +10,33 @@
  * The anon key is safe to publish. Every table is protected by row level
  * security and clients can only reach data through the token-checked functions.
  */
-/* The agency profile (restructure release 6, 2026-11-28): every value that
-   names the agency, the install's own copy and the pages' one read of it.
-   The database holds the same profile (`agency_profile`, read by `agency()`
-   and `agency_profile_read()`; the edge functions through
-   supabase/functions/_shared/agency.ts); `tests/agencysql.js` holds this
-   copy equal to its seed. ADSPACE_ORG and ADSPACE_CONFIG below read their
-   agency fields from here, never a copy of their own. */
+/* The agency profile: docs/rules/mechanisms.md. */
 window.ADspaceAgency = {
   trading_name: 'ADspace',
   legal_name: 'ADSPACE PLT',
-  reg_no: '202304002162',            // business registration no.
-  tax_no: 'J31-2401-32100002',       // SST registration no.
+  reg_no: '202304002162',
+  tax_no: 'J31-2401-32100002',
   address: '61-02 Jalan Mutiara Emas 2A\nTaman Mount Austin\n81100 Johor Bahru\nJohor, Malaysia',
   phone: '60187625233',
   website: 'adspacestudios.com',
-  // The office on Google Maps, through our own short link (2026-11-19):
-  // a candidate's Get directions and a namecard's address open it.
   map_url: 'https://hi.adspace.me/map',
   portal_domain: 'digital.adspace.me',
   link_domain: 'hi.adspace.me',
   sender_domain: 'sc.adspace.me',
   cdn_base: 'https://mycdn.adspace.me',
-  // The header wordmark, and the letterhead's monogram (the letterhead only).
   wordmark_url: 'https://mycdn.adspace.me/adspace-brandname.png',
   monogram_url: '/css/adspace-mark.png',
   favicon_url: '/favicon.ico',
   touch_icon_url: '/img/apple-touch-icon.png',
   icon_url: '/img/icon-512.png',
-  // The public page a letter's footer points to.
   verify_url: 'digital.adspace.me/verify',
-  // The agency's Service Terms, named by every quotation (its PDF and
-  // /quote/). Blank leaves the clause out.
   service_terms_url: 'hi.adspace.me/svc-terms',
-  // The brand's colours are the stylesheet's tokens, named here, never new.
   ink_token: '--ink',
   accent_token: '--action',
   ground_token: '--page',
-  // The General reply-to mailbox (the database's `mail_boxes` `general`,
-  // answered by the profile as `email`): the issuer's address on a letter.
   email: 'advertise@adspacestudios.com'
 };
 
-/* A field of `obj` that reads and writes the profile's `key`: one copy, so
-   a value set anywhere (the demo's own name) is the value read everywhere. */
 window.ADspaceAgency.alias = function (obj, map) {
   var A = window.ADspaceAgency;
   Object.keys(map).forEach(function (f) {
@@ -164,10 +147,6 @@ window.ADSPACE_CONFIG = {
      Blank hides the Drive section in admin. */
   googleApiKey: 'AIzaSyDKzn17TE3wimfU-nKlikwKta4pi8RKtNc',
 
-  /* brandLogo, agencyName, serviceTermsUrl, supportEmail, accountEmail
-     (the reply-to on anything sent on the team's behalf) and linkHost (the
-     host a new short link is written under; go.adspace.me retired
-     2026-11-26) are the agency profile's, aliased after this object. */
   /* The script, selection and creator links are written as short links
      (/s/, /c/, /p/ on the host above), answered by the links Worker
      (workers/links/worker.js, live 2026-10-13); false writes the long link. */

@@ -169716,8 +169716,9 @@ select public.functions_tidy();
 --     `mail_boxes` `general`, answered as `email`.
 --   * `agency(p_key)`: one value, the read every database function uses
 --     (the service role's and other functions' alone).
---   * `agency_profile_read()`: the whole profile, for a signed-in caller
---     and the edge functions (`_shared/agency.ts`).
+--   * `agency_profile_read()`: the whole profile, for a colleague and the
+--     edge functions (the service role; `_shared/agency.ts`), `denied` to
+--     anyone else.
 --   * `mail_senders`: the sending domain is the profile's `sender_domain`,
 --     checked by a trigger on every write, in place of the domains its
 --     address check typed.
@@ -169779,10 +169780,14 @@ grant execute on function public.agency(text) to service_role;
 
 create or replace function public.agency_profile_read()
 returns jsonb
-language sql stable security definer set search_path = public as $$
-  select coalesce((select jsonb_object_agg(a.key, a.value) from public.agency_profile a), '{}'::jsonb)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not (public.is_team() or coalesce(auth.jwt() ->> 'role', '') = 'service_role') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  return coalesce((select jsonb_object_agg(a.key, a.value) from public.agency_profile a), '{}'::jsonb)
       || jsonb_build_object('email', (select b.address from public.mail_boxes b where b.key = 'general'));
-$$;
+end $$;
 revoke all on function public.agency_profile_read() from public, anon;
 grant execute on function public.agency_profile_read() to authenticated, service_role;
 

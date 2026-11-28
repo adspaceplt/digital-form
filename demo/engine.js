@@ -16225,7 +16225,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     }
 
     if (name === 'agency_profile_read') {
-      if (!session) return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function agency_profile_read' } });
+      if (!opsMe()) return Promise.resolve({ data: { error: 'denied' }, error: null });
       var agp = {}, AG = window.ADspaceAgency || {};
       Object.keys(AG).forEach(function (k) { if (typeof AG[k] !== 'function' && k !== 'email') agp[k] = AG[k]; });
       agp.email = (mailBoxes().filter(function (b) { return b.key === 'general'; })[0] || {}).address || null;

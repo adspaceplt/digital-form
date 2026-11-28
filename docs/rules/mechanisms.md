@@ -5,8 +5,8 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
 
 - The agency profile (restructure release 6, 2026-11-28) is the one source
   of every value that names the agency: `agency_profile` in the database
-  (`agency(key)` for a function, `agency_profile_read()` for a signed-in
-  caller and the edge functions through `_shared/agency.ts`), and on the
+  (`agency(key)` for a function, `agency_profile_read()` for a colleague
+  and the edge functions through `_shared/agency.ts`), and on the
   page `window.ADspaceAgency` in `js/config.js`, the install's copy, held
   equal to the seed by `tests/agencysql.js`. `ADSPACE_ORG` and
   `ADSPACE_CONFIG`'s agency fields alias it (`ADspaceAgency.alias`), never a

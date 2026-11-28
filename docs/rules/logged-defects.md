@@ -78,3 +78,9 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   repository's main (f69f372) does not yet, so a rebuild from today's
   stand-in would take that behaviour out of the demo. Not rebuilt here.
   Held until the stand-in and the engine agree.
+- 2026-11-28, `quotesite` (AGENCY PROFILE's affected run): "a lead nobody
+  holds keeps the page within the screen, Take lead on the head" and "Take
+  lead stands under the name at its own width" fail at 1280 and 390 (Take
+  lead drawn 325px and 33px left of the name); the same four fail on main
+  f1160c8 with the tests' main, so they came with OWNERS BY ID (#1596), not
+  this release. Held until a Clients release fixes the head's layout.
