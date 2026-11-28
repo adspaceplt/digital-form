@@ -874,7 +874,7 @@ creator-mail, supplier-mail, quote-request, portal-login, push-send, wa-send: no
 | 53 | script-pictures | `SYSTEM` 56-70 |
 | 54 | analytics-read | `SYSTEM` 55-79; `SCHEMA` 81 |
 
-meta-import calls no model. No prompt is stored in the database or `app_settings`.
+meta-import calls no model. No prompt is stored in the database or `app_settings`. Since 2026-11-28 (release 17) the 18 prompt constants are `ai-prompt` templates read by `_shared/prompts.ts`; the line numbers above are 561ccbb's; `TOOLS`, `SUBMIT` and `SCHEMA` stay in code.
 
 ### D.6 Neutral UI (labels, buttons, refusals, empty states)
 

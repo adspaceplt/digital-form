@@ -44,6 +44,7 @@ Moved whole from `CLAUDE.md` §3 Git and delivery, which keeps a one-line pointe
   writes such characters as themselves, keeping the read-back byte for byte.
   A function that imports `../_shared/` is sent with that file in the same
   call (`wa-send`, `supplier-mail`: `_shared/pdfref.ts`; `supplier-mail`,
-  `bukku-sync`: `_shared/mail.ts`, the one email layout and Resend send; every function a
+  `bukku-sync`: `_shared/mail.ts`, the one email layout and Resend send; the eight AI
+  functions: `_shared/prompts.ts`, the one read of their prompts; every function a
   browser calls: `_shared/cors.ts`, the one list of origins and the one
   answer's headers, `tests/mailfn.js`), and both read back.

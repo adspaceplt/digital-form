@@ -1,4 +1,4 @@
-<!-- triggers: js/api.js js/money.js js/acts.js js/clock.js js/otp.js js/copy.js js/icons.js js/words.js js/captcha.js js/decide.js js/swipe.js js/chart.js js/tpl.js -->
+<!-- triggers: js/api.js js/money.js js/acts.js js/clock.js js/otp.js js/copy.js js/icons.js js/words.js js/captcha.js js/decide.js js/swipe.js js/chart.js js/tpl.js supabase/functions/_shared/prompts.ts -->
 # Shared mechanisms
 
 Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is the one copy of its mechanism: no page keeps its own.
@@ -29,6 +29,15 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   `codeEmail` are async), and the links Worker its own settings
   (`PORTAL_URL`, `HOME_URL`, `AGENCY_NAME`, `WORDMARK_URL`), set equal to
   the profile because the public key it reads with is not answered it.
+- Every prompt an edge function sends Claude (restructure release 17,
+  2026-11-28) is a template in the store (`templates`, kind `ai-prompt`,
+  English, key `ai.{function}.{part}`), read by `_shared/prompts.ts`
+  (`prompts(db, keys)` through `template_render` as the colleague, before a
+  press is counted; a prompt names another by `{ai.key}`), never a literal
+  in a function. A key not live answers `ai-not-set-up` and sends nothing;
+  the seed lives in the private tests repository (`prompts/`), never in
+  this public one (`tests/promptstore.js`). Tool and schema descriptions
+  stay with the code that reads their answers.
 - `js/api.js` is the only Supabase client. Demo content is only for a copy
   with no database configured: a configured page whose database library
   failed to load reads Unable to load and records nothing, and a review
