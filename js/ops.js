@@ -1334,7 +1334,7 @@
       }));
     // A report submitted to you to confirm.
     if (may('reports', 'view')) jobs.push(got(db.from('sm_reports')
-      .select('id, kind, title, period_start, period_end, submitted_at, submitted_by, brand_name, client_id, clients(name)')
+      .select('id, kind, title, period_start, period_end, submitted_at, submitted_by, brand_name, client_id, clients!sm_reports_client_id_fkey(name)')
       .eq('status', 'review').eq('reviewer_id', me.id), 'Reports').then(function (list) {
         (list || []).forEach(function (r) {
           var SM = window.ADspaceSmReport, MON = window.ADspaceMoney;

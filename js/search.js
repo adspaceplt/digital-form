@@ -263,7 +263,7 @@
     { key: 'reports', head: 'Reports', can: function () { return may('reports'); },
       read: function (q) {
         return clientsFor(q).then(function (ids) {
-          return read(db.from('sm_reports').select('id, kind, title, period_start, period_end, status, brand_name, client_id, clients(name, client_code)')
+          return read(db.from('sm_reports').select('id, kind, title, period_start, period_end, status, brand_name, client_id, clients!sm_reports_client_id_fkey(name, client_code)')
             .or(orClient(any(['title', 'brand_name'], q), ids)).order('period_start', { ascending: false }).limit(LIMIT));
         });
       },
@@ -283,7 +283,7 @@
         var direct = clientRows(q).then(function (r) { return r.error ? r : { rows: (r.rows || []).slice(0, LIMIT) }; });
         var none = Promise.resolve({ rows: [] });
         var people = !may('clients.contacts') ? none : read(db.from('client_contacts')
-          .select('name, email, phone, client_id, clients(id, slug, name, client_code, stage)')
+          .select('name, email, phone, client_id, clients!client_contacts_client_id_fkey(id, slug, name, client_code, stage)')
           .is('archived_at', null).or(any(['name', 'email', 'phone'], q)).order('name').limit(LIMIT));
         /* A billing entity by its registered name or registration no.
            (2026-10-29), each client it bills, opening its Billing. A
