@@ -1310,7 +1310,7 @@
        call moves the stage, which reads the client back, and that used to
        throw somebody out of the pane they were working in. */
     var same = Boolean(state.client && state.client.id === c.id);
-    if (!same) { state.contacts = []; state.contactsFor = null; state.emailsFor = null; state.log = []; state.touches = []; state.touchesGone = []; state.touchesRead = null; state.ovFail = {}; state.quotes = null; ba.id = null; if (document.querySelector('[data-a="delclient"]')) document.querySelector('[data-a="delclient"]').hidden = false; if ($('crmQuotes')) $('crmQuotes').hidden = true; }
+    if (!same) { state.contacts = []; state.contactsFor = null; state.emailsFor = null; state.log = []; state.logDays = 0; state.touches = []; state.touchesGone = []; state.touchesRead = null; state.ovFail = {}; state.quotes = null; ba.id = null; if (document.querySelector('[data-a="delclient"]')) document.querySelector('[data-a="delclient"]').hidden = false; if ($('crmQuotes')) $('crmQuotes').hidden = true; }
     /* A record opens at its top. Opened from a list scrolled down, it kept
        the list's scroll and drew halfway down its own page (2026-09-28). A
        refresh restores its own place (`restoring`). */
@@ -1643,6 +1643,7 @@
       /* Kept so the rail can show the last three without a second read: the
          record has already paid for this one. */
       state.log = rows;
+      state.logDays = pg.more && !rows.length ? pg.days : 0;
       railLog();
       /* One line an entry, the client named once by the record itself. */
       box.innerHTML = '<div class="softpanel recpanel"></div>';
@@ -2788,12 +2789,16 @@
 
   /* The last few entries the portal wrote about this client. The whole record
      is one tab away; this is the excerpt, and it draws nothing at all until
-     that read has landed. */
+     that read has landed. A history older than the window reads as the
+     Activity pane does (`recentNone`), its View all kept: only a client
+     with no history at all draws no block. */
   function railLog() {
     var block = $('crmRailLogBlock'), box = $('crmRailLog');
     if (!block || !box) return;
-    if (!(state.log || []).length) { block.hidden = true; box.innerHTML = ''; lastRule(); return; }
-    window.ADspaceRecords.paint(box, (state.log || []).map(recordOf), { limit: 3 });
+    var R = window.ADspaceRecords;
+    if (!(state.log || []).length && !state.logDays) { block.hidden = true; box.innerHTML = ''; lastRule(); return; }
+    if (!(state.log || []).length) box.innerHTML = ovNone(R.none(state.logDays));
+    else R.paint(box, state.log.map(recordOf), { limit: 3 });
     block.hidden = false;
     lastRule();
   }

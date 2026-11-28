@@ -41,7 +41,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   function's `campaign.*` / `creator.*` line from `activity_campaign_note`,
   `activity_creator_note` and `activity_log_ids`), and their panes read by it.
 - The Activity record reads its chosen section alone (`.in('action', actionsOf(k))`), newest first, 200 a page; a failed read is `failLine` with Try again (ACT-1, ACT-2, 2026-10-22).
-- Every list of `activity_log` rows (the Activity record, a client's Activity and its rail, a campaign's, a creator's) opens on its last days (`activity_window_days`, 7, Settings, Company, Activity history) through `ADspaceRecords.pager`, Show more (`ADspaceRecords.earlier`) reading older entries a page at a time, a window holding none reading `ADspaceWords.line.recentNone`; Performance's steps stand beside it only as far back as the log is read (2026-11-28).
+- Every list of `activity_log` rows (the Activity record, a client's Activity and its rail, a campaign's, a creator's) opens on its last days (`activity_window_days`, 7, Settings, Company, Activity history) through `ADspaceRecords.pager`, Show more (`ADspaceRecords.earlier`) reading older entries a page at a time, a window holding none reading `ADspaceWords.line.recentNone` (a client's rail too, its View all kept: only a client with no history at all draws no block, 2026-11-28); Performance's steps stand beside it only as far back as the log is read (2026-11-28).
 - Every history (the Activity record, a client's and a campaign's Activity and
   rail, a task's log and recent activity, and every Performance history) is
   drawn by `js/records.js`
