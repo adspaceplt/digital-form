@@ -87,7 +87,7 @@
       ik: {
         secContact: 'Contact person', secBiz: 'Business registration', secBrand: 'Brand', secStart: 'Commencement',
         kind: 'Registering as', kinds: [['company', 'Company'], ['soleprop', 'Sole / Partnership']],
-        brn: 'Business Registration No. (BRN)', legal: 'Registered Name', site: 'Website', noSite: 'No website',
+        brn: 'Business Registration No. (BRN)', brnPh: '12 digits', legal: 'Registered Name', site: 'Website', noSite: 'No website',
         plat: 'Platform', plats: [['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['xhs', 'rednote']],
         handle: 'Social media account', comments: 'Comments',
         say: { brn: window.ADspaceWords.en.brnBad,
@@ -268,7 +268,7 @@
       ik: {
         secContact: '联系人', secBiz: '商业登记', secBrand: '品牌', secStart: '开始时间',
         kind: '登记类别', kinds: [['company', '公司'], ['soleprop', '独资 / 合伙']],
-        brn: '商业注册号码（BRN）', legal: '注册名称', site: '网站', noSite: '没有网站',
+        brn: '商业注册号码（BRN）', brnPh: '12位数字', legal: '注册名称', site: '网站', noSite: '没有网站',
         plat: '平台', plats: [['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['xhs', '小红书']],
         handle: '社交媒体账号', comments: '备注',
         say: { brn: window.ADspaceWords.zh.brnBad,
@@ -892,7 +892,7 @@
   function regHtml(c) {
     var k = t().ik;
     return seg('qsKind', k.kind, k.kinds, c.kind || 'company') +
-      pair(field('qsBrn', k.brn, true, '<input class="input" id="qsBrn" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="202301012345" aria-required="true" value="' + esc(c.brn) + '">'),
+      pair(field('qsBrn', k.brn, true, '<input class="input" id="qsBrn" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="' + esc(k.brnPh) + '" aria-required="true" value="' + esc(c.brn) + '">'),
         field('qsLegal', k.legal, true, '<input class="input qs-caps" id="qsLegal" autocomplete="organization" placeholder="ADSPACE ADVERTISING SDN BHD" aria-required="true" value="' + esc(c.legal) + '">'));
   }
   function industryHtml(c) {
