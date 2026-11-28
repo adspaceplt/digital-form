@@ -154,6 +154,7 @@
     wa_templates_read: '',
     wa_messages: 'p_month',
     mail_log: 'p_month',
+    mail_cancel: 'p_source p_id',
     mail_senders_read: '',
     agency_profile_read: '',
     mail_boxes_set: 'p_values',
@@ -316,7 +317,7 @@
     hiring_doc_pay_set: 'p_doc p_basic p_probation p_token', hiring_doc_pay_get: 'p_doc p_token', hiring_doc_send: 'p_doc',
     hiring_doc_withdraw: 'p_doc p_restore', hiring_doc_mark: 'p_doc p_route p_on p_path', hiring_doc_send_back: 'p_doc p_note',
     hiring_doc_confirm: 'p_doc p_stamp_no p_stamp_path', hiring_doc_signed: 'p_doc p_token', hiring_doc_seal: 'p_doc p_path p_sha p_pages_sha',
-    hiring_doc_void: 'p_doc p_note', hiring_doc_replace: 'p_doc', hiring_doc_delete: 'p_doc p_serial', hiring_doc_record: 'p_doc',
+    hiring_doc_void: 'p_doc p_note', hiring_doc_replace: 'p_doc', hiring_doc_delete: 'p_doc p_serial', hiring_doc_record: 'p_doc', hiring_doc_wording: 'p_doc',
     hiring_doc_mail_prepare: 'p_doc', hiring_doc_mail_done: 'p_doc p_status p_error',
     hiring_confirmed_mail_prepare: 'p_doc', hiring_confirmed_mail_done: 'p_doc p_status p_error',
     hiring_hire_state: 'p_id', hiring_make_colleague: 'p_id p_values', welcome_kit_get: '', welcome_kit_save: 'p_sections p_expected',
@@ -5978,6 +5979,32 @@ function cardSlugFree(name, self, email) {
     return window.__bukkuAccounts || [{ id: 100, code: '6000-03', name: 'Cost of Sales - Influencers', type: 'cost_of_sales' },
       { id: 610, code: '6100', name: 'Creator fees', type: 'cost_of_sales' }, { id: 620, code: '6200', name: 'Advertising', type: 'expenses' }];
   }
+
+  function undoQueue(src, table, key, logId, close) {
+    var secs = Number(window.__undoSeconds) || 0;
+    if (!(secs > 0)) return null;
+    var row = (DB[table] || []).filter(function (x) { return x.id === logId; })[0];
+    if (!row) return null;
+    row[key] = 'queued';
+    DB.mail_queue = DB.mail_queue || [];
+    var me = opsMe() || {};
+    var q = { id: nid('mq'), source: src, table: table, key: key, log_id: logId, status: 'queued', queued_by: me.id || null,
+      send_at: new Date(Date.now() + secs * 1000).toISOString(), created_at: new Date().toISOString() };
+    DB.mail_queue.push(q);
+    persist();
+    setTimeout(function () {
+      var x = (DB.mail_queue || []).filter(function (y) { return y.id === q.id; })[0];
+      var r = x && (DB[table] || []).filter(function (y) { return y.id === logId; })[0];
+      if (!x || x.status !== 'queued' || !r) return;
+      x.status = 'sending'; r[key] = 'sending';
+      persist();
+      window.__undoSent = (window.__undoSent || []).concat([{ source: src, id: logId }]);
+      Promise.resolve(close(window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent')).then(function () {
+        x.status = r[key] === 'sending' ? 'unknown' : r[key]; persist();
+      });
+    }, secs * 1000);
+    return { source: src, id: logId, seconds: secs, send_at: q.send_at };
+  }
   function opsMe() {
     var e = String((session && session.user && session.user.email) || '').toLowerCase();
 
@@ -6138,8 +6165,37 @@ function cardSlugFree(name, self, email) {
     feedback: ['contact name', 'client name', 'link'],
     quote: ['contact name', 'brand', 'reference', 'details', 'reply by', 'link'],
     candidate: ['candidate name', 'position', 'interview length', 'where', 'times', 'reply by', 'note', 'time', 'previous time', 'new time', 'place', 'google meet notice',
-      'decision date', 'months', 'document', 'reference', 'requested action', 'purpose', 'reason', 'document date', 'contact', 'sign-off', 'button']
+      'decision date', 'months', 'document', 'reference', 'requested action', 'purpose', 'reason', 'document date', 'contact', 'sign-off', 'button'],
+    'hr-document': ['agency name', 'position', 'duties', 'start', 'end', 'place', 'probation', 'salary', 'salary in words', 'probation salary',
+      'probation salary in words', 'reply days']
   };
+
+  var HR_SEED = {"hr.declare": {"subject": "", "body": "I have read and fully understood the contents of this offer letter and contract, and I accept all the terms and conditions herein.", "version": 1}, "hr.offer.lead": {"subject": "", "body": "{agency name} is pleased to offer you employment, subject to the terms and conditions of the employment contract.", "version": 1}, "hr.offer.reply": {"subject": "", "body": "Kindly indicate your acceptance of this offer on your application page within {reply days} from the date of this letter. Please note that this is not an employment contract. A formal employment contract will be issued upon confirmation of acceptance.\n\nThank you.", "version": 1}, "hr.offer.accepted": {"subject": "", "body": "I accept this Employment Offer.", "version": 1}, "hr.offer.pending": {"subject": "", "body": "Acceptance is given on the application page.", "version": 1}, "hr.contract.lead": {"subject": "", "body": "With reference to your recent application and interviews, {agency name} is pleased to offer you employment as {position} on the following terms and conditions:", "version": 1}, "hr.contract.close": {"subject": "", "body": "If the above terms and conditions are agreeable to you, please sign this contract on your application page as soon as possible.\n\nThis letter, when signed by the applicant, will constitute a binding contract.", "version": 1}, "hr.contract.nature": {"subject": "NATURE OF WORKS", "body": "{duties} In addition to normal duties, you may from time to time be required to render such other duties and services as may be necessary to meet the needs of the company’s business.", "version": 1}, "hr.contract.commencement": {"subject": "DATE OF COMMENCEMENT", "body": "Your employment shall commence on {start}.", "version": 1}, "hr.contract.ends": {"subject": "", "body": "This contract ends on {end}.", "version": 1}, "hr.contract.hours": {"subject": "WORKING HOURS", "body": "Normal hours of work are 8 hours per day for five days a week and one hour lunch break. The nature of the work may require you to extend your service beyond the normal working hours in fulfilment of your duties and responsibilities.\n\nYou will not receive overtime payments in respect of any such working time unless provided for in law or you are eligible for overtime pay under the Company’s policies or guidelines.\n\nThe Company additionally reserves its right to change or substitute your scheduled work hours or workdays/off days to meet business needs. The Company reserves the right to exclude office holiday(s) to staff depending on their workload / work schedule and/or programs.", "version": 1}, "hr.contract.place": {"subject": "PLACE OF EMPLOYMENT", "body": "During the term of your employment, the Management reserves the right to transfer you to other location/position within the {agency name} group of companies, departments, and associated companies.", "version": 1}, "hr.contract.place-named": {"subject": "", "body": "Your place of employment will be at {place} but this location may change from time to time.", "version": 1}, "hr.contract.place-office": {"subject": "", "body": "Your place of employment will be at the {agency name} registered office but this location may change from time to time.", "version": 1}, "hr.contract.probation": {"subject": "PROBATIONARY PERIOD", "body": "You are required to serve a probationary period of {probation} during which time your employment may be terminated by either party giving the other FOURTEEN (14) days' notice of termination or equivalent to FOURTEEN (14) days' salary in lieu of the notice.\n\nThis probationary period may be extended on reasonable grounds.\n\nYou are not entitled to paid annual leave during probationary period. If you have been absent from work for more than 3 consecutive working days without prior approval or leave from the company and without valid reason, your employment with the Company will be deemed terminated.", "version": 1}, "hr.contract.probation-intern": {"subject": "", "body": "(For “Internship” position, this is equivalent to your Internship Programme)", "version": 1}, "hr.contract.salary": {"subject": "SALARY, BONUS AND ADVANCE WAGES", "body": "No advance wages will be payable.\n\nPayment of bonus and annual increment (if any) is based on your performance, the Company’s profit and the overall market/economic condition and is solely at the absolute discretion of the Company.", "version": 1}, "hr.contract.salary-probation": {"subject": "", "body": "The basic salary at the commencement of the employment will be {probation salary in words} ({probation salary}) per month during probationary period; {salary in words} ({salary}) after completion of probation, payable on or before the 7th day after each calendar month.", "version": 1}, "hr.contract.salary-basic": {"subject": "", "body": "The basic salary at the commencement of the employment will be {salary in words} ({salary}) per month, payable on or before the 7th day after each calendar month.", "version": 1}, "hr.contract.salary-unset": {"subject": "", "body": "The basic salary is stated in the copy sent to you.", "version": 1}, "hr.contract.deductions": {"subject": "DEDUCTIONS", "body": "The Company reserves the right in its absolute discretion to deduct from your pay the Employee’s contribution to Employees’ Provident Fund (EPF), Social Security Organisation (SOCSO), Employment Insurance System (EIS) and any sums which you may owe to the Company including, but without limitation, any overpayments or losses suffered by the Company as a result of your negligence or breach of the Company’s rules or terms.", "version": 1}, "hr.contract.deductions-no-statutory": {"subject": "DEDUCTIONS", "body": "The Company reserves the right in its absolute discretion to deduct from your pay any sums which you may owe to the Company including, but without limitation, any overpayments or losses suffered by the Company as a result of your negligence or breach of the Company’s rules or terms.\n\nThe Employee shall not be entitled to contributions under the Employees Provident Fund Act 1991, the Employees’ Social Security Act 1969 or the Employment Insurance System Act 2017.", "version": 1}, "hr.contract.rest-days": {"subject": "REST DAYS AND PUBLIC HOLIDAYS", "body": "You are entitled to ELEVEN (11) paid public holidays that are gazetted under the Public Holidays Ordinance and five of which, namely the National Day, Malaysia Day, the Birthday of the Yang Di-Pertuan Agong, the Birthday of Sultan of Johor and Labour Day are compulsory.\n\nThe remainder will be determined by the Company. You may refer to the Company’s internal list of public holidays for more information.", "version": 1}, "hr.contract.annual-leave": {"subject": "ANNUAL LEAVE", "body": "Upon confirmation as permanent employee, you are entitled to paid annual leave of:\n\n[a] eight (8) days for every twelve (12) months of continuous service with the Company for the first two (2) years with the Company;\n\n[b] twelve (12) days for every twelve (12) months of continuous service with the Company from the third year onwards; and\n\n[c] sixteen (16) days for every twelve (12) months of continuous service with the Company from the sixth year onwards.\n\nIf your employment commences or terminates part way through the year, your entitlement to the annual leave during the year will be assessed on a pro-rata basis and deductions from final salary due to your termination of employment will be made in respect of the annual leaves taken in excess of entitlement.\n\nAnnual leave must be taken at times convenient to the Company and at least seven (7) days’ advance notice to take annual leave must be given to the Company. No more than seven (7) days’ annual leave may be taken at any one time unless permission is given by the Company through the Employee’s Direct Manager.\n\nEmergency Leave is strictly for emergency and limited to unavoidable circumstances such as family member in serious illness or funeral. Disciplinary action will be taken against those who do not have a valid reason for their emergency leave. You are required to inform your Direct Manager personally at the earliest time of the day.", "version": 1}, "hr.contract.sick-leave": {"subject": "SICK LEAVE", "body": "You shall, after examination by a registered medical practitioner duly appointed by the Company; or a medical officer of the General Hospital or Government Clinic, be entitled to paid sick leave of a maximum of fourteen (14) days in the aggregate in each calendar year.\n\nThe Company does not provide medical expenses reimbursements in respect of the hospitalization, dental treatments, specialists, and/or Chinese Physician treatments.", "version": 1}, "hr.contract.absence": {"subject": "NOTIFICATION OF SICKNESS OR OTHER ABSENCE", "body": "If you are unable to attend work for any reason and the absence has not previously been authorized by the Company, you must inform the Company of the fact of your absence and the full reasons for it on each working day of absence until the Company is provided with a medical certificate, failing which you shall be deemed as absent without reason and may be subject to disciplinary action.\n\nIf you are absent from work without any reason, that shall be considered taking unpaid leave without prejudice to the Company’s right to impose disciplinary action against you.", "version": 1}, "hr.contract.parental-leave": {"subject": "PATERNITY / MATERNITY LEAVE", "body": "You are entitled to a paid maternity leave of 98 days or paternity leave of 7 days consecutively including the public holidays and weekends/rest days during the period of childbirth in accordance with Section 37 and Section 60FA of the Employment Act.", "version": 1}, "hr.contract.notice": {"subject": "NOTICE OF TERMINATION", "body": "If your employment continues after the end of the probationary period, your employment with the Company may be terminated by giving the Company at least TWO (2) months’ notice or equivalent of TWO (2) months’ salary in lieu of the notice.", "version": 1}, "hr.contract.breach": {"subject": "BREACH AND TERMINATION", "body": "This contract is breached and terminated when you are found guilty of misconduct, whether in the course of your duties or not, inconsistent with the fulfilment of the express or implied conditions of this contract, including but not limited to the following:\n\n[a] For dishonesty particularly the misappropriation of the Company’s assets of any kind;\n\n[b] For stealing and/or taking goods without authorization of the Company;\n\n[c] Indecent and immoral acts during working hours;\n\n[d] Guilty of any criminal offences;\n\n[e] For wilful disobedience to lawful orders and instructions given by the Company and or insubordination;\n\n[f] For lack of skill which you have expressly or impliedly warrant yourself to possess;\n\n[g] For absence from work without leave from the Company or absence without any reasonable excuse.", "version": 1}, "hr.contract.conflict": {"subject": "CONFLICT OF INTEREST", "body": "You must devote the whole of your time, attention and abilities during the hours of work for the Company to your duties for the Company. You may not, under any circumstances, whether directly or indirectly undertake any other duties, of whatever kind during the hours of work for the Company.\n\nYou may not without the knowledge and prior written consent of the Company engage, whether directly or indirectly, in any business or employment which could or might reasonably be considered by others to impair your ability to act at all times in the best interests of the Company.\n\nYou must not own shares in a non-listed competitor.", "version": 1}, "hr.contract.confidentiality": {"subject": "CONFIDENTIALITY", "body": "You must not at any time during or after your employment, in any fashion, form, or manner, either directly or indirectly divulge, disclose, or communicate to any person, firm or corporation in any manner whatsoever any information of any kind, nature or description concerning any matters affecting or relating to the business of the Company or any information concerning the business of the Company, its manner of operation, or its plans, processes, or other facts of any kind, nature, or description without regard to whether any or all of the foregoing matters would be deemed confidential, material, or important.\n\nThe parties hereby stipulate that as between them, the foregoing matters are important, material, and confidential and gravely affect the effectiveness and successful conduct of the business of the Company, and its goodwill, and that any breach of the terms of this section is a material breach of this contract.", "version": 1}, "hr.contract.non-compete": {"subject": "NON-COMPETE CLAUSE", "body": "You agree that, during your employment with the Company and for a period of two (2) years following the termination of your employment, regardless of the reason for termination, you shall not, directly or indirectly, within Malaysia:\n\n[a] Engage in or render services to any business in direct competition with the Company;\n\n[b] Solicit, divert, or appropriate, or attempt to solicit, divert, or appropriate, any customer or client of the Company with whom you had material contact during your employment;\n\n[c] Solicit, encourage, or induce any employee, consultant, or contractor of the Company to terminate or modify their relationship with the Company.\n\nThis restriction shall not prevent you from working for a non-competitive organization or engaging in activities not directly related to the business of the Company.", "version": 1}, "hr.contract.policies": {"subject": "COMPLIANCE WITH COMPANY POLICIES AND GUIDELINES", "body": "[a] Compliance with Company Policies\n\nYou agree to adhere and comply with all policies, guidelines, procedures, rules, and regulations established by the Company (collectively referred as the “Company Policies”), as may be updated or amended from time to time at the Company’s sole discretion.\n\n[b] Duty to Stay Informed\n\nIt is your responsibility to familiarize yourself with the Company Policies and any subsequent updates or amendments. Failure to comply with the Company Policies may result in disciplinary action, up to and including termination of employment.\n\n[c] Binding Nature\n\nCompliance with the Company Policies is a condition of your continued employment. Any violation may constitute grounds for disciplinary measures, including but not limited to termination.", "version": 1}, "hr.contract.compensation": {"subject": "COMPENSATION", "body": "You shall be responsible to indemnify the Company for any loss or damages against the Company’s Property as a result of your wilful acts and/or negligence.", "version": 1}, "hr.contract.changes": {"subject": "CHANGES TO THE TERMS OF EMPLOYMENT", "body": "The Company reserves the right to make reasonable changes to any of the terms and conditions of employment and will notify you in writing of such changes at the earliest opportunity and, in any event, within one month after such changes have taken effect.\n\nSuch changes will be deemed to be accepted unless you notify the Company of any objection in writing before the expiry of the notice period.", "version": 1}};
+
+  function tplStore() {
+    if (!DB.templates) DB.templates = [
+      { id: nid('tp'), key: 'sample.greeting', kind: 'client', language: 'en', version: 1, subject: 'Sample for {client name}',
+        body: 'Dear {contact name},\n\nThis is a sample template for {client name}.\n\n{sender name}', status: 'live', effective_from: '2026-01-01', sample: true },
+      { id: nid('tp'), key: 'sample.greeting', kind: 'client', language: 'zh', version: 1, subject: '{client name}示例',
+        body: '{contact name}您好：\n\n这是{client name}的示例模板。\n\n{sender name}', status: 'live', effective_from: '2026-01-01', sample: true }];
+    Object.keys(HR_SEED).forEach(function (k) {
+      if (DB.templates.some(function (x) { return x.key === k && x.language === 'en'; })) return;
+      DB.templates.push({ id: nid('tp'), key: k, kind: 'hr-document', language: 'en', version: 1, subject: HR_SEED[k].subject, body: HR_SEED[k].body,
+        status: 'live', effective_from: '2026-01-01', sample: false });
+    });
+    return DB.templates;
+  }
+
+  function hrWording(at) {
+    var out = {};
+    tplStore().forEach(function (x) {
+      if (x.kind !== 'hr-document' || x.language !== 'en' || x.status !== 'live' || x.effective_from > at) return;
+      var cur = out[x.key];
+      if (!cur || x.effective_from > cur.from || (x.effective_from === cur.from && x.version > cur.version)) out[x.key] = { subject: x.subject, body: x.body, version: x.version, from: x.effective_from };
+    });
+    Object.keys(out).forEach(function (k) { delete out[k].from; });
+    return window.__noHrWording ? {} : out;
+  }
 
   function clientRep(c, purpose) {
     if (!c) return null;
@@ -16117,7 +16173,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return { source: 'manual', id: e.id, kind: 'message', to_email: e.to_email, to_name: e.to_name || null, cc_email: e.cc_email || null,
               subject: e.subject, body: e.body, reference: e.attachment || null, status: e.status, error: e.error || null,
               created_at: e.created_at, sent_at: e.sent_at || null, delivered_at: e.delivered_at || null, opened_at: e.opened_at || null,
-              bounced_at: e.bounced_at || null, sent_by: who ? who.name : null, client_id: e.client_id };
+              bounced_at: e.bounced_at || null, sent_by: who ? who.name : null, sent_by_id: e.sent_by || null, client_id: e.client_id };
           }) });
       }
       if (!opsAllowed('whatsapp', 'work')) return emNo('denied');
@@ -16231,6 +16287,29 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: { ok: true, id: caId }, error: null });
     }
+    if (name === 'mail_cancel') {
+      var mcMe = opsMe();
+      if (!mcMe) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var mq = (DB.mail_queue || []).filter(function (x) { return x.source === args.p_source && x.log_id === args.p_id; })[0];
+
+      var mqc = !mq && args.p_source === 'system' && (DB.hiring_candidates || []).filter(function (x) { return x.id === args.p_id; })[0];
+      if (mqc) {
+        if (mqc.outcome_mail === 'cancelled') return Promise.resolve({ data: { ok: true, same: true }, error: null });
+        if (mqc.outcome_mail !== 'queued') return Promise.resolve({ data: { error: 'sent' }, error: null });
+        mqc.outcome_mail = 'cancelled'; mqc.outcome_mail_due = null; persist();
+        return Promise.resolve({ data: { ok: true }, error: null });
+      }
+      if (!mq) return Promise.resolve({ data: { error: 'not-found' }, error: null });
+      if (mq.queued_by !== mcMe.id && !opsAllowed('whatsapp', 'manage')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      if (mq.status === 'cancelled') return Promise.resolve({ data: { ok: true, same: true }, error: null });
+      if (mq.status !== 'queued') return Promise.resolve({ data: { error: 'sent' }, error: null });
+      mq.status = 'cancelled'; mq.cancelled_by = mcMe.id;
+      var mr = (DB[mq.table] || []).filter(function (x) { return x.id === mq.log_id; })[0];
+      if (mr) { mr[mq.key] = 'cancelled'; if (mq.table === 'feedback_requests' && !mr.closed_at) { mr.closed_at = new Date().toISOString(); mr.closed_reason = 'withdrawn'; } }
+      DB.activity_log.unshift({ id: nid('al'), actor: mcMe.name, action: 'email.sent', subject: 'Email', detail: 'Email · email to the recipient cancelled before it was sent', created_at: new Date().toISOString() });
+      persist();
+      return Promise.resolve({ data: { ok: true }, error: null });
+    }
     if (name === 'mail_log') {
       if (window.__refuseRpc && window.__refuseRpc.mail_log) return Promise.resolve({ data: null, error: { message: window.__refuseRpc.mail_log } });
       if (!opsAllowed('whatsapp', 'view')) return Promise.resolve({ data: { error: 'denied' }, error: null });
@@ -16245,7 +16324,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var mlFree = function () { var me = opsMe(); return !!me && (me.is_admin || (me.client_scope || 'all') !== 'own'); };
       var mlSeen = function (cid) { return cid ? scopeSeen(cid, 'view') : mlFree(); };
       var mlBase = function (e) { return { id: e.id, to_email: e.to_email, cc_email: e.cc_email || null, subject: e.subject, body: e.body,
-        sent_by: mlWho(e.sent_by, e.by), created_at: e.created_at, status: e.status, error: e.error || null, sent_at: e.sent_at || null,
+        sent_by: mlWho(e.sent_by, e.by), sent_by_id: e.sent_by || null, created_at: e.created_at, status: e.status, error: e.error || null, sent_at: e.sent_at || null,
         delivered_at: e.delivered_at || null, opened_at: e.opened_at || null, bounced_at: e.bounced_at || null,
         client_id: null, client: null, supplier_id: null, supplier: null, supplier_code: null, reference: null, to_name: null,
         ref_id: e.ref_id || null, again_of: e.again_of || null }; };
@@ -16774,11 +16853,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var tsNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       var tsOk = function (d) { persist(); return Promise.resolve({ data: JSON.parse(JSON.stringify(Object.assign({ ok: true }, d || {}))), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return tsNo(window.__refuseRpc[name]);
-      if (!DB.templates) DB.templates = [
-        { id: nid('tp'), key: 'sample.greeting', kind: 'client', language: 'en', version: 1, subject: 'Sample for {client name}',
-          body: 'Dear {contact name},\n\nThis is a sample template for {client name}.\n\n{sender name}', status: 'live', effective_from: '2026-01-01', sample: true },
-        { id: nid('tp'), key: 'sample.greeting', kind: 'client', language: 'zh', version: 1, subject: '{client name}示例',
-          body: '{contact name}您好：\n\n这是{client name}的示例模板。\n\n{sender name}', status: 'live', effective_from: '2026-01-01', sample: true }];
+      tplStore();
       var tsMe = opsMe(), tsToday = appToday();
       var tsNorm = function (x) { return String(x == null ? '' : x).toLowerCase().replace(/\s+/g, ' ').trim(); };
       var tsEsc = function (x) { return String(x == null ? '' : x).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -18455,7 +18530,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return { ok: true, id: d.id, kind: d.kind, serial: d.serial, state: d.state === 'sent' && Date.parse(d.reply_by) <= Date.now() ? 'expired' : d.state,
           sent_at: d.sent_at, reply_by: d.reply_by, terms: JSON.parse(JSON.stringify(d.terms)), returned_note: d.state === 'sent' ? d.returned_note || undefined : undefined,
           name: c.name, signed_at: d.signed_at || undefined, signed_name: d.signed && d.signed.name || undefined,
-          signatory: { name: t.name, designation: t.designation }, pay: { basic: p.basic, probation: p.probation == null ? undefined : p.probation } };
+          signatory: { name: t.name, designation: t.designation }, pay: { basic: p.basic, probation: p.probation == null ? undefined : p.probation },
+          wording: hrWording(myDay(d.sent_at)) };
       };
       var hdView = function (id, v) { return DB.hiring_doc_views.filter(function (x) { return x.doc_id === id && x.view === v && x.until > Date.now(); })[0]; };
       if (name === 'careers_doc_open') {
@@ -18888,6 +18964,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
           else DB.hiring_doc_pay.push({ doc_id: hd.id, basic: bs, probation: args.p_probation == null ? null : Number(args.p_probation) });
           hd.updated_at = nowD; hLog(dc.id, 'candidate.document', 'Salary changed');
           return hOk({});
+        }
+
+        if (name === 'hiring_doc_wording') {
+          if (!keepsD) return hNo('denied');
+          var wAt = myDay(hd.sent_at);
+          return hOk({ at: wAt, wording: hrWording(wAt) });
         }
         if (name === 'hiring_doc_record') {
           if (!keepsD) return hNo('denied');
@@ -19469,10 +19551,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!opsAllowed('suppliers', 'view')) return spNo('denied');
           return spOk({ rows: DB.supplier_emails.filter(function (e) { return e.supplier_id === args.p_supplier; })
             .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })
-            .map(function (e) { return { id: e.id, purpose: e.purpose, to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: e.by, document: e.document }; })
+            .map(function (e) { return { id: e.id, purpose: e.purpose, to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: e.by, by_id: e.sent_by || null, source: 'supplier', document: e.document }; })
             .concat((DB.team_emails || []).filter(function (e) { return e.supplier_id === args.p_supplier; }).map(function (e) {
               var who = (DB.team_members || []).filter(function (m) { return m.id === e.sent_by; })[0];
-              return { id: e.id, purpose: 'message', to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: who ? who.name : null, document: e.attachment };
+              return { id: e.id, purpose: 'message', to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: who ? who.name : null, by_id: e.sent_by || null, source: 'manual', document: e.attachment };
             }))
             .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; }) });
         }
@@ -20946,6 +21028,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
           });
         }
 
+        if (name === 'hiring-mail' && opts && opts.body && opts.body.kind === 'outcome' && !opts.body.byHand && !opts.body.againOf) {
+
+          var hq0 = opts.body;
+          return rpc('hiring_outcome_mail_queue', { p_id: hq0.candidateId }).then(function (r) {
+            var d = r.data || {};
+            if (r.error || d.error) return { data: { error: d.error || 'denied' }, error: null };
+            return { data: { ok: true, queued: { source: 'system', id: hq0.candidateId, seconds: d.seconds || 60, send_at: d.due } }, error: null };
+          });
+        }
         if (name === 'hiring-mail' && opts && opts.body && opts.body.kind === 'outcome') {
           var ho = opts.body;
           return rpc('hiring_outcome_mail_prepare', { p_id: ho.candidateId }).then(function (r) {
@@ -21596,6 +21687,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 bkb.cc !== false, bkb.subject, bkb.body, bkb.again === true, ivSend ? 'invoice' : 'reminder',
                 typeof bkb.to === 'string' && bkb.to.trim() ? bkb.to.trim() : null, Array.isArray(bkb.ccs) ? bkb.ccs.filter(function (x) { return typeof x === 'string'; }) : null);
               if (b.error) return bkR(Object.assign(b, { paid: paid }));
+              var iq = undoQueue('invoice', 'invoice_emails', 'status', b.id, function (st) { invDone(b.id, st, st === 'sent' ? 're_' + b.id : null, window.__mailFail || null); });
+              if (iq) { persist(); return bkR({ ok: true, id: b.id, to: b.to, cc: b.cc || null, paid: paid, queued: iq }); }
               var st2 = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
               invDone(b.id, st2, st2 === 'sent' ? 're_' + b.id : null, window.__mailFail || null);
               window.__invSent = (window.__invSent || []).concat([{ to: b.to, cc: b.cc, subject: b.subject, body: b.body, invoices: lines.map(function (l) { return l.number; }) }]);
@@ -21783,6 +21876,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             p_to: nb.to, p_ccs: nb.ccs || [], p_subject: nb.subject, p_body: nb.body, p_attachment: nb.file ? nb.file.name : null, p_idem: nb.key }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
+            var nq = undoQueue('manual', 'team_emails', 'status', b.id, function (st) { return rpc('email_new_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (nq) return { data: { ok: true, id: b.id, to: b.to, to_name: b.to_name || null, cc: b.cc, queued: nq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('email_new_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to, cc: b.cc } : { error: window.__mailFail }, error: null };
@@ -21797,6 +21892,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
             window.__quoteAskSent = b;
+            var aq = undoQueue('client', 'client_emails', 'status', b.id, function (st) { return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (aq) return { data: { ok: true, id: b.id, to: b.to_email, to_name: b.to_name, queued: aq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name } : { error: window.__mailFail }, error: null };
@@ -21811,6 +21908,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
             window.__fbMailSent = b;
+            var fq = undoQueue('feedback', 'feedback_requests', 'mail_status', b.id, function (st) { return rpc('feedback_mail_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (fq) return { data: { ok: true, id: b.id, to: b.to_email, to_name: b.to_name, queued: fq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('feedback_mail_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name } : { error: window.__mailFail }, error: null };
@@ -21827,6 +21926,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             p_subject: dmb.subject, p_body: dmb.body, p_again: dmb.again === true }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
+            var cq = undoQueue('client', 'client_emails', 'status', b.id, function (st) { return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (cq) return { data: { ok: true, id: b.id, queued: cq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id } : { error: window.__mailFail }, error: null };
@@ -21843,6 +21944,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             p_subject: mb.subject, p_body: mb.body, p_again: mb.again === true }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
+            var sq = undoQueue('supplier', 'supplier_emails', 'status', b.id, function (st) { return rpc('supplier_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (sq) return { data: { ok: true, id: b.id, queued: sq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('supplier_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id } : { error: window.__mailFail }, error: null };
