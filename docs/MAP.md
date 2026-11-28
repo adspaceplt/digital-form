@@ -196,7 +196,7 @@ One area per release. Sizes: **S** under half a day, **M** a day, **L** two or m
 | 11 | Template store: versioned, placeholders, EN and 中文, one engine a side (`templates`, `template_render`, `js/tpl.js`). Built 2026-11-28 ahead of 6, no wording moved; its editor in Settings and Settings › Messages onto it go with 12 | 3 | L | After 6 |
 | 12 | Letter of Offer and client letters (`documents.js`, `letters.js`) | 3 | M | Ride-along with Documents |
 | 13 | Quotation and rate card terms (`quotepdf.js`, `ratecardpdf.js`, `quote.js`) | 3 | S | Ride-along with Services |
-| 14 | HR documents and contract clauses (`hrdocs.js`, `hiring.js`, `onboard.js`) | 3 | M | Ride-along with Hiring |
+| 14 | HR documents and contract clauses (`hrdocs.js`, `hiring.js`, `onboard.js`) | 3 | M | Built 2026-11-28 on its draft PR: 35 templates of kind `hr-document`, read by the day a document went out; `onboard.js` held none (DECISIONS, 2026-11-28) |
 | 15 | Consent and privacy lines (careers, supplier, details, personnel); Health agreement, feedback questions and checklist template get their editor | 3 | S | Ride-along per page |
 | 16 | First-visit guides (`admin.js` GUIDES), performance categories (`perf.js`), ad-report explainer (`smreport.js`) | 3 | S each | Ride-along |
 | 17 | AI prompts (8 functions) into the store, read by `_shared` | 3 | M | After 11 |

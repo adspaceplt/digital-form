@@ -272,10 +272,19 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   user's templates in substance, their typos and grammar put right,
   ADspace in place of we and our, the candidate greeted by their whole
   name (no NRIC), Yours sincerely on both, one declaration
-  (`ADspaceHrDocs.declare`, the contract's and the page's tick alike),
+  (`hr.declare` through `ADspaceHrDocs.declare(wording)`, the contract's
+  and the page's tick alike; the offer's tick `hr.offer.accepted`),
   the signing block's NRIC or Passport Number, the salary in words and
   figures, the intern and part-time paragraphs only for those types; the
-  page and emails read Read offer and Read contract. Its
+  page and emails read Read offer and Read contract. Every sentence of
+  the Offer and the Contract is the template store's (kind `hr-document`,
+  a clause a template, its heading the subject; restructure release 14,
+  `2026-11-28-hr-wording.sql`, `hrwordingsql`), the version in force on the
+  Malaysian day the document went out (today for a draft), read by
+  `hiring_doc_wording` (the part and the Owner) and `careers_doc_json`
+  `wording` (behind the code), filled on the page by `ADspaceTpl.fill`;
+  `js/hrdocs.js` keeps the order of the clauses and which apply, never a
+  sentence, and refuses to draw where a key is missing. Its
   documents' files are queued for the console to take out of Storage when
   it goes (trigger `hiring_docs_files_gone`). /verify/ answers an offer's
   or contract's reference once sent as HR Letter (Valid, Void, Withdrawn,

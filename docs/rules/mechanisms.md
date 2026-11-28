@@ -232,4 +232,6 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   same way, and `templatesql` holds the two equal case by case. A value is
   escaped where it is inserted (`ADspaceWords.esc`); a field with no value
   is kept as `{field}` and named in `missing`, refused `missing-field` where
-  `strict`, never sent blank.
+  `strict`, never sent blank. A page that prints a set of templates (the HR documents) reads
+  them in force on the record's own day through its area's function and
+  fills them with `ADspaceTpl.fill`, a field left empty printing nothing.
