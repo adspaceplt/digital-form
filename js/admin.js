@@ -3930,7 +3930,7 @@
   function paintActivity() {
     var box = $('activityList');
     /* Performance's steps stand beside the log only as far back as the log
-       is read (the last months first, then each earlier page). */
+       is read (the last days first, then each earlier page). */
     var rows = actRows.filter(function (a) {
       return (actFilter === 'all' || sectionOfRow(a) === actFilter) &&
         (a._section !== 'performance' || !actFloor || String(a.created_at) >= actFloor);
@@ -3938,14 +3938,14 @@
     if ($('activitySection').value !== actFilter) $('activitySection').value = actFilter;
     var R = window.ADspaceRecords;
     if (!rows.length) {
-      box.innerHTML = '<div class="empty">' + esc(actMore() ? R.none(actPage && actPage.months) :
+      box.innerHTML = '<div class="empty">' + esc(actMore() ? R.none(actPage && actPage.days) :
         'Nothing recorded' + (actFilter === 'all' ? '' : ' in ' + ACT_SECTION[actFilter]) + '.') + '</div>';
     } else {
       /* One line an entry, a heading a day, runs folded (js/records.js). */
       R.paint(box, rows.map(recordOf));
     }
-    /* The list ends where its read did: Show earlier reads the next page of
-       the same section (ACT-1, 2026-10-22; the last months first,
+    /* The list ends where its read did: Show more reads the next page of
+       the same section (ACT-1, 2026-10-22; the last days first,
        2026-11-28). */
     if (actMore()) {
       var b = R.earlier(box, readOlder);
@@ -4057,7 +4057,7 @@
      a page at a time: the newest 200 of every section filtered in the page
      left a quiet section (Handbook, Documents) reading Nothing recorded
      while its rows stood older than the 200th of the busy ones (ACT-1,
-     2026-10-22). It opens on the last months (`ADspaceRecords.pager`). */
+     2026-10-22). It opens on the last days (`ADspaceRecords.pager`). */
   var ACT_PAGE = 200, actSeq = 0, actPage = null, actFloor = null;
   function actionsOf(k) {
     return Object.keys(ACTION_LABEL).filter(function (a) { return ACTION_LABEL[a][2] === k; });
@@ -4068,7 +4068,7 @@
     else if (actFilter !== 'all') q = q.in('action', actionsOf(actFilter));
     return q;
   }
-  /* Performance alone reads no log: its own steps, the last months first. */
+  /* Performance alone reads no log: its own steps, the last days first. */
   function actMore() {
     var older = actRows.some(function (a) { return a._section === 'performance' && actFloor && String(a.created_at) < actFloor; });
     return !!(actPage && actPage.more) || older;
@@ -4098,7 +4098,7 @@
     var seq = ++actSeq;
     window.ADspaceState.skeleton($('activityList'), 6);
     var pg = actPage = actFilter === 'performance' ? null : window.ADspaceRecords.pager(actQuery, ACT_PAGE);
-    actFloor = pg ? pg.floor : new Date(Date.now() - window.ADspaceRecords.months() * 30.44 * 864e5).toISOString();
+    actFloor = pg ? pg.floor : new Date(Date.now() - window.ADspaceRecords.days() * 864e5).toISOString();
     Promise.all([pg ? pg.first() : Promise.resolve({ data: [] }), perfRead()]).then(function (both) {
       if (seq !== actSeq) return;
       var r = both[0] || {};
@@ -6757,7 +6757,7 @@
     lat: [-90, 90, false, 6], lng: [-180, 180, false, 6], accm: [5, 500, true],
     /* The ranges app_settings_set holds (2026-11-25: months, orad and remh
        were missing, so their sheets refused nothing and threw at Save). */
-    months: [1, 24, true], keepc: [1, 36, true], actr: [1, 36, true], actk: [12, 120, true], jobk: [1, 90, true], orad: [20, 1000, true], remh: [1, 12, true], inv: [1, 14, true], link: [7, 90, true],
+    months: [1, 24, true], keepc: [1, 36, true], actw: [1, 90, true], actr: [1, 36, true], actk: [12, 120, true], jobk: [1, 90, true], undos: [10, 300, true], orad: [20, 1000, true], remh: [1, 12, true], inv: [1, 14, true], link: [7, 90, true],
     sback: [0, 30, true], adreq: [1, 100, true] };
   /* WORKING HOURS (2026-11-20, the user: "Give working hours a setting",
      "by default 10am to 7pm monday to friday, Saturday and sunday on
@@ -6911,7 +6911,8 @@
     health_task_hours: [null, '', 'hours', '', 'decimal'],
     health_remind_days: [null, '', 'days', '0 turns this off.'],
     health_keep_months: [null, '', 'months'], health_leaver_months: [null, '', 'months'],
-    activity_routine_months: [null, '', 'months'], activity_keep_months: [null, '', 'months'], jobs_keep_days: [null, '', 'days'],
+    activity_window_days: [null, '', 'days'], activity_routine_months: [null, '', 'months'], activity_keep_months: [null, '', 'months'], jobs_keep_days: [null, '', 'days'],
+    send_undo_seconds: [null, '', 'seconds'],
     creator_pay_days_myr: [null, '', 'working days'], creator_pay_days_other: [null, '', 'working days'],
     timely_pct: [null, '', '%'], timely_late_days: [null, '', 'days', '', 'decimal'],
     wa_repeat_hours: [null, '', 'hours', '0 turns this off.'],
@@ -7029,13 +7030,18 @@
       ['health_alert', 'Heavy workload notice', 'onoff', '', 'Heavy workload notice', function (v) { return Number(v) ? 'on' : 'off'; }]] },
     healthkeep: { title: 'Health data kept', keys: [['health_keep_months', 'Check-ins kept for', 'keep', '', 'Check-ins', per('month')],
       ['health_leaver_months', 'Leavers\' health data kept for', 'leave', '', 'Leavers', per('month')]] },
-    /* How long the Activity record keeps a routine entry and a key one, and
-       the scheduled jobs' history (ACTIVITY KEPT BY KIND, 2026-11-28). */
-    actkeep: { title: 'Records kept', keys: [['activity_routine_months', 'Routine activity kept for', 'actr', '', 'Routine activity', per('month')],
-      ['activity_keep_months', 'Key activity kept for', 'actk', '', 'Key activity', per('month')],
-      ['jobs_keep_days', 'Scheduled job history kept for', 'jobk', '', 'Job history', per('day')]],
-      notes: { activity_routine_months: 'Saves, stage moves, messages sent, links opened and other everyday steps. Activity lists open on this period.',
+    /* The Activity record's lists and how long it keeps a routine entry and
+       an important one, and the automatic runs' history (ACTIVITY KEPT BY
+       KIND, 2026-11-28). */
+    actkeep: { title: 'Activity history', keys: [['activity_window_days', 'Activity lists show the last', 'actw', '', 'Lists show', per('day')],
+      ['activity_routine_months', 'Routine activity kept for', 'actr', '', 'Routine activity', per('month')],
+      ['activity_keep_months', 'Important activity kept for', 'actk', '', 'Important activity', per('month')],
+      ['jobs_keep_days', 'Automatic run history kept for', 'jobk', '', 'Automatic runs', per('day')]],
+      notes: { activity_routine_months: 'Saves, stage moves, messages sent, links opened and other everyday steps.',
         activity_keep_months: 'Everything else, including money, documents, deletions, access, Settings and client decisions.' } },
+    /* How long an email a colleague's act queued waits for Undo
+       (2026-11-28; a decision's email to a candidate first). */
+    sendundo: { title: 'Undo before sending', keys: [['send_undo_seconds', 'Undo before an email sends', 'undos', '', 'Undo', per('second')]] },
     /* When a creator is paid after their post (2026-11-09, Creator R3). */
     creatorpay: { title: 'Creator payments', keys: [['creator_pay_days_myr', 'Payment time in MYR', 'pay', '', 'MYR', per('working day')],
       ['creator_pay_days_other', 'Payment time in other currencies', 'pay', '', 'Other currencies', per('working day')]] },

@@ -444,11 +444,20 @@
     /* A sign-in's code step, the console's and the client portal's alike
        (the cover family, 2026-11-22). */
     docNo: function (n, r) { n = String(n || ''); r = String(r || '').trim(); return r && r !== n ? n + ' / Reference: ' + r : n; },
-    /* Every history opens on its last months (ACTIVITY KEPT BY KIND,
+    /* Every history opens on its last days (ACTIVITY KEPT BY KIND,
        2026-11-28): the press for older entries, and the line where the
-       months hold none (js/records.js). */
-    earlier: function (zh) { return zh ? '显示更早的记录' : 'Show earlier'; },
-    recentNone: function (n, zh) { n = Math.floor(Number(n)); return zh ? '最近' + n + '个月没有记录。' : 'Nothing recorded in the last ' + (n === 1 ? 'month.' : n + ' months.'); },
+       days hold none (js/records.js). */
+    earlier: function (zh) { return zh ? '显示更多' : 'Show more'; },
+    recentNone: function (n, zh) { n = Math.floor(Number(n)); return zh ? '最近' + n + '天没有记录。' : 'Nothing recorded in the last ' + (n === 1 ? 'day.' : n + ' days.'); },
+    /* An email a colleague's act queued, while its Undo stands
+       (`send_undo_seconds`, 2026-11-28): Outcome email to Ali sends in 1
+       minute. */
+    sendsIn: function (what, s, zh) {
+      s = Math.max(1, Math.round(Number(s) || 0));
+      var m = s % 60 === 0 ? s / 60 : 0;
+      if (zh) return what + '将在' + (m ? m + '分钟' : s + '秒') + '后发送。';
+      return what + ' sends in ' + (m ? (m === 1 ? '1 minute' : m + ' minutes') : (s === 1 ? '1 second' : s + ' seconds')) + '.';
+    },
     checked: function (n, zh) { n = Math.floor(Number(n)); return zh ? '已核验' + n + '次' : n === 1 ? 'Checked once' : 'Checked ' + n + ' times'; },
     codeSent: 'If {email} is registered, a sign-in code and link have been sent to it.',
     dateFloor: 'Choose a date from 14 Aug 2023.',

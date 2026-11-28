@@ -37,8 +37,10 @@
     creator_pay_days_myr: 10, creator_pay_days_other: 21,
     /* Client feedback: months since a client was last asked (2026-11-24). */
     feedback_quiet_months: 6,
-    /* The Activity record and job history kept (2026-11-28). */
-    activity_routine_months: 3, activity_keep_months: 36, jobs_keep_days: 7,
+    /* The Activity lists, the record and job history kept (2026-11-28). */
+    activity_window_days: 7, activity_routine_months: 3, activity_keep_months: 36, jobs_keep_days: 7,
+    /* How long a queued email waits for Undo (2026-11-28). */
+    send_undo_seconds: 60,
     /* The month Analytics counts its history from, YYYYMM (2026-10-25). */
     analytics_from: 202609,
     /* When an Analytics figure reads better or worse, and when churn is an

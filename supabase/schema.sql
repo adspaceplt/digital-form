@@ -174510,36 +174510,49 @@ select public.functions_tidy();
 -- everyday steps (a report saved 1,133 times, stage moves, messages sent)
 -- stood beside the entries a dispute or an audit reads. A routine entry is
 -- now kept for months, a key one for years; the scheduled jobs' history
--- for a week; and the decision emails' wake runs every five minutes.
+-- for a week; every Activity list opens on its last 7 days; and a
+-- candidate's decision email waits a minute for Undo, its wake every five
+-- minutes (the user, through the coordinator, 2026-11-28).
 --
 -- WHAT CHANGES
---   * Three settings, seeded once (`app_settings`, from 14 Aug 2023):
---     `activity_routine_months` 3 (1 to 36), `activity_keep_months` 36
---     (12 to 120), `jobs_keep_days` 7 (1 to 90); Settings, Security,
---     Records kept (`team.settings`), taken by `app_settings_set`
---     (restated from CREATOR BILL ON COMPLETED with the three keys).
+--   * Five settings, seeded once (`app_settings`, from 14 Aug 2023):
+--     `activity_window_days` 7 (1 to 90, what every Activity list shows
+--     first), `activity_routine_months` 3 (1 to 36),
+--     `activity_keep_months` 36 (12 to 120), `jobs_keep_days` 7 (1 to 90),
+--     Settings, Security, Activity history; `send_undo_seconds` 60 (10 to
+--     300), Settings, Messages, Undo before sending, the one window every
+--     email a colleague's act queues waits for Undo (`team.settings`);
+--     taken by `app_settings_set` (restated from CREATOR BILL ON
+--     COMPLETED with the five keys).
 --   * `activity_routine(p_action)`: true for the routine tags, false for
 --     every other (key, the safe side). The console's `ACTION_ROUTINE`
 --     (js/admin.js, beside `ACTION_LABEL`) is the same list
---     (`tests/actkeepsql.js`). A helper: no page calls it.
+--     (`tests/actkeepsql.js`). A helper: no page calls it. The setting
+--     names it files call the two kinds routine and important.
 --   * `privacy_retention` (restated from RETENTION AND JOBS HELD) deletes a
 --     routine entry after the routine months and every entry after the key
 --     months, answering `activity_routine_removed` beside
 --     `activity_removed` (the two together).
 --   * `jobs_prune` (restated from UNREAD NOTICES PRUNED) keeps the job
 --     history `jobs_keep_days`, 14 before; notices as before.
---   * pg_cron `hiring-outcome-mail` every five minutes (`*/5 * * * *`); a
---     decision email still waits its 30 seconds of Undo first.
+--   * `hiring_outcome_mail_queue` (restated from DECISION EMAILS QUEUED)
+--     dates the email `send_undo_seconds` on (30 seconds before) and
+--     answers `seconds`.
+--   * pg_cron `hiring-outcome-mail` every five minutes (`*/5 * * * *`), so
+--     a decision email goes between one and six minutes after it.
 --
--- ORDER: this file (connector), then the pages (Records kept, and every
--- history opening on its last months). An old page meanwhile reads all
--- rows as before; nothing older than three months stands today, so the
+-- ORDER: this file (connector), then the pages (Activity history, Undo
+-- before sending, every history opening on its last days, the minute's
+-- Undo bar). An old page meanwhile reads all rows as before, and its Undo
+-- bar shuts after 30 seconds while the email waits the minute: Reopen on
+-- the decision still cancels it; nothing older than three months stands today, so the
 -- first nightly run removes none.
 -- Safe to run twice.
 -- ROLLBACK: run `privacy_retention` from RETENTION AND JOBS HELD, `jobs_prune`
--- from UNREAD NOTICES PRUNED and `app_settings_set` from CREATOR BILL ON
--- COMPLETED again, and schedule `hiring-outcome-mail` at `* * * * *`;
--- `activity_routine` and the three settings may stay. An entry removed is
+-- from UNREAD NOTICES PRUNED, `hiring_outcome_mail_queue` from DECISION
+-- EMAILS QUEUED and `app_settings_set` from CREATOR BILL ON COMPLETED
+-- again, and schedule `hiring-outcome-mail` at `* * * * *`;
+-- `activity_routine` and the five settings may stay. An entry removed is
 -- not brought back (the nightly dumps hold it 90 days).
 -- ===========================================================================
 
@@ -174554,6 +174567,12 @@ select 'activity_keep_months', date '2023-08-14', 36
 insert into public.app_settings (key, from_date, value)
 select 'jobs_keep_days', date '2023-08-14', 7
  where not exists (select 1 from public.app_settings s where s.key = 'jobs_keep_days');
+insert into public.app_settings (key, from_date, value)
+select 'activity_window_days', date '2023-08-14', 7
+ where not exists (select 1 from public.app_settings s where s.key = 'activity_window_days');
+insert into public.app_settings (key, from_date, value)
+select 'send_undo_seconds', date '2023-08-14', 60
+ where not exists (select 1 from public.app_settings s where s.key = 'send_undo_seconds');
 
 /* The routine tags: the everyday steps kept for the routine months. Every
    other tag, a new one included, is key. */
@@ -174686,7 +174705,26 @@ begin
 end $$;
 revoke all on function public.jobs_prune(timestamptz) from public, anon, authenticated;
 
-/* The three settings are ones the Business settings sheets take too,
+/* The decision's email, queued for the drain once Undo's window passes
+   (`send_undo_seconds`, 60). */
+create or replace function public.hiring_outcome_mail_queue(p_id uuid)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare v_role text := public.hiring_role(p_id); c public.hiring_candidates;
+  v_secs integer := greatest(coalesce(public.app_setting('send_undo_seconds', (now() at time zone 'Asia/Kuala_Lumpur')::date), 60)::integer, 10);
+begin
+  if v_role is null or v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  select * into c from public.hiring_candidates where id = p_id for update;
+  if c.id is null or c.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
+  if c.outcome is null or c.outcome not in ('pool', 'not') then return jsonb_build_object('error', 'no-email'); end if;
+  if c.outcome_mail in ('sent', 'sending') then return jsonb_build_object('ok', true, 'same', true); end if;
+  update public.hiring_candidates set outcome_mail = 'queued', outcome_mail_at = null,
+    outcome_mail_due = now() + make_interval(secs => v_secs), updated_at = now() where id = c.id;
+  return jsonb_build_object('ok', true, 'due', now() + make_interval(secs => v_secs), 'seconds', v_secs);
+end $$;
+revoke all on function public.hiring_outcome_mail_queue(uuid) from public, anon;
+grant execute on function public.hiring_outcome_mail_queue(uuid) to authenticated;
+
+/* The five settings are ones the Business settings sheets take too,
    restated whole from CREATOR BILL ON COMPLETED with the keys added. */
 create or replace function public.app_settings_set(p_from date, p_values jsonb)
 returns jsonb
@@ -174711,7 +174749,7 @@ declare
     'outstation_office_lat', 'outstation_office_lng', 'outstation_accuracy_m', 'outstation_keep_months',
     'outstation_office_radius_m', 'outstation_remind_hours',
     'reveal_seconds', 'ad_prepay_pct', 'ad_credit_fee_pct',
-    'activity_routine_months', 'activity_keep_months', 'jobs_keep_days'];
+    'activity_routine_months', 'activity_keep_months', 'jobs_keep_days', 'activity_window_days', 'send_undo_seconds'];
   v_moved text[] := '{}';
   v_drop boolean; v_fw text; v_fv text;
 begin
@@ -174768,6 +174806,8 @@ begin
        or (v_k = 'activity_routine_months' and (v_v < 1 or v_v > 36 or v_v <> trunc(v_v)))
        or (v_k = 'activity_keep_months' and (v_v < 12 or v_v > 120 or v_v <> trunc(v_v)))
        or (v_k = 'jobs_keep_days' and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'activity_window_days' and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'send_undo_seconds' and (v_v < 10 or v_v > 300 or v_v <> trunc(v_v)))
        or (v_k = 'health_cap_default' and (v_v < 1 or v_v > 80 or v_v <> trunc(v_v)))
        or (v_k = 'health_near_pct' and (v_v < 50 or v_v > 100 or v_v <> trunc(v_v)))
        or (v_k = 'health_task_hours' and (v_v < 0.5 or v_v > 40 or v_v * 2 <> trunc(v_v * 2)))
@@ -174848,8 +174888,9 @@ begin
         when 'bench_cpl_rise' then 'Yearly rise in cost per lead' when 'bench_reels_share' then 'Reels share of impressions'
         when 'bench_ad_spend_pct' then 'Ad spend share of the budget' when 'bench_adset_daily' then 'Minimum daily budget per ad set'
         when 'fx_sgd' then 'Singapore dollar rate'
-        when 'activity_routine_months' then 'Routine activity kept' when 'activity_keep_months' then 'Key activity kept'
-        when 'jobs_keep_days' then 'Scheduled job history kept'
+        when 'activity_routine_months' then 'Routine activity kept' when 'activity_keep_months' then 'Important activity kept'
+        when 'jobs_keep_days' then 'Automatic run history kept' when 'activity_window_days' then 'Activity lists show'
+        when 'send_undo_seconds' then 'Undo before an email sends'
         when 'health_keep_months' then 'Health check-ins kept' when 'health_leaver_months' then 'Leavers'' health data kept'
         when 'health_cap_default' then 'Health default weekly capacity' when 'health_near_pct' then 'Health near capacity'
         when 'health_task_hours' then 'Health default hours per task' when 'health_remind_days' then 'Health check-in reminder'
@@ -174867,12 +174908,12 @@ begin
         else 'Report due' end;
       v_pre := case when v_k = 'fx_sgd' then 'RM ' when v_k like 'ai_price_%' then 'US$' when v_k like 'bench_%' and v_k not in ('bench_cpl_rise', 'bench_reels_share', 'bench_ad_spend_pct') then 'RM ' else '' end;
       v_unit := case when v_k = 'fx_sgd' then ' per S$1' when v_k in ('lead_followup_hours', 'vic_lead_followup_hours', 'task_remind_hours', 'wa_repeat_hours', 'abroad_remind_hours', 'health_cap_default', 'health_task_hours') or v_k like 'priority_%_hours' then ' hours'
-        when v_k in ('proposal_followup_days', 'vic_proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days', 'task_start_days', 'task_past_days', 'quote_valid_days', 'details_form_days', 'quote_details_close_days', 'abroad_days', 'hiring_invite_days', 'hiring_link_days', 'timely_late_days', 'stage_back_days', 'hiring_reply_days', 'session_idle_days', 'health_remind_days', 'jobs_keep_days') then ' days'
+        when v_k in ('proposal_followup_days', 'vic_proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days', 'task_start_days', 'task_past_days', 'quote_valid_days', 'details_form_days', 'quote_details_close_days', 'abroad_days', 'hiring_invite_days', 'hiring_link_days', 'timely_late_days', 'stage_back_days', 'hiring_reply_days', 'session_idle_days', 'health_remind_days', 'jobs_keep_days', 'activity_window_days') then ' days'
         when v_k in ('quote_reply_days', 'quote_details_days', 'creator_pay_days_myr', 'creator_pay_days_other', 'hiring_decision_days') then ' working days'
         when v_k = 'quote_wa_day' then ' per day'
         when v_k = 'plan_db_mb' then ' MB'
         when v_k = 'work_lunch_min' then ' minutes'
-        when v_k = 'reveal_seconds' then ' seconds'
+        when v_k in ('reveal_seconds', 'send_undo_seconds') then ' seconds'
         when v_k in ('outstation_accuracy_m', 'outstation_office_radius_m') then ' m'
         when v_k = 'outstation_remind_hours' then ' hours'
         when v_k in ('outstation_office_lat', 'outstation_office_lng') then ''

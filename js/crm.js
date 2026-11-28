@@ -1632,7 +1632,7 @@
     var c = state.client;
     if (!box || !c) return;
     UI.skeleton(box, 3);
-    /* The last months first, Show earlier reading older pages
+    /* The last days first, Show more reading older pages
        (`ADspaceRecords.pager`, 2026-11-28). */
     var R = window.ADspaceRecords;
     var pg = R.pager(function () { return db.from('activity_log').select('*').eq('client_id', c.id); }, 50);
@@ -1645,7 +1645,7 @@
       railLog();
       /* One line an entry, the client named once by the record itself. */
       box.innerHTML = '<div class="softpanel recpanel"></div>';
-      R.paint(box.firstChild, rows.map(recordOf), pg.more && !rows.length ? { empty: R.none(pg.months) } : null);
+      R.paint(box.firstChild, rows.map(recordOf), pg.more && !rows.length ? { empty: R.none(pg.days) } : null);
       if (pg.more) R.earlier(box, more);
     }
     function took(r, retry) {

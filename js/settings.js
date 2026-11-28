@@ -384,12 +384,14 @@
            employee record is hidden again after this long. */
         biz && { id: 'reveal', name: 'Hidden personal details', kind: 'edit',
           meta: num('reveal_seconds') == null ? '' : 'Hidden again after ' + plural(num('reveal_seconds'), 'second', 'seconds') },
-        /* Records kept (ACTIVITY KEPT BY KIND, 2026-11-28): the Activity
-           record's routine and key entries, and the scheduled jobs' history. */
-        biz && { id: 'actkeep', name: 'Records kept', kind: 'edit',
-          meta: num('activity_routine_months') == null ? '' : parts(['Routine activity ' + plural(num('activity_routine_months'), 'month', 'months'),
-            'Key activity ' + plural(num('activity_keep_months'), 'month', 'months'),
-            'Job history ' + plural(num('jobs_keep_days'), 'day', 'days')]) },
+        /* Activity history (ACTIVITY KEPT BY KIND, 2026-11-28): what the
+           Activity lists show first, how long routine and important
+           entries are kept, and the automatic runs' history. */
+        biz && { id: 'actkeep', name: 'Activity history', kind: 'edit',
+          meta: num('activity_window_days') == null ? '' : parts(['Shows ' + plural(num('activity_window_days'), 'day', 'days'),
+            'Routine ' + plural(num('activity_routine_months'), 'month', 'months'),
+            'Important ' + plural(num('activity_keep_months'), 'month', 'months'),
+            'Automatic runs ' + plural(num('jobs_keep_days'), 'day', 'days')]) },
         /* Delete requests (2026-11-17): a Delete pressed at Edit waits
            here for an admin (js/delreq.js). */
         W.ADspaceAdmin && W.ADspaceAdmin.isAdmin && W.ADspaceAdmin.isAdmin() && W.ADspaceDelReq &&
@@ -476,7 +478,11 @@
         /* Sent again (2026-10-14): the same message sent within the window
            asks again before it goes, WhatsApp and emails alike (SET2-1). */
         biz && { id: 'resend', name: 'Repeat messages', kind: 'edit',
-          meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : parts(['WhatsApp and emails', 'Within ' + plural(rep2, 'hour', 'hours')]) }]],
+          meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : parts(['WhatsApp and emails', 'Within ' + plural(rep2, 'hour', 'hours')]) },
+        /* Undo before sending (2026-11-28): an email a colleague's act
+           queued waits this long for Undo. */
+        biz && { id: 'sendundo', name: 'Undo before sending', kind: 'edit',
+          meta: num('send_undo_seconds') == null ? '' : 'Emails wait ' + plural(num('send_undo_seconds'), 'second', 'seconds') }]],
       ['Email', [
         /* Send by email (2026-10-31; widened 2026-11-21, SEND SWITCHES):
            every email a colleague sends by hand. Off, each send act stays

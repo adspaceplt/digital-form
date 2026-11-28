@@ -815,7 +815,7 @@
   }
   function paneCrActivity(c, host) {
     UI.skeleton(host, 3);
-    /* The last months first, Show earlier reading older pages
+    /* The last days first, Show more reading older pages
        (`ADspaceRecords.pager`, 2026-11-28). */
     var R = window.ADspaceRecords, A = window.ADspaceAdmin, rows = [];
     var pg = R.pager(function () { return db.from('activity_log').select('*').eq('creator_id', c.id); }, 50);
@@ -828,7 +828,7 @@
         var e = A && A.record ? A.record(x) : { at: x.created_at, who: x.actor || 'System', what: x.action, detail: x.detail || '' };
         if (e.key == null) e.key = 'creator';
         return e;
-      }), { empty: R.none(pg.months) });
+      }), { empty: R.none(pg.days) });
       if (pg.more) R.earlier(host, more);
     }
     function took(r, retry) {
@@ -3832,7 +3832,7 @@
     var c = state.campaign;
     if (!box || !c) return;
     UI.skeleton(box, 3);
-    /* The last months first, Show earlier reading older pages
+    /* The last days first, Show more reading older pages
        (`ADspaceRecords.pager`, 2026-11-28). */
     var R = window.ADspaceRecords, A = window.ADspaceAdmin, rows = [];
     var pg = R.pager(function () { return db.from('activity_log').select('*').eq('campaign_id', c.id); }, 50);
@@ -3849,7 +3849,7 @@
         if (r.lead) r.detail = r.rest || '';
         if (r.key == null) r.key = 'campaign';
         return r;
-      }), pg.more && !rows.length ? { empty: R.none(pg.months) } : null);
+      }), pg.more && !rows.length ? { empty: R.none(pg.days) } : null);
       if (pg.more) R.earlier(box, more);
     }
     function took(r, retry) {

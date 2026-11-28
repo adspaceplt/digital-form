@@ -253,32 +253,28 @@
     return out.join('; ');
   }
 
-  /* THE LAST MONTHS FIRST (ACTIVITY KEPT BY KIND, 2026-11-28). Every list
-     of `activity_log` rows opens on the months a routine entry is kept
-     (Settings, `activity_routine_months`, 3 before it is read), newest
-     first; Show earlier reads older entries a page at a time.
+  /* THE LAST DAYS FIRST (ACTIVITY KEPT BY KIND, 2026-11-28). Every list
+     of `activity_log` rows opens on its last days (Settings, Activity
+     history, `activity_window_days`, 7 before it is read), newest first;
+     Show more reads older entries a page at a time.
        var pg = ADspaceRecords.pager(function () { return db.from(…).select(…).eq(…); }, 50);
-       pg.first() / pg.next()  → the read's answer; pg.more, pg.floor
+       pg.first() / pg.next()  → the read's answer; pg.more, pg.floor, pg.days
      `query` hands back a fresh builder each call, filtered but neither
      ordered nor limited. `floor` is the oldest moment the list now holds
      whole (null once every row is read). */
-  function months() {
-    var M = window.ADspaceMoney, n = M && M.setting ? Number(M.setting('activity_routine_months')) : NaN;
-    return n > 0 ? n : 3;
+  function days() {
+    var M = window.ADspaceMoney, n = M && M.setting ? Number(M.setting('activity_window_days')) : NaN;
+    return n > 0 ? n : 7;
   }
-  function since(n) {
-    var d = new Date();
-    d.setMonth(d.getMonth() - (n || months()));
-    return d.toISOString();
-  }
+  function since(n) { return new Date(Date.now() - (n || days()) * 864e5).toISOString(); }
   function pager(query, page) {
     page = page || 50;
     var oldest = null;
-    var self = { more: false, floor: since(), months: months() };
+    var self = { more: false, floor: since(), days: days() };
     var newest = function (q) { return q.order('created_at', { ascending: false }); };
     function took(rows) { if (rows.length) oldest = rows[rows.length - 1].created_at; }
     self.first = function () {
-      self.months = months(); self.floor = since(self.months); oldest = null; self.more = false;
+      self.days = days(); self.floor = since(self.days); oldest = null; self.more = false;
       return newest(query().gte('created_at', self.floor)).limit(page).then(function (r) {
         if (r.error) return r;
         var rows = r.data || [];
@@ -315,8 +311,8 @@
     more.firstChild.addEventListener('click', function () { this.disabled = true; press(this); });
     return more.firstChild;
   }
-  function none(n) { return window.ADspaceWords.line.recentNone(n || months()); }
+  function none(n) { return window.ADspaceWords.line.recentNone(n || days()); }
 
   window.ADspaceRecords = { paint: paint, fold: fold, day: day, time: time, changes: changes,
-    pager: pager, earlier: earlier, none: none, months: months };
+    pager: pager, earlier: earlier, none: none, days: days };
 })();
