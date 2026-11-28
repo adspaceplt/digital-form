@@ -7,6 +7,8 @@
  *   ADspaceTpl.fill(text, values)          { text, html, missing }
  *   ADspaceTpl.render(key, lang, opts)     the database's render, a promise
  *   ADspaceTpl.said(res)                   a refusal in the team's words
+ *   ADspaceTpl.set(name, lang)             one set's words in force today, a
+ *                                          promise of { key: { subject, body } }
  *
  * A placeholder is `{field}`, read in any case and spacing. Each value is
  * escaped where it is inserted (ADspaceWords.esc), the words around it
@@ -88,5 +90,23 @@
     return SAID[d.error] || W().en.notSaved;
   }
 
-  window.ADspaceTpl = { names: names, fill: fill, render: render, said: said };
+  /* A page's set of words (release 16: the guides, the performance words,
+     the ad report's notes; `wording_read`), read once a page and kept. A
+     read that fails is not kept, so the next asks again; it answers null,
+     and the page says its words cannot be loaded, never draws without them. */
+  var sets = {};
+  function set(name, lang) {
+    var k = name + ':' + (lang === 'zh' ? 'zh' : 'en');
+    if (sets[k]) return sets[k];
+    var api = window.ADspaceAPI && window.ADspaceAPI.client;
+    if (!api) return Promise.resolve(null);
+    sets[k] = Promise.resolve(api.rpc('wording_read', { p_set: name, p_lang: lang === 'zh' ? 'zh' : 'en' })).then(function (r) {
+      var d = r && !r.error && r.data;
+      if (!d || !d.ok || !d.words) { delete sets[k]; return null; }
+      return d.words;
+    }).catch(function () { delete sets[k]; return null; });
+    return sets[k];
+  }
+
+  window.ADspaceTpl = { names: names, fill: fill, render: render, said: said, set: set };
 })();

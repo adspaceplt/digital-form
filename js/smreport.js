@@ -146,8 +146,6 @@
     'saves': '收藏数',
     'by platform': '各平台表现',
     'remarks': '点评',
-    'how to read this': '阅读说明',
-    'how to read the video figures': '视频数据说明',
     'no data.': '暂无数据。',
     'no image': '暂无图片',
     'not available': '暂无数据',
@@ -164,29 +162,8 @@
     'reel': 'Reels', 'video': '视频', 'photo': '图片', 'carousel': '轮播帖', 'story': '限时动态',
     'live': '直播', 'short': '短视频', 'article': '文章', 'rednote': '小红书',
     'the key figures for the period, ahead of the detailed results.': '本期核心数据一览。',
-    'what the period’s figures mean, and the next steps.': '本期数据解读与后续计划。',
-    'each objective is ranked by cost per result, followed by each creative and its results across objectives.':
-      '各广告目标按单次成效费用排序，随后呈现每个创意在各目标下的成效。',
-    'cost per result is the cost of obtaining one lead, click or action; where the result is reach, it is the cost per 1,000 people reached, shown as / 1,000. it should be compared only between ads with the same objective, which is why each objective is ranked separately.':
-      '单次成效费用指获得一次潜在客户、点击或行动所需的费用。此数据只宜在同一广告目标的广告之间比较，因此每个目标均单独排名。',
-    'each ad is assessed only against the result its objective was set to achieve. a leads ad that also started conversations is assessed by its cost per lead; those conversations are incidental, and the budget was not spent on them.':
-      '每则广告只按其投放目标所设定的成效计算费用。例如潜在客户广告即使同时带来少量对话，仍以单次潜在客户费用评估；这些对话属附带成效，预算并非为其投放。',
-    'reach is the number of people who saw an ad; impressions are the number of times it was shown. frequency is impressions divided by reach.':
-      '覆盖人数指看过广告的人数；展示次数指广告获得展示的总次数。频次即展示次数除以覆盖人数。',
-    'a creative that ran under two objectives is shown on one line for each, so the lines can be compared to see which objective it served best.':
-      '同一创意若在两个广告目标下投放，将各列一行，便于比较该创意最能达成哪一个目标。',
-    'hook rate is the proportion of viewers who continued watching after the ad appeared. the opening seconds determine whether a viewer stops or scrolls past: a high hook rate indicates an effective opening, and a low one shows where the next creative should be strengthened.':
-      '吸睛率指广告出现后继续观看的人数比例。开场几秒决定观众停留还是滑过；吸睛率高代表开场奏效，偏低则说明下一则创意的开场可再加强。',
-    'hold rate is the proportion of viewers who continued watching after the opening, showing whether the message holds attention to the end. a high hold rate indicates engaging content; a low one shows where viewers stop watching.':
-      '持续观看率指被开场吸引后继续观看的人数比例，反映内容能否从头到尾留住观众。持续观看率高代表内容奏效；偏低则显示观众开始流失的位置。',
-    'amount spent is the total spent on ads, excluding the 10% wht and 8% sst, which are charged separately.':
-      '广告花费为投放于广告的全部金额，不包括另行收取的10%预扣税（WHT）及8%销售与服务税（SST）。',
-    'amount spent is the total spent on ads, excluding the 5% dcc and 9% gst, which are charged separately.':
-      '广告花费为投放于广告的全部金额，不包括另行收取的5%数字服务费（DCC）及9%消费税（GST）。',
-    'amount spent is the total spent on ads, excluding the 10% wht and 8% sst on a malaysian ad account and the 5% dcc and 9% gst on a singapore ad account, which are charged separately.':
-      '广告花费为投放于广告的全部金额。马来西亚广告账户不包括另行收取的10%预扣税（WHT）及8%销售与服务税（SST）；新加坡广告账户不包括另行收取的5%数字服务费（DCC）及9%消费税（GST）。'
+    'what the period’s figures mean, and the next steps.': '本期数据解读与后续计划。'
   };
-  ZH_WORDS[('every ad term is explained at ' + window.ADspaceAgency.link_domain + '/fb-ad-terms.').toLowerCase()] = '各项广告术语的说明，请参阅 ' + window.ADspaceAgency.link_domain + '/fb-ad-terms。';
   /* A count reads as Chinese does: the figure, then its measure word. */
   var ZH_COUNT = {
     'leads': '个潜在客户', 'lead': '个潜在客户', 'messages': '次私信对话', 'message': '次私信对话',
@@ -994,6 +971,15 @@
     if (!D || !D.lib) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     return D.lib().then(function () { return drawReport(snap, opts); });
   }
+  var NOTES = null;
+  var NOTE_KEYS = ['performance.lead', 'read', 'variations', 'video', 'glossary', 'tax.sg', 'tax.my', 'tax.both', 'roas', 'not-ranked'];
+  function notesOk(w) { return !!w && NOTE_KEYS.every(function (k) { return w['ad-report.' + k]; }); }
+  /* A note's words, its agency values filled from the profile. */
+  function note(k, part) {
+    var t = NOTES['ad-report.' + k][part || 'body'];
+    return window.ADspaceTpl.fill(t, { 'link domain': window.ADspaceAgency.link_domain }).text;
+  }
+  function noteParas(k) { return note(k).split(/\n\n+/); }
   function drawReport(snap, opts) {
     opts = opts || {};
     var PDF = window.PDFLib;
@@ -1008,6 +994,10 @@
     ZH = false;
     var mdl = model(snap);
     var rep = mdl.rep;
+    /* The ad report's reading notes are the template store's (restructure
+       release 16, `ad-report.*`), in the report's language where held; an
+       advertising report is never drawn without them. */
+    var notesJob = rep.kind === 'ads' && window.ADspaceTpl ? window.ADspaceTpl.set('ad-report', ZH ? 'zh' : 'en') : Promise.resolve(null);
     mdl.code = (snap && snap.doc_code) || '';
     var everyText = [rep.title, rep.intro, rep.headline, rep.client_name].concat(
       Object.keys(rep.insights || {}).map(function (k) { return rep.insights[k]; }),
@@ -1018,9 +1008,11 @@
     var pdf, fonts, logo, sh;
     return PDF.PDFDocument.create().then(function (p) {
       pdf = p;
-      return Promise.all([DOCS.embedFonts(pdf, PDF, { cjk: needsCjk }), DOCS.embedLogo(pdf)]);
+      return Promise.all([DOCS.embedFonts(pdf, PDF, { cjk: needsCjk }), DOCS.embedLogo(pdf), notesJob]);
     }).then(function (got) {
       fonts = got[0]; logo = got[1];
+      if (rep.kind === 'ads' && !notesOk(got[2])) throw new Error(window.ADspaceWords.line.pdfLib);
+      NOTES = got[2];
       if (needsCjk && !fonts.cjk) {
         throw new Error(window.ADspaceWords.line.pdfCjk);
       }
@@ -1853,11 +1845,7 @@
          ad account, DCC and GST on a Singapore one); TikTok's wording waits
          on the user (2026-10-05), so a TikTok figure carries no note. */
       var hasMeta = am.platforms.some(function (o) { return o.key === 'meta'; });
-      var TAX = mk === 'SG'
-        ? 'Amount spent is the total spent on ads, excluding the 5% DCC and 9% GST, which are charged separately.'
-        : mk === 'MY'
-          ? 'Amount spent is the total spent on ads, excluding the 10% WHT and 8% SST, which are charged separately.'
-          : 'Amount spent is the total spent on ads, excluding the 10% WHT and 8% SST on a Malaysian ad account and the 5% DCC and 9% GST on a Singapore ad account, which are charged separately.';
+      var TAX = note(mk === 'SG' ? 'tax.sg' : mk === 'MY' ? 'tax.my' : 'tax.both');
 
       /* A line under a page title, in the second ink: what the page is for,
          said once, in the first month only. */
@@ -1883,16 +1871,16 @@
         });
         y -= h + BLOCK;
       };
-      var GLOSSARY = 'Every ad term is explained at ' + window.ADspaceAgency.link_domain + '/fb-ad-terms.';
+      var GLOSSARY = note('glossary');
       /* A row is one creative with every variation of it added together,
          so a weak row reads as the creative tried several ways (the user,
          2026-10-02, their option B). */
-      var VARIATIONS = 'Each row combines every variation of one creative. Where a row shows a high cost per result or few results, its variations were tested together and did not perform as intended; the next round builds on the creatives that performed.';
+      var VARIATIONS = note('variations');
       /* The note under a table holding an ad the team marked as an ad error
          (2026-10-16): neutral words for the client, never "error". */
       /* Under every table that prints a purchase value or ROAS (the user,
          2026-10-25: both are Meta's own reading, not the client's sales). */
-      var ROAS_NOTE = '\u00b2 Purchase value and ROAS are as reported by Meta, based on purchases its tracking attributes to these ads, and may differ from the sales your own records show.';
+      var ROAS_NOTE = '\u00b2 ' + note('roas');
       var roasNote = function () {
         y -= TY.small * 0.72 + S(-1);
         sh.linesOf(ROAS_NOTE, CW, TY.small, book).forEach(function (ln, i) {
@@ -1902,7 +1890,7 @@
         });
         y -= TY.small * 0.28;
       };
-      var NOT_RANKED = '\u00b9 Not ranked: this ad recorded minimal delivery during the period, so its cost per result is not comparable.';
+      var NOT_RANKED = '\u00b9 ' + note('not-ranked');
 
       // ------------------------------------------------ Executive summary
       (function summary() {
@@ -2181,14 +2169,8 @@
         newPage('Ad Performance');
         pageTitle('Ad Performance');
         if (first) {
-          leadLine('Each objective is ranked by cost per result, followed by each creative and its results across objectives.');
-          panel('How to read this', [
-            'Cost per result is the cost of obtaining one lead, click or action; where the result is reach, it is the cost per 1,000 people reached, shown as / 1,000. It should be compared only between ads with the same objective, which is why each objective is ranked separately.',
-            'Each ad is assessed only against the result its objective was set to achieve. A leads ad that also started conversations is assessed by its cost per lead; those conversations are incidental, and the budget was not spent on them.',
-            'Reach is the number of people who saw an ad; impressions are the number of times it was shown. Frequency is impressions divided by reach.',
-            'A creative that ran under two objectives is shown on one line for each, so the lines can be compared to see which objective it served best.',
-            VARIATIONS
-          ]);
+          leadLine(note('performance.lead'));
+          panel(note('read', 'subject'), noteParas('read').concat([VARIATIONS]));
         } else {
           leadLine(GLOSSARY);
           leadLine(VARIATIONS);
@@ -2279,11 +2261,7 @@
           creativeCard(c);
           if (first && c.vidAd && !videoRead) {
             videoRead = true;
-            panel('How to read the video figures', [
-              'Hook rate is the proportion of viewers who continued watching after the ad appeared. The opening seconds determine whether a viewer stops or scrolls past: a high hook rate indicates an effective opening, and a low one shows where the next creative should be strengthened.',
-              'Hold rate is the proportion of viewers who continued watching after the opening, showing whether the message holds attention to the end. A high hold rate indicates engaging content; a low one shows where viewers stop watching.',
-              GLOSSARY
-            ]);
+            panel(note('video', 'subject'), noteParas('video').concat([GLOSSARY]));
           }
         });
       })();

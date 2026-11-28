@@ -34,16 +34,40 @@
   }
 
   // ---- The framework's words ---------------------------------------------------
+  /* A category's key, its name and its maximum. The names, the paths and
+     the record's print lines are the template store's (restructure release
+     16, `performance.*`), read as this script loads (`wordsRead`) and
+     waited on before a view that draws them; a read refused says the view
+     could not be loaded, never draws a category without its name. */
   var CATS = [
-    ['output',     'Role output quality',              25],
-    ['accuracy',   'Accuracy and compliance',          15],
-    ['delivery',   'Delivery and reliability',         15],
-    ['client',     'Client ownership',                 20],
-    ['comms',      'Communication and collaboration',  15],
-    ['initiative', 'Initiative and improvement',       10]
+    ['output',     '', 25],
+    ['accuracy',   '', 15],
+    ['delivery',   '', 15],
+    ['client',     '', 20],
+    ['comms',      '', 15],
+    ['initiative', '', 10]
   ];
   var CAT_WORD = {};
-  CATS.forEach(function (c) { CAT_WORD[c[0]] = c[1]; });
+  var WORDS = null, wordsAsk = null;
+  function wordsRead() {
+    if (WORDS) return Promise.resolve(true);
+    if (wordsAsk) return wordsAsk;
+    wordsAsk = window.ADspaceTpl.set('performance').then(function (w) {
+      wordsAsk = null;
+      var keys = CATS.map(function (c) { return 'performance.category.' + c[0]; })
+        .concat(['performance.path.development', 'performance.path.accountability',
+          'performance.print.issue-once', 'performance.print.no-path', 'performance.print.path-limits']);
+      if (!w || keys.some(function (k) { return !w[k]; })) return false;
+      CATS.forEach(function (c) { c[1] = w['performance.category.' + c[0]].body; CAT_WORD[c[0]] = c[1]; });
+      ['development', 'accountability'].forEach(function (k) {
+        PATH[k] = [w['performance.path.' + k].subject, w['performance.path.' + k].body];
+      });
+      WORDS = w;
+      return true;
+    });
+    return wordsAsk;
+  }
+  function printWord(k) { return WORDS['performance.print.' + k].body; }
   /* The letter ladder (the user, 2026-11-24): a category is scored by a
      letter, A Exceptional to E Poor, each a fifth of its maximum in steps of
      a point from the top (25: A1 25 to A5 21 … E5 1), and E0 for none. The
@@ -168,10 +192,8 @@
     D: 'Intensive training, close guidance and a formal improvement plan.',
     E: 'A formal improvement plan, agreed with management.'
   };
-  var PATH = {
-    development: ['Development path', 'A work or skills shortfall with no client harmed. Repeated months move through a documented, staged improvement process.'],
-    accountability: ['Recovery path', 'A serious issue this month, or the month fell well short. This month\'s bonus, commission eligibility, trip and reward-linked benefits do not apply.']
-  };
+  /* development, accountability: [name, what it means], from the store. */
+  var PATH = {};
   var DECISION = { upheld: 'Agreed', partly: 'Partly agreed', not_upheld: 'Not agreed' };
 
   function dateWord(s) {
@@ -388,6 +410,14 @@
 
   function enterPerf() {
     token = token || readToken();
+    wordsRead().then(function (ok) {
+      if (ok) { enterPerfRead(); return; }
+      $('perfLock').hidden = true;
+      $('perfOpen').hidden = false;
+      UI.failLine($('perfList'), 'Performance reviews', '', enterPerf);
+    });
+  }
+  function enterPerfRead() {
     call('perf_gate_info', {}, function (g) {
       st.gate = g;
       if (g.error) { showLock(g); return; }
@@ -1687,6 +1717,12 @@
 
   function enterMine() {
     if (!st.mine) UI.skeleton($('mineList'), 3);
+    wordsRead().then(function (ok) {
+      if (ok) { enterMineRead(); return; }
+      UI.failLine($('mineList'), 'Your reviews', '', enterMine);
+    });
+  }
+  function enterMineRead() {
     guardInfo(function () {
       call('perf_mine', {}, function (d) {
         if (d.error === 'code-needed') { st.mine = null; showMineLock(true); return; }
@@ -2133,15 +2169,15 @@
                   b.what + (b.client_name ? ' (' + b.client_name + ')' : '') + (flags.length ? ' ' + flags.join('. ') + '.' : ''), num(b.deduction)];
         }));
       y -= SP.line;
-      para('Each issue is recorded once, under the area it affected most. Putting it right adds no points back, but can keep it from going further; the issue stays on the record.', TY.small, book, SOFT);
+      para(printWord('issue-once'), TY.small, book, SOFT);
     }
 
     heading('If This Result Repeats', ROW);
     var path = res.path && PATH[res.path];
     if (path) { para(path[0], TY.body, med); para(path[1]); }
-    else para('No development or recovery path applies this month.', TY.body, book, SOFT);
+    else para(printWord('no-path'), TY.body, book, SOFT);
     y -= SP.tight;
-    para('A month with no issue resets the recovery path. Consequences are limited to privileges, training and discretionary rewards, and never affect salary.', TY.small, book, SOFT);
+    para(printWord('path-limits'), TY.small, book, SOFT);
 
     heading('Improvement and Follow-up', ROW * 3);
     var lw2 = W / (1 + RPHI) / RPHI;
@@ -3689,5 +3725,6 @@
        lock back over My records. */
     mineCall: function (fn, args, then) { mineCall(fn, args, then); }
   };
+  wordsRead();
   if (bridge.perfReady) bridge.perfReady();
 })();

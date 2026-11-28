@@ -1251,6 +1251,7 @@
       if (me) loadRail();
       meLoaded = true;
       go();
+      if (me) loadGuides();
       if (me) readPayWaiting();
     }).catch(function () { me = null; meFailed = true; meLoaded = true; go(); });
   }
@@ -2375,144 +2376,168 @@
      do not know what each section is for). Two or three steps a section,
      each on a control the section draws; a step whose control this person
      cannot see is left out. Opened once by itself, and again from the ⓘ. */
-  var GUIDES = {
-    analytics: { name: 'Analytics', steps: [
-      { at: '#anlTabs', text: 'Each tab covers one subject, showing the charts your access allows.' },
-      { at: '#anlPeriod', text: 'Every figure covers the period chosen here and compares it with the period of the same length before it.' },
-      { at: '.anl-changed', text: 'The largest changes against the previous period, calculated from the figures.' }] },
-    overview: { name: 'Dashboard', steps: [
-      { at: '#ovwToday .ovw-today-row', text: 'Everything that needs your action today, late items first. Select an item to open it.' },
-      { at: '#ovwAsk', text: 'Ask the Assistant about your clients and work.' },
-      { at: '#ovwPages', text: 'Me is your own work. Team holds the figures of the sections you manage.' },
-      { at: '#ovwPeriod', text: 'Every figure covers the period chosen here.' },
-      { at: '#ovwLead', text: 'The main figures, each compared with the previous period.' },
-      { at: '#ovwAttention .ovw-att-row', text: 'Everything that needs attention, late items first. Choose a tab above to show one section. Select an item to open it.' }] },
-    work: { name: 'My Work', steps: [
-      { at: '#workViews', text: 'My Work shows the same tasks as a list, a board, a calendar or months.' },
-      { at: '#workNew', text: 'Add a task here, or a client\'s posts for the month.' },
-      { at: '#workList .task-stage .state-select', text: 'Move a task to its next stage here. The colleague who takes it next is notified.' }] },
-    clients: { name: 'Clients', steps: [
-      { at: '#crmNew', text: 'Add a lead on the day it comes in. Billing, brand and services are added as the deal progresses.' },
-      { at: '#crmList .crm-row:not(.crm-head)', text: 'Open a client to see its contacts, services, documents, calls and visits.' },
-      { at: '#crmBar .cmdbar-chips, #crmBar .cmdbar-filters', text: 'Filter the list by stage or person in charge.' }] },
-    whatsapp: { name: 'Messages', steps: [
-      { at: '#msgViews', text: 'WhatsApp and Email each list what the portal has sent, month by month.' },
-      { at: '#waNew', text: 'New message sends a Meta-approved template to a client contact or a creator.' },
-      { at: '#waList .wam-row:not(.crm-head)', text: 'Every message the portal has sent, with its status: Sent, Delivered, Read, or Failed with the reason.' },
-      { at: '#waQueue', text: 'Messages the portal sends automatically: those waiting or sending, and those not sent or not confirmed in the last seven days.' }] },
-    review: { name: 'Content Review', steps: [
-      { at: '#clientCards .cr-client-row', text: 'Open a client to prepare a content set and send it for approval.' },
-      { at: '#crFind', text: 'Find a client by name.' }] },
-    scripts: { name: 'Video Scripts', steps: [
-      { at: '#vsNew', text: 'New script adds a video to a client\'s content month, numbered by month (for example 2610VS01).' },
-      { at: '#vsList .vs-row:not(.crm-head)', text: 'Open a script to write it, publish it to the client\'s link and record each clip number on the shoot day.' }] },
-    campaigns: { name: 'Creators', steps: [
-      { at: '#showAddCamp', text: 'New campaign creates a campaign for a client, with creators from the Creators List.' },
-      { at: '#campSectionTabs', text: 'Campaigns, and the Creators List with every creator and their rates.' },
-      { at: '#campCards .camp-row', text: 'Open a campaign to book creators, check drafts and release them to the client.' }] },
-    register: { name: 'Documents', steps: [
-      { at: '#regIssue', text: 'Issue a letter on the letterhead. Its reference number is assigned automatically.' },
-      { at: '#regList .serial-copy', text: 'Press a reference to copy it. Anyone can check it at ' + AGENCY.verify_url + '.' }] },
-    suppliers: { name: 'Suppliers', steps: [
-      { at: '#supNew', text: 'New supplier creates a Supplier ID and a link. The supplier fills in their own details.' },
-      { at: '#supList button.sup-row', text: 'Open a supplier to review the details they submitted, approve them and issue documents.' }] },
-    'team.hiring': { name: 'Hiring', steps: [
-      { at: '#hirAdd', text: 'Add candidate saves their details and CV, and creates their own page.' },
-      { at: '#hirList button.hir-row', text: 'Open a candidate to add the colleagues who decide or interview, and to copy their page\'s link.' }] },
-    reports: { name: 'Reports', steps: [
-      { at: '#rhNew', text: 'New report creates an Accounts Report or an Advertising Report for an active client.' },
-      { at: '#rhTabs', text: 'A report moves from Drafts to In review, Confirmed and Published. The client can read it once it is published.' },
-      { at: '#rhMoreBtn', text: 'Select reports to download several, or mark them as sent.' }] },
-    links: { name: 'Short Links', steps: [
-      { at: '#showAddLink', text: 'Add link creates a short address and its QR code.' },
-      { at: '#linkList .crm-group-head', text: 'Live, Namecards and Paused, followed by the addresses the portal creates for clients and creators. Every address in use is listed, so none is used twice.' }] },
-    services: { name: 'Services', steps: [
-      { at: '#svcAdd', text: 'Add a service or an add-on to the Rate Card.' },
-      { at: '#svcList .svc-row:not(.crm-head)', text: 'Each Rate Card service is the starting point for a client\'s service line, which can then be edited.' }] },
-    team: { name: 'Team', steps: [
-      { at: '#teamTabs', text: 'Members, Hiring, the user groups that control what each member can open, Performance and Health.' },
-      { at: '#teamAdd', text: 'Add member gives a colleague their sign-in and digital namecard.' }] },
-    handbook: { name: 'Handbook', steps: [
-      { at: '#hbAdd', text: 'Add a file or a link. A new version never replaces the old one.' },
-      { at: '#hbList .hb-row:not(.crm-head)', text: 'Open a file. Earlier versions are in its ⋯ menu.' }] },
-    mine: { name: 'My records', steps: [
-      { at: '#mineViews', text: 'Your reviews, recognitions, letters and health check-ins. Only you can see them here.' }] },
+  /* Each guide's places on the screen, in the order of its steps. The words
+     are the template store's (restructure release 16, `guide.{key}`): the
+     guide's name its subject and a step a paragraph, read once signed in
+     (`ADspaceTpl.set('guide')`, `guideWords`). Nothing is offered until
+     they are read; a step with no paragraph is left out. */
+  var GUIDE_AT = {
+    analytics: { at: [
+      '#anlTabs',
+      '#anlPeriod',
+      '.anl-changed'] },
+    overview: { at: [
+      '#ovwToday .ovw-today-row',
+      '#ovwAsk',
+      '#ovwPages',
+      '#ovwPeriod',
+      '#ovwLead',
+      '#ovwAttention .ovw-att-row'] },
+    work: { at: [
+      '#workViews',
+      '#workNew',
+      '#workList .task-stage .state-select'] },
+    clients: { at: [
+      '#crmNew',
+      '#crmList .crm-row:not(.crm-head)',
+      '#crmBar .cmdbar-chips, #crmBar .cmdbar-filters'] },
+    whatsapp: { at: [
+      '#msgViews',
+      '#waNew',
+      '#waList .wam-row:not(.crm-head)',
+      '#waQueue'] },
+    review: { at: [
+      '#clientCards .cr-client-row',
+      '#crFind'] },
+    scripts: { at: [
+      '#vsNew',
+      '#vsList .vs-row:not(.crm-head)'] },
+    campaigns: { at: [
+      '#showAddCamp',
+      '#campSectionTabs',
+      '#campCards .camp-row'] },
+    register: { at: [
+      '#regIssue',
+      '#regList .serial-copy'] },
+    suppliers: { at: [
+      '#supNew',
+      '#supList button.sup-row'] },
+    'team.hiring': { at: [
+      '#hirAdd',
+      '#hirList button.hir-row'] },
+    reports: { at: [
+      '#rhNew',
+      '#rhTabs',
+      '#rhMoreBtn'] },
+    links: { at: [
+      '#showAddLink',
+      '#linkList .crm-group-head'] },
+    services: { at: [
+      '#svcAdd',
+      '#svcList .svc-row:not(.crm-head)'] },
+    team: { at: [
+      '#teamTabs',
+      '#teamAdd'] },
+    handbook: { at: [
+      '#hbAdd',
+      '#hbList .hb-row:not(.crm-head)'] },
+    mine: { at: ['#mineViews'] },
     /* A screen of its own inside a section (2026-10-10; the user: "the
        entire portal of these sections"): a tab, a report's step, a sheet.
        Keyed by guideKey(), each met once. */
-    settings: { name: 'Settings', steps: [
-      { at: '#setList .stg-nav, #setList .stg-strip, #setList .stg-title', text: 'Settings are grouped by what they change. You see only the settings you have access to.' },
-      { at: '#setList .stg-row .btn', text: 'Edit and Open show the setting in full. A business figure applies from the date you enter.' },
-      { at: '#setList .stg-row .switch', text: 'A switch takes effect for everyone as soon as you press it. If the change is refused, it switches back.' }] },
-    'whatsapp.templates': { name: 'WhatsApp templates', within: '#waTplSheet', steps: [
-      { at: '#waTplList .wat-row [data-a="edit"]', text: 'Edit selects the Meta-approved template for this purpose from the list Meta provides.' },
-      { at: '#waTplList .wat-row .switch', text: 'The switch turns a purpose on or off. When it is off, nothing is sent and its button is removed from the records.' }] },
-    'whatsapp.compose': { name: 'New message', within: '#waCompose', steps: [
-      { at: '#waTo', text: 'Choose a client contact or a creator. Their number is shown below. A contact with only a username cannot be messaged.' },
-      { at: '#waTpl', text: 'Choose a Meta-approved template. Its variables are filled in from the record and can be changed.' },
-      { at: '#waSend', text: 'The preview shows the message as it will be sent. Send asks you to confirm the number and the category.' }] },
-    phone: { name: 'Your sections', steps: [
-      { at: '#tabBar .tabbar-tab:not(#tabMore)', text: 'The bar holds the Dashboard and your sections. Press one to open it.' },
-      { at: '#tabMore', text: 'More opens the other sections, Settings, the Activity record and Arrange sections, where you choose the sections on this bar.' },
-      { at: '#acctBtn', text: 'Your name opens My records and My namecard.' }] },
-    arrange: { name: 'Arrange sections', within: '#railSheet', steps: [
-      { at: '#railLists .ro-grip', text: 'Drag a section by its grip, or press the grip and move it with the arrow keys.' },
-      { at: '#railLists .ro-switch', text: 'Turn on up to three sections for the tab bar at the bottom of your phone. Under Tab bar order, drag them and the Dashboard into any order.' },
-      { at: '#railSave', text: 'Save applies the order on the web and on your phone, and the tab bar on your phone. Reset restores the standard order and tab bar.' }] },
-    'mine.health': { name: 'Health', steps: [
-      { at: '#mineHealthBox .health-termbox', text: 'A short check-in each month, or each week while your planned work is near your weekly capacity. Management reads your answers by name to support you. They are never used in a performance review.' },
-      { at: '#mineHealthBox [data-a="agree"]', text: 'I agree starts the check-ins. Withdraw stops them at any time.' }] },
-    'mine.checkin': { name: 'Health', steps: [
-      { at: '#mineHealthBox [data-a="checkin"]', text: 'Check in with your mood and workload. You can change your answers until the period ends.' },
-      { at: '#mineHealthBox [data-a="talk"]', text: 'Ask a colleague for a talk. They are told who asked, but never see your note.' },
-      { at: '#mineHealthBox [data-a="withdraw"]', text: 'Withdraw stops the check-ins and removes your answers from Team: Health.' }] },
-    'team.health': { name: 'Health', steps: [
-      { at: '#healthKpis', text: 'This period\'s average mood, check-ins, weekly check-ins and open talks.' },
-      { at: '#healthTrend', text: 'Average mood by week, over 12 weeks.' },
-      { at: '#teamHealthBox .health-prow', text: 'Press a colleague to see their check-ins and this week\'s planned work. Answers are shown only while their agreement is in place.' }] },
-    'reports.entry': { name: 'Report', steps: [
-      { at: '#rhEdit .rp-steps', text: 'Four steps, each with a summary of what it contains. Press a step to open it.' },
-      { at: '#rhEdit .rp-head [data-a="pdf"]', text: 'Preview PDF shows the report as the client will read it, marked as a draft until it is confirmed.' },
-      { at: '#rhEdit .rp-stepfoot [data-a="next"]', text: 'Next opens the following step.' }] },
-    'reports.text': { name: 'Commentary', steps: [
-      { at: '#rhEdit .rp-aidraft [data-a="aidraft"]', text: 'Write with AI drafts the commentary from the figures and your notes. Read it before submitting.' },
-      { at: '#rhEdit .rp-ainotes > summary', text: 'Notes for the draft: reasons, changes, the goal and next month\'s budget. They are kept in this browser only.' },
-      { at: '#rhEdit .rp-ailang', text: 'The language Write with AI drafts in.' }] },
-    'reports.review': { name: 'Review and publish', steps: [
-      { at: '#rhEdit [data-a="confirm"]', text: 'Confirm marks the report as reviewed. A manager then publishes it.' },
-      { at: '#rhEdit [data-a="publish"]', text: 'Publish shows the report on the client\'s link and saves its PDF as published.' },
-      { at: '#rhEdit [data-a="return"]', text: 'Send back returns the report to its writer as a draft for corrections.' }] },
+    settings: { at: [
+      '#setList .stg-nav, #setList .stg-strip, #setList .stg-title',
+      '#setList .stg-row .btn',
+      '#setList .stg-row .switch'] },
+    'whatsapp.templates': { within: '#waTplSheet', at: [
+      '#waTplList .wat-row [data-a="edit"]',
+      '#waTplList .wat-row .switch'] },
+    'whatsapp.compose': { within: '#waCompose', at: [
+      '#waTo',
+      '#waTpl',
+      '#waSend'] },
+    phone: { at: [
+      '#tabBar .tabbar-tab:not(#tabMore)',
+      '#tabMore',
+      '#acctBtn'] },
+    arrange: { within: '#railSheet', at: [
+      '#railLists .ro-grip',
+      '#railLists .ro-switch',
+      '#railSave'] },
+    'mine.health': { at: [
+      '#mineHealthBox .health-termbox',
+      '#mineHealthBox [data-a="agree"]'] },
+    'mine.checkin': { at: [
+      '#mineHealthBox [data-a="checkin"]',
+      '#mineHealthBox [data-a="talk"]',
+      '#mineHealthBox [data-a="withdraw"]'] },
+    'team.health': { at: [
+      '#healthKpis',
+      '#healthTrend',
+      '#teamHealthBox .health-prow'] },
+    'reports.entry': { at: [
+      '#rhEdit .rp-steps',
+      '#rhEdit .rp-head [data-a="pdf"]',
+      '#rhEdit .rp-stepfoot [data-a="next"]'] },
+    'reports.text': { at: [
+      '#rhEdit .rp-aidraft [data-a="aidraft"]',
+      '#rhEdit .rp-ainotes > summary',
+      '#rhEdit .rp-ailang'] },
+    'reports.review': { at: [
+      '#rhEdit [data-a="confirm"]',
+      '#rhEdit [data-a="publish"]',
+      '#rhEdit [data-a="return"]'] },
     /* Batch 2 (2026-11-21): the screens inside Creator Campaigns, Messages,
        the Dashboard and Analytics, each met once. */
-    'campaigns.record': { name: 'Campaign', steps: [
-      { at: '#campTabs', text: 'Each tab holds one part of the campaign: its creators, schedule, the client\'s selection and its finance.' },
-      { at: '#campCopy', text: 'Copy the client\'s link to send it. The client chooses their creators on it.' },
-      { at: '#campPublish', text: 'Publish shows the campaign\'s creators to the client on their link.' }] },
-    'campaigns.roster': { name: 'Creators List', steps: [
-      { at: '#showAddCreator', text: 'Add creator saves a creator with their profiles, rate and contact details.' },
-      { at: '#rosterList .crm-group-head', text: 'Creators are grouped by fee. Inactive creators are in a group of their own.' },
-      { at: '#rosterList .cr-row:not(.crm-head)', text: 'Open a creator to see their bookings, payments and payment details.' }] },
-    'campaigns.payments': { name: 'Payments', steps: [
-      { at: '#cpqList .crm-group-head', text: 'Payments are grouped by stage: Details to review, Ready to bill, Draft in Bukku, Awaiting payment and Paid.' },
-      { at: '#cpqList .cpq-act .btn', text: 'The button on each row takes its next step: Review, Create bill, Link to Bukku or Open in Bukku.' },
-      { at: '#cpqRead', text: 'Read from Bukku updates each bill\'s status once it is posted or paid in Bukku.' }] },
-    'whatsapp.email': { name: 'Email', steps: [
-      { at: '#emlList .eml-row:not(.crm-head)', text: 'Every email the portal has sent, with its status. Press one to read it in full.' },
-      { at: '#emlMonth', text: 'Emails are listed by month. Type and Status narrow the list.' },
-      { at: '#emlNew', text: 'New email sends an email to a client, a supplier or a creator from a template.' }] },
-    'overview.team': { name: 'Team', steps: [
-      { at: '#ovwStages', text: 'Open work at each stage, with the colleagues assigned to it.' },
-      { at: '#ovwPeople button.ovw-tr', text: 'Each colleague\'s open, late and delivered work. Press a colleague to open their work.' },
-      { at: '#ovwClientsMonth button.ovw-tr', text: 'Each client\'s posts, report and meeting this month. Press a client to open their month in My Work.' }] },
-    'analytics.tab': { name: 'Charts', steps: [
-      { at: '#anlBody .anl-page .ovw-kpi', text: 'Each tile shows a figure and its change from the previous period.' },
-      { at: '#anlBody .anl-page .anl-verdict', text: 'Better, Worse, Steady or Above alert states how the figure moved.' },
-      { at: '#anlBody .anl-fold-head', text: 'Monthly review and Reference hold the charts read less often. Press a heading to open it.' },
-      { at: '#anlBody .anl-ai [data-a="write"]', text: 'Write with AI analyses the figures on this tab: their health, risks, what is working and recommended actions.' }] },
-    'reports.check': { name: 'Check and submit', steps: [
-      { at: '#rhEdit .rp-aicheck', text: 'Report audit checks the figures against Meta and the commentary against the figures.' },
-      { at: '#rhEdit [data-a="submit"]', text: 'Submit asks who reviews the report, then sends it to them.' }] }
+    'campaigns.record': { at: [
+      '#campTabs',
+      '#campCopy',
+      '#campPublish'] },
+    'campaigns.roster': { at: [
+      '#showAddCreator',
+      '#rosterList .crm-group-head',
+      '#rosterList .cr-row:not(.crm-head)'] },
+    'campaigns.payments': { at: [
+      '#cpqList .crm-group-head',
+      '#cpqList .cpq-act .btn',
+      '#cpqRead'] },
+    'whatsapp.email': { at: [
+      '#emlList .eml-row:not(.crm-head)',
+      '#emlMonth',
+      '#emlNew'] },
+    'overview.team': { at: [
+      '#ovwStages',
+      '#ovwPeople button.ovw-tr',
+      '#ovwClientsMonth button.ovw-tr'] },
+    'analytics.tab': { at: [
+      '#anlBody .anl-page .ovw-kpi',
+      '#anlBody .anl-page .anl-verdict',
+      '#anlBody .anl-fold-head',
+      '#anlBody .anl-ai [data-a="write"]'] },
+    'reports.check': { at: [
+      '#rhEdit .rp-aicheck',
+      '#rhEdit [data-a="submit"]'] }
   };
+  var GUIDES = {};
+  function guideWords(words) {
+    Object.keys(GUIDE_AT).forEach(function (k) {
+      var w = words && words['guide.' + k];
+      if (!w) return;
+      var text = window.ADspaceTpl.fill(w.body, { 'verify url': AGENCY.verify_url }).text.split(/\n\n+/);
+      var g = { name: w.subject, steps: GUIDE_AT[k].at.map(function (at, i) { return { at: at, text: text[i] || '' }; })
+        .filter(function (st) { return st.text.trim(); }) };
+      if (GUIDE_AT[k].within) g.within = GUIDE_AT[k].within;
+      GUIDES[k] = g;
+    });
+  }
+  function loadGuides() {
+    need('tpl').then(function () { return window.ADspaceTpl.set('guide'); }).then(function (words) {
+      if (!words) return;
+      guideWords(words);
+      guideHere(true);
+    }).catch(function () {});
+  }
+
   /* The screen on show, for its guide: a route, else a tab, a report's step
      or a sheet open over it. Read from the page each time it is asked. */
   function shownSheet(id) { var e = $(id); return !!e && !e.hidden; }

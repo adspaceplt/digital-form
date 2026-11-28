@@ -117,7 +117,7 @@
   var LIVE_FNS = {
     template_render: 'p_key p_lang p_record p_values p_at p_strict', templates_list: 'p_key',
     template_draft_save: 'p_id p_key p_kind p_lang p_subject p_body p_expected', template_publish: 'p_id p_from',
-    template_draft_delete: 'p_id',
+    template_draft_delete: 'p_id', wording_read: 'p_set p_lang',
     activity_section: 'p_action',
     ai_check_claim: 'p_report',
     client_open_tasks: 'p_client',
@@ -154,6 +154,7 @@
     wa_templates_read: '',
     wa_messages: 'p_month',
     mail_log: 'p_month',
+    mail_cancel: 'p_source p_id',
     mail_senders_read: '',
     agency_profile_read: '',
     mail_boxes_set: 'p_values',
@@ -5978,6 +5979,32 @@ function cardSlugFree(name, self, email) {
     return window.__bukkuAccounts || [{ id: 100, code: '6000-03', name: 'Cost of Sales - Influencers', type: 'cost_of_sales' },
       { id: 610, code: '6100', name: 'Creator fees', type: 'cost_of_sales' }, { id: 620, code: '6200', name: 'Advertising', type: 'expenses' }];
   }
+
+  function undoQueue(src, table, key, logId, close) {
+    var secs = Number(window.__undoSeconds) || 0;
+    if (!(secs > 0)) return null;
+    var row = (DB[table] || []).filter(function (x) { return x.id === logId; })[0];
+    if (!row) return null;
+    row[key] = 'queued';
+    DB.mail_queue = DB.mail_queue || [];
+    var me = opsMe() || {};
+    var q = { id: nid('mq'), source: src, table: table, key: key, log_id: logId, status: 'queued', queued_by: me.id || null,
+      send_at: new Date(Date.now() + secs * 1000).toISOString(), created_at: new Date().toISOString() };
+    DB.mail_queue.push(q);
+    persist();
+    setTimeout(function () {
+      var x = (DB.mail_queue || []).filter(function (y) { return y.id === q.id; })[0];
+      var r = x && (DB[table] || []).filter(function (y) { return y.id === logId; })[0];
+      if (!x || x.status !== 'queued' || !r) return;
+      x.status = 'sending'; r[key] = 'sending';
+      persist();
+      window.__undoSent = (window.__undoSent || []).concat([{ source: src, id: logId }]);
+      Promise.resolve(close(window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent')).then(function () {
+        x.status = r[key] === 'sending' ? 'unknown' : r[key]; persist();
+      });
+    }, secs * 1000);
+    return { source: src, id: logId, seconds: secs, send_at: q.send_at };
+  }
   function opsMe() {
     var e = String((session && session.user && session.user.email) || '').toLowerCase();
 
@@ -10647,6 +10674,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (c.stage !== 'past') return true;
     return Boolean(c.portal_kept_at) && (!c.stage_since || String(c.portal_kept_at) >= String(c.stage_since));
   }
+
+  var WORDING_SEED = [{"key":"ad-report.glossary","body":"Every ad term is explained at {link domain}/fb-ad-terms.","kind":"ad-report","lang":"en","subject":""},{"key":"ad-report.glossary","body":"各项广告术语的说明，请参阅 {link domain}/fb-ad-terms。","kind":"ad-report","lang":"zh","subject":""},{"key":"ad-report.not-ranked","body":"Not ranked: this ad recorded minimal delivery during the period, so its cost per result is not comparable.","kind":"ad-report","lang":"en","subject":""},{"key":"ad-report.performance.lead","body":"Each objective is ranked by cost per result, followed by each creative and its results across objectives.","kind":"ad-report","lang":"en","subject":""},{"key":"ad-report.performance.lead","body":"各广告目标按单次成效费用排序，随后呈现每个创意在各目标下的成效。","kind":"ad-report","lang":"zh","subject":""},{"key":"ad-report.read","body":"Cost per result is the cost of obtaining one lead, click or action; where the result is reach, it is the cost per 1,000 people reached, shown as / 1,000. It should be compared only between ads with the same objective, which is why each objective is ranked separately.\n\nEach ad is assessed only against the result its objective was set to achieve. A leads ad that also started conversations is assessed by its cost per lead; those conversations are incidental, and the budget was not spent on them.\n\nReach is the number of people who saw an ad; impressions are the number of times it was shown. Frequency is impressions divided by reach.\n\nA creative that ran under two objectives is shown on one line for each, so the lines can be compared to see which objective it served best.","kind":"ad-report","lang":"en","subject":"How to read this"},{"key":"ad-report.read","body":"单次成效费用指获得一次潜在客户、点击或行动所需的费用。此数据只宜在同一广告目标的广告之间比较，因此每个目标均单独排名。\n\n每则广告只按其投放目标所设定的成效计算费用。例如潜在客户广告即使同时带来少量对话，仍以单次潜在客户费用评估；这些对话属附带成效，预算并非为其投放。\n\n覆盖人数指看过广告的人数；展示次数指广告获得展示的总次数。频次即展示次数除以覆盖人数。\n\n同一创意若在两个广告目标下投放，将各列一行，便于比较该创意最能达成哪一个目标。","kind":"ad-report","lang":"zh","subject":"阅读说明"},{"key":"ad-report.roas","body":"Purchase value and ROAS are as reported by Meta, based on purchases its tracking attributes to these ads, and may differ from the sales your own records show.","kind":"ad-report","lang":"en","subject":""},{"key":"ad-report.tax.both","body":"Amount spent is the total spent on ads, excluding the 10% WHT and 8% SST on a Malaysian ad account and the 5% DCC and 9% GST on a Singapore ad account, which are charged separately.","kind":"ad-report","lang":"en","subject":""},{"key":"ad-report.tax.both","body":"广告花费为投放于广告的全部金额。马来西亚广告账户不包括另行收取的10%预扣税（WHT）及8%销售与服务税（SST）；新加坡广告账户不包括另行收取的5%数字服务费（DCC）及9%消费税（GST）。","kind":"ad-report","lang":"zh","subject":""},{"key":"ad-report.tax.my","body":"Amount spent is the total spent on ads, excluding the 10% WHT and 8% SST, which are charged separately.","kind":"ad-report","lang":"en","subject":""},{"key":"ad-report.tax.my","body":"广告花费为投放于广告的全部金额，不包括另行收取的10%预扣税（WHT）及8%销售与服务税（SST）。","kind":"ad-report","lang":"zh","subject":""},{"key":"ad-report.tax.sg","body":"Amount spent is the total spent on ads, excluding the 5% DCC and 9% GST, which are charged separately.","kind":"ad-report","lang":"en","subject":""},{"key":"ad-report.tax.sg","body":"广告花费为投放于广告的全部金额，不包括另行收取的5%数字服务费（DCC）及9%消费税（GST）。","kind":"ad-report","lang":"zh","subject":""},{"key":"ad-report.variations","body":"Each row combines every variation of one creative. Where a row shows a high cost per result or few results, its variations were tested together and did not perform as intended; the next round builds on the creatives that performed.","kind":"ad-report","lang":"en","subject":""},{"key":"ad-report.video","body":"Hook rate is the proportion of viewers who continued watching after the ad appeared. The opening seconds determine whether a viewer stops or scrolls past: a high hook rate indicates an effective opening, and a low one shows where the next creative should be strengthened.\n\nHold rate is the proportion of viewers who continued watching after the opening, showing whether the message holds attention to the end. A high hold rate indicates engaging content; a low one shows where viewers stop watching.","kind":"ad-report","lang":"en","subject":"How to read the video figures"},{"key":"ad-report.video","body":"吸睛率指广告出现后继续观看的人数比例。开场几秒决定观众停留还是滑过；吸睛率高代表开场奏效，偏低则说明下一则创意的开场可再加强。\n\n持续观看率指被开场吸引后继续观看的人数比例，反映内容能否从头到尾留住观众。持续观看率高代表内容奏效；偏低则显示观众开始流失的位置。","kind":"ad-report","lang":"zh","subject":"视频数据说明"},{"key":"guide.analytics","body":"Each tab covers one subject, showing the charts your access allows.\n\nEvery figure covers the period chosen here and compares it with the period of the same length before it.\n\nThe largest changes against the previous period, calculated from the figures.","kind":"guide","lang":"en","subject":"Analytics"},{"key":"guide.analytics.tab","body":"Each tile shows a figure and its change from the previous period.\n\nBetter, Worse, Steady or Above alert states how the figure moved.\n\nMonthly review and Reference hold the charts read less often. Press a heading to open it.\n\nWrite with AI analyses the figures on this tab: their health, risks, what is working and recommended actions.","kind":"guide","lang":"en","subject":"Charts"},{"key":"guide.arrange","body":"Drag a section by its grip, or press the grip and move it with the arrow keys.\n\nTurn on up to three sections for the tab bar at the bottom of your phone. Under Tab bar order, drag them and the Dashboard into any order.\n\nSave applies the order on the web and on your phone, and the tab bar on your phone. Reset restores the standard order and tab bar.","kind":"guide","lang":"en","subject":"Arrange sections"},{"key":"guide.campaigns","body":"New campaign creates a campaign for a client, with creators from the Creators List.\n\nCampaigns, and the Creators List with every creator and their rates.\n\nOpen a campaign to book creators, check drafts and release them to the client.","kind":"guide","lang":"en","subject":"Creators"},{"key":"guide.campaigns.payments","body":"Payments are grouped by stage: Details to review, Ready to bill, Draft in Bukku, Awaiting payment and Paid.\n\nThe button on each row takes its next step: Review, Create bill, Link to Bukku or Open in Bukku.\n\nRead from Bukku updates each bill's status once it is posted or paid in Bukku.","kind":"guide","lang":"en","subject":"Payments"},{"key":"guide.campaigns.record","body":"Each tab holds one part of the campaign: its creators, schedule, the client's selection and its finance.\n\nCopy the client's link to send it. The client chooses their creators on it.\n\nPublish shows the campaign's creators to the client on their link.","kind":"guide","lang":"en","subject":"Campaign"},{"key":"guide.campaigns.roster","body":"Add creator saves a creator with their profiles, rate and contact details.\n\nCreators are grouped by fee. Inactive creators are in a group of their own.\n\nOpen a creator to see their bookings, payments and payment details.","kind":"guide","lang":"en","subject":"Creators List"},{"key":"guide.clients","body":"Add a lead on the day it comes in. Billing, brand and services are added as the deal progresses.\n\nOpen a client to see its contacts, services, documents, calls and visits.\n\nFilter the list by stage or person in charge.","kind":"guide","lang":"en","subject":"Clients"},{"key":"guide.handbook","body":"Add a file or a link. A new version never replaces the old one.\n\nOpen a file. Earlier versions are in its ⋯ menu.","kind":"guide","lang":"en","subject":"Handbook"},{"key":"guide.links","body":"Add link creates a short address and its QR code.\n\nLive, Namecards and Paused, followed by the addresses the portal creates for clients and creators. Every address in use is listed, so none is used twice.","kind":"guide","lang":"en","subject":"Short Links"},{"key":"guide.mine","body":"Your reviews, recognitions, letters and health check-ins. Only you can see them here.","kind":"guide","lang":"en","subject":"My records"},{"key":"guide.mine.checkin","body":"Check in with your mood and workload. You can change your answers until the period ends.\n\nAsk a colleague for a talk. They are told who asked, but never see your note.\n\nWithdraw stops the check-ins and removes your answers from Team: Health.","kind":"guide","lang":"en","subject":"Health"},{"key":"guide.mine.health","body":"A short check-in each month, or each week while your planned work is near your weekly capacity. Management reads your answers by name to support you. They are never used in a performance review.\n\nI agree starts the check-ins. Withdraw stops them at any time.","kind":"guide","lang":"en","subject":"Health"},{"key":"guide.overview","body":"Everything that needs your action today, late items first. Select an item to open it.\n\nAsk the Assistant about your clients and work.\n\nMe is your own work. Team holds the figures of the sections you manage.\n\nEvery figure covers the period chosen here.\n\nThe main figures, each compared with the previous period.\n\nEverything that needs attention, late items first. Choose a tab above to show one section. Select an item to open it.","kind":"guide","lang":"en","subject":"Dashboard"},{"key":"guide.overview.team","body":"Open work at each stage, with the colleagues assigned to it.\n\nEach colleague's open, late and delivered work. Press a colleague to open their work.\n\nEach client's posts, report and meeting this month. Press a client to open their month in My Work.","kind":"guide","lang":"en","subject":"Team"},{"key":"guide.phone","body":"The bar holds the Dashboard and your sections. Press one to open it.\n\nMore opens the other sections, Settings, the Activity record and Arrange sections, where you choose the sections on this bar.\n\nYour name opens My records and My namecard.","kind":"guide","lang":"en","subject":"Your sections"},{"key":"guide.register","body":"Issue a letter on the letterhead. Its reference number is assigned automatically.\n\nPress a reference to copy it. Anyone can check it at {verify url}.","kind":"guide","lang":"en","subject":"Documents"},{"key":"guide.reports","body":"New report creates an Accounts Report or an Advertising Report for an active client.\n\nA report moves from Drafts to In review, Confirmed and Published. The client can read it once it is published.\n\nSelect reports to download several, or mark them as sent.","kind":"guide","lang":"en","subject":"Reports"},{"key":"guide.reports.check","body":"Report audit checks the figures against Meta and the commentary against the figures.\n\nSubmit asks who reviews the report, then sends it to them.","kind":"guide","lang":"en","subject":"Check and submit"},{"key":"guide.reports.entry","body":"Four steps, each with a summary of what it contains. Press a step to open it.\n\nPreview PDF shows the report as the client will read it, marked as a draft until it is confirmed.\n\nNext opens the following step.","kind":"guide","lang":"en","subject":"Report"},{"key":"guide.reports.review","body":"Confirm marks the report as reviewed. A manager then publishes it.\n\nPublish shows the report on the client's link and saves its PDF as published.\n\nSend back returns the report to its writer as a draft for corrections.","kind":"guide","lang":"en","subject":"Review and publish"},{"key":"guide.reports.text","body":"Write with AI drafts the commentary from the figures and your notes. Read it before submitting.\n\nNotes for the draft: reasons, changes, the goal and next month's budget. They are kept in this browser only.\n\nThe language Write with AI drafts in.","kind":"guide","lang":"en","subject":"Commentary"},{"key":"guide.review","body":"Open a client to prepare a content set and send it for approval.\n\nFind a client by name.","kind":"guide","lang":"en","subject":"Content Review"},{"key":"guide.scripts","body":"New script adds a video to a client's content month, numbered by month (for example 2610VS01).\n\nOpen a script to write it, publish it to the client's link and record each clip number on the shoot day.","kind":"guide","lang":"en","subject":"Video Scripts"},{"key":"guide.services","body":"Add a service or an add-on to the Rate Card.\n\nEach Rate Card service is the starting point for a client's service line, which can then be edited.","kind":"guide","lang":"en","subject":"Services"},{"key":"guide.settings","body":"Settings are grouped by what they change. You see only the settings you have access to.\n\nEdit and Open show the setting in full. A business figure applies from the date you enter.\n\nA switch takes effect for everyone as soon as you press it. If the change is refused, it switches back.","kind":"guide","lang":"en","subject":"Settings"},{"key":"guide.suppliers","body":"New supplier creates a Supplier ID and a link. The supplier fills in their own details.\n\nOpen a supplier to review the details they submitted, approve them and issue documents.","kind":"guide","lang":"en","subject":"Suppliers"},{"key":"guide.team","body":"Members, Hiring, the user groups that control what each member can open, Performance and Health.\n\nAdd member gives a colleague their sign-in and digital namecard.","kind":"guide","lang":"en","subject":"Team"},{"key":"guide.team.health","body":"This period's average mood, check-ins, weekly check-ins and open talks.\n\nAverage mood by week, over 12 weeks.\n\nPress a colleague to see their check-ins and this week's planned work. Answers are shown only while their agreement is in place.","kind":"guide","lang":"en","subject":"Health"},{"key":"guide.team.hiring","body":"Add candidate saves their details and CV, and creates their own page.\n\nOpen a candidate to add the colleagues who decide or interview, and to copy their page's link.","kind":"guide","lang":"en","subject":"Hiring"},{"key":"guide.whatsapp","body":"WhatsApp and Email each list what the portal has sent, month by month.\n\nNew message sends a Meta-approved template to a client contact or a creator.\n\nEvery message the portal has sent, with its status: Sent, Delivered, Read, or Failed with the reason.\n\nMessages the portal sends automatically: those waiting or sending, and those not sent or not confirmed in the last seven days.","kind":"guide","lang":"en","subject":"Messages"},{"key":"guide.whatsapp.compose","body":"Choose a client contact or a creator. Their number is shown below. A contact with only a username cannot be messaged.\n\nChoose a Meta-approved template. Its variables are filled in from the record and can be changed.\n\nThe preview shows the message as it will be sent. Send asks you to confirm the number and the category.","kind":"guide","lang":"en","subject":"New message"},{"key":"guide.whatsapp.email","body":"Every email the portal has sent, with its status. Press one to read it in full.\n\nEmails are listed by month. Type and Status narrow the list.\n\nNew email sends an email to a client, a supplier or a creator from a template.","kind":"guide","lang":"en","subject":"Email"},{"key":"guide.whatsapp.templates","body":"Edit selects the Meta-approved template for this purpose from the list Meta provides.\n\nThe switch turns a purpose on or off. When it is off, nothing is sent and its button is removed from the records.","kind":"guide","lang":"en","subject":"WhatsApp templates"},{"key":"guide.work","body":"My Work shows the same tasks as a list, a board, a calendar or months.\n\nAdd a task here, or a client's posts for the month.\n\nMove a task to its next stage here. The colleague who takes it next is notified.","kind":"guide","lang":"en","subject":"My Work"},{"key":"performance.category.accuracy","body":"Accuracy and compliance","kind":"performance","lang":"en","subject":""},{"key":"performance.category.client","body":"Client ownership","kind":"performance","lang":"en","subject":""},{"key":"performance.category.comms","body":"Communication and collaboration","kind":"performance","lang":"en","subject":""},{"key":"performance.category.delivery","body":"Delivery and reliability","kind":"performance","lang":"en","subject":""},{"key":"performance.category.initiative","body":"Initiative and improvement","kind":"performance","lang":"en","subject":""},{"key":"performance.category.output","body":"Role output quality","kind":"performance","lang":"en","subject":""},{"key":"performance.path.accountability","body":"A serious issue this month, or the month fell well short. This month's bonus, commission eligibility, trip and reward-linked benefits do not apply.","kind":"performance","lang":"en","subject":"Recovery path"},{"key":"performance.path.development","body":"A work or skills shortfall with no client harmed. Repeated months move through a documented, staged improvement process.","kind":"performance","lang":"en","subject":"Development path"},{"key":"performance.print.issue-once","body":"Each issue is recorded once, under the area it affected most. Putting it right adds no points back, but can keep it from going further; the issue stays on the record.","kind":"performance","lang":"en","subject":""},{"key":"performance.print.no-path","body":"No development or recovery path applies this month.","kind":"performance","lang":"en","subject":""},{"key":"performance.print.path-limits","body":"A month with no issue resets the recovery path. Consequences are limited to privileges, training and discretionary rewards, and never affect salary.","kind":"performance","lang":"en","subject":""}];
+
   function portalClientIds() {
     return (DB.client_contacts || []).filter(function (k) { return k.portal_access && !k.archived_at && String(k.email || '').toLowerCase() === whoNow() &&
       portalOpen(k.client_id); })
@@ -16117,7 +16147,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return { source: 'manual', id: e.id, kind: 'message', to_email: e.to_email, to_name: e.to_name || null, cc_email: e.cc_email || null,
               subject: e.subject, body: e.body, reference: e.attachment || null, status: e.status, error: e.error || null,
               created_at: e.created_at, sent_at: e.sent_at || null, delivered_at: e.delivered_at || null, opened_at: e.opened_at || null,
-              bounced_at: e.bounced_at || null, sent_by: who ? who.name : null, client_id: e.client_id };
+              bounced_at: e.bounced_at || null, sent_by: who ? who.name : null, sent_by_id: e.sent_by || null, client_id: e.client_id };
           }) });
       }
       if (!opsAllowed('whatsapp', 'work')) return emNo('denied');
@@ -16231,6 +16261,29 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: { ok: true, id: caId }, error: null });
     }
+    if (name === 'mail_cancel') {
+      var mcMe = opsMe();
+      if (!mcMe) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var mq = (DB.mail_queue || []).filter(function (x) { return x.source === args.p_source && x.log_id === args.p_id; })[0];
+
+      var mqc = !mq && args.p_source === 'system' && (DB.hiring_candidates || []).filter(function (x) { return x.id === args.p_id; })[0];
+      if (mqc) {
+        if (mqc.outcome_mail === 'cancelled') return Promise.resolve({ data: { ok: true, same: true }, error: null });
+        if (mqc.outcome_mail !== 'queued') return Promise.resolve({ data: { error: 'sent' }, error: null });
+        mqc.outcome_mail = 'cancelled'; mqc.outcome_mail_due = null; persist();
+        return Promise.resolve({ data: { ok: true }, error: null });
+      }
+      if (!mq) return Promise.resolve({ data: { error: 'not-found' }, error: null });
+      if (mq.queued_by !== mcMe.id && !opsAllowed('whatsapp', 'manage')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      if (mq.status === 'cancelled') return Promise.resolve({ data: { ok: true, same: true }, error: null });
+      if (mq.status !== 'queued') return Promise.resolve({ data: { error: 'sent' }, error: null });
+      mq.status = 'cancelled'; mq.cancelled_by = mcMe.id;
+      var mr = (DB[mq.table] || []).filter(function (x) { return x.id === mq.log_id; })[0];
+      if (mr) { mr[mq.key] = 'cancelled'; if (mq.table === 'feedback_requests' && !mr.closed_at) { mr.closed_at = new Date().toISOString(); mr.closed_reason = 'withdrawn'; } }
+      DB.activity_log.unshift({ id: nid('al'), actor: mcMe.name, action: 'email.sent', subject: 'Email', detail: 'Email · email to the recipient cancelled before it was sent', created_at: new Date().toISOString() });
+      persist();
+      return Promise.resolve({ data: { ok: true }, error: null });
+    }
     if (name === 'mail_log') {
       if (window.__refuseRpc && window.__refuseRpc.mail_log) return Promise.resolve({ data: null, error: { message: window.__refuseRpc.mail_log } });
       if (!opsAllowed('whatsapp', 'view')) return Promise.resolve({ data: { error: 'denied' }, error: null });
@@ -16245,7 +16298,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var mlFree = function () { var me = opsMe(); return !!me && (me.is_admin || (me.client_scope || 'all') !== 'own'); };
       var mlSeen = function (cid) { return cid ? scopeSeen(cid, 'view') : mlFree(); };
       var mlBase = function (e) { return { id: e.id, to_email: e.to_email, cc_email: e.cc_email || null, subject: e.subject, body: e.body,
-        sent_by: mlWho(e.sent_by, e.by), created_at: e.created_at, status: e.status, error: e.error || null, sent_at: e.sent_at || null,
+        sent_by: mlWho(e.sent_by, e.by), sent_by_id: e.sent_by || null, created_at: e.created_at, status: e.status, error: e.error || null, sent_at: e.sent_at || null,
         delivered_at: e.delivered_at || null, opened_at: e.opened_at || null, bounced_at: e.bounced_at || null,
         client_id: null, client: null, supplier_id: null, supplier: null, supplier_code: null, reference: null, to_name: null,
         ref_id: e.ref_id || null, again_of: e.again_of || null }; };
@@ -16767,6 +16820,23 @@ function opsCodeRange(cid, period, ty, src, seq) {
         uf.used_at = uf.used_at || dfNow.toISOString(); uf.used_by = uf.used_by || dfMe.id;
         return dfOk();
       }
+    }
+
+    if (name === 'wording_read') {
+      if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: { error: window.__refuseRpc[name] }, error: null });
+      var wrSet = args.p_set, wrLang = args.p_lang === 'zh' ? 'zh' : 'en', wrAt = appToday();
+      if (['guide', 'performance', 'ad-report'].indexOf(wrSet) < 0) return Promise.resolve({ data: { error: 'bad-set' }, error: null });
+      if (!(opsMe() || (wrSet === 'ad-report' && portalClientIds().length))) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var wrRows = WORDING_SEED.map(function (r) { return { key: r.key, kind: r.kind, language: r.lang, version: 1, subject: r.subject, body: r.body, status: 'live', effective_from: '2026-01-01' }; })
+        .concat((DB.templates || []).filter(function (x) { return x.kind === wrSet && !(x.version === 1 && WORDING_SEED.some(function (r) { return r.key === x.key && r.lang === x.language; })); }));
+      var wrOut = {};
+      wrRows.filter(function (x) { return x.kind === wrSet && x.status === 'live' && x.effective_from <= wrAt && (x.language === 'en' || x.language === wrLang); })
+        .sort(function (a, b) {
+          return (a.language === wrLang) !== (b.language === wrLang) ? ((a.language === wrLang) ? -1 : 1)
+            : a.effective_from !== b.effective_from ? (a.effective_from < b.effective_from ? 1 : -1) : b.version - a.version;
+        })
+        .forEach(function (x) { if (!wrOut[x.key]) wrOut[x.key] = { subject: x.subject, body: x.body, version: x.version, lang: x.language }; });
+      return Promise.resolve({ data: JSON.parse(JSON.stringify({ ok: true, set: wrSet, lang: wrLang, at: wrAt, words: wrOut })), error: null });
     }
 
     if (name === 'template_render' || name === 'templates_list' || name === 'template_draft_save' ||
@@ -19469,10 +19539,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!opsAllowed('suppliers', 'view')) return spNo('denied');
           return spOk({ rows: DB.supplier_emails.filter(function (e) { return e.supplier_id === args.p_supplier; })
             .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })
-            .map(function (e) { return { id: e.id, purpose: e.purpose, to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: e.by, document: e.document }; })
+            .map(function (e) { return { id: e.id, purpose: e.purpose, to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: e.by, by_id: e.sent_by || null, source: 'supplier', document: e.document }; })
             .concat((DB.team_emails || []).filter(function (e) { return e.supplier_id === args.p_supplier; }).map(function (e) {
               var who = (DB.team_members || []).filter(function (m) { return m.id === e.sent_by; })[0];
-              return { id: e.id, purpose: 'message', to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: who ? who.name : null, document: e.attachment };
+              return { id: e.id, purpose: 'message', to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: who ? who.name : null, by_id: e.sent_by || null, source: 'manual', document: e.attachment };
             }))
             .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; }) });
         }
@@ -20946,6 +21016,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
           });
         }
 
+        if (name === 'hiring-mail' && opts && opts.body && opts.body.kind === 'outcome' && !opts.body.byHand && !opts.body.againOf) {
+
+          var hq0 = opts.body;
+          return rpc('hiring_outcome_mail_queue', { p_id: hq0.candidateId }).then(function (r) {
+            var d = r.data || {};
+            if (r.error || d.error) return { data: { error: d.error || 'denied' }, error: null };
+            return { data: { ok: true, queued: { source: 'system', id: hq0.candidateId, seconds: d.seconds || 60, send_at: d.due } }, error: null };
+          });
+        }
         if (name === 'hiring-mail' && opts && opts.body && opts.body.kind === 'outcome') {
           var ho = opts.body;
           return rpc('hiring_outcome_mail_prepare', { p_id: ho.candidateId }).then(function (r) {
@@ -21596,6 +21675,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 bkb.cc !== false, bkb.subject, bkb.body, bkb.again === true, ivSend ? 'invoice' : 'reminder',
                 typeof bkb.to === 'string' && bkb.to.trim() ? bkb.to.trim() : null, Array.isArray(bkb.ccs) ? bkb.ccs.filter(function (x) { return typeof x === 'string'; }) : null);
               if (b.error) return bkR(Object.assign(b, { paid: paid }));
+              var iq = undoQueue('invoice', 'invoice_emails', 'status', b.id, function (st) { invDone(b.id, st, st === 'sent' ? 're_' + b.id : null, window.__mailFail || null); });
+              if (iq) { persist(); return bkR({ ok: true, id: b.id, to: b.to, cc: b.cc || null, paid: paid, queued: iq }); }
               var st2 = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
               invDone(b.id, st2, st2 === 'sent' ? 're_' + b.id : null, window.__mailFail || null);
               window.__invSent = (window.__invSent || []).concat([{ to: b.to, cc: b.cc, subject: b.subject, body: b.body, invoices: lines.map(function (l) { return l.number; }) }]);
@@ -21783,6 +21864,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             p_to: nb.to, p_ccs: nb.ccs || [], p_subject: nb.subject, p_body: nb.body, p_attachment: nb.file ? nb.file.name : null, p_idem: nb.key }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
+            var nq = undoQueue('manual', 'team_emails', 'status', b.id, function (st) { return rpc('email_new_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (nq) return { data: { ok: true, id: b.id, to: b.to, to_name: b.to_name || null, cc: b.cc, queued: nq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('email_new_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to, cc: b.cc } : { error: window.__mailFail }, error: null };
@@ -21797,6 +21880,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
             window.__quoteAskSent = b;
+            var aq = undoQueue('client', 'client_emails', 'status', b.id, function (st) { return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (aq) return { data: { ok: true, id: b.id, to: b.to_email, to_name: b.to_name, queued: aq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name } : { error: window.__mailFail }, error: null };
@@ -21811,6 +21896,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
             window.__fbMailSent = b;
+            var fq = undoQueue('feedback', 'feedback_requests', 'mail_status', b.id, function (st) { return rpc('feedback_mail_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (fq) return { data: { ok: true, id: b.id, to: b.to_email, to_name: b.to_name, queued: fq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('feedback_mail_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name } : { error: window.__mailFail }, error: null };
@@ -21827,6 +21914,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             p_subject: dmb.subject, p_body: dmb.body, p_again: dmb.again === true }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
+            var cq = undoQueue('client', 'client_emails', 'status', b.id, function (st) { return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (cq) return { data: { ok: true, id: b.id, queued: cq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id } : { error: window.__mailFail }, error: null };
@@ -21843,6 +21932,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             p_subject: mb.subject, p_body: mb.body, p_again: mb.again === true }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
+            var sq = undoQueue('supplier', 'supplier_emails', 'status', b.id, function (st) { return rpc('supplier_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (sq) return { data: { ok: true, id: b.id, queued: sq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('supplier_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id } : { error: window.__mailFail }, error: null };

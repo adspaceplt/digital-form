@@ -6828,7 +6828,8 @@ raya-2026        https://example.com/raya"></textarea>
 {
   "documents": {"src": "/js/documents.js?v=dev"},
   "letters": {"src": "/js/letters.js?v=dev", "first": ["documents"], "uses": ["documents"]},
-  "smreport": {"src": "/js/smreport.js?v=dev", "uses": ["documents"]},
+  "tpl": {"src": "/js/tpl.js?v=dev"},
+  "smreport": {"src": "/js/smreport.js?v=dev", "first": ["tpl"], "uses": ["documents", "tpl"]},
   "reports": {"src": "/js/reports.js?v=dev", "uses": ["documents", "smreport"]},
   "register": {"src": "/js/register.js?v=dev", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
   "suppliers": {"src": "/js/suppliers.js?v=dev", "uses": ["letters", "register", "bukku"]},
@@ -6855,7 +6856,7 @@ raya-2026        https://example.com/raya"></textarea>
   "scriptpdf": {"src": "/js/scriptpdf.js?v=dev", "uses": ["documents"]},
   "ratecardpdf": {"src": "/js/ratecardpdf.js?v=dev", "uses": ["documents"]},
   "campaigns": {"src": "/js/campaigns.js?v=dev", "uses": ["bukku"]},
-  "perf": {"src": "/js/perf.js?v=dev", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
+  "perf": {"src": "/js/perf.js?v=dev", "first": ["tpl"], "uses": ["documents", "tpl", "letters", "hiring", "seal", "team", "health", "personnel"]},
   "health": {"src": "/js/health.js?v=dev", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=dev"},
   "personnel": {"src": "/js/personnel.js?v=dev", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
