@@ -147,10 +147,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (`#indSheet`, `team.settings`): one table, English · 中文 · Clients · the
   pen; the pen turns its row into the two fields (Enter saves, Escape
   leaves), Delete in that row only where no client holds it (asked,
-  `in-use`); the last row adds one; `industry_save(p_was, p_name,
-  p_name_zh)` (`bad-name`, `bad-name-zh`, `taken`, a rename onto another
-  name included), a rename carrying onto every client holding the old
-  name, those outside the caller's own client scope too (`adspace.team_owner`
+  `in-use`); the last row adds one; `industry_save(p_id, p_name,
+  p_name_zh)` and `industry_delete(p_id)`, by the industry's id
+  (`2026-11-28-lookups-by-id.sql`; `bad-name`, `bad-name-zh`, `taken`, a
+  rename onto another name included), a rename carrying onto every client
+  whose `industry_id` it is (the name a snapshot written from the id by
+  `client_industry_id_stamp`; the console's Industry picks the id; a name
+  written alone, as /quote/ sends it, takes its one industry), those outside the caller's own client scope too (`adspace.team_owner`
   for that update, `2026-11-04-industry-renames.sql`); Enter twice while a
   row saves is one save, both tables' keys one helper (`rowKeys`); /quote/
   refused an industry renamed meanwhile (`bad-industry`) reads the list again

@@ -245,7 +245,7 @@
      `client_billing()`, which answers only the people Clients: Billing
      admits (2026-09-28). */
   const CLIENT_COLS = 'id, name, logo_url, access_token, passcode, active, created_at, drive_folder, ' +
-    'handle_ig, handle_fb, handle_tiktok, handle_xhs, stage, industry, owner, owner_id, market, sst_applies, ' +
+    'handle_ig, handle_fb, handle_tiktok, handle_xhs, stage, industry, industry_id, owner, owner_id, market, sst_applies, ' +
     'website, source, brand_notes, updated_at, phone, social_ig, social_fb, social_tiktok, social_xhs, ' +
     'review_hidden, deal_value, deal_note, commence, slug, stage_since, stage_log, client_code, bill_sgd, sales_by, ' +
     'stage_next, stage_next_on, stage_next_reason, stage_next_note';
