@@ -1314,7 +1314,7 @@
   function undoBar(text, undo, host) { window.ADspaceAdmin.undoHere(text, undo, host); }
 
   function clientLink(key) { return location.origin + '/script/?k=' + key; }
-  /* The address and Copy link give the short link (hi.adspace.me/s/{key},
+  /* The address and Copy link give the short link ({link host}/s/{key},
      2026-10-13), so a chat app's preview names the brand; Preview is the
      page itself. */
   function shareLink(key) { return bridge.shortLink ? bridge.shortLink('script', key, clientLink(key)) : clientLink(key); }

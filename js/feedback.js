@@ -67,7 +67,7 @@
     }).join('') + '</div>';
   }
   /* Received (the board ReceivedFeedback, 2026-11-25; js/icons.js received):
-     where it stands, what was answered, and ADspace to follow. */
+     where it stands, what was answered, and the agency to follow. */
   function paintDone() {
     var w = t(), I = window.ADspaceIcons, C = window.ADspaceClock, zh = lang === 'zh', u = site();
     var when = sentAt && C ? C.date(sentAt, { zh: zh }) + (zh ? '' : ', ') + C.clock(sentAt, { zh: zh }) : '';

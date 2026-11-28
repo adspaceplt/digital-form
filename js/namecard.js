@@ -2,8 +2,8 @@
  * namecard.js — a colleague's digital namecard (ADspaceCard), drawn the same
  * way on its public page (/card/?k=…) and in the console's My namecard.
  *
- * The card is the signboard's lockup on a #f5f5f5 card: ADspace in Optima
- * over the tagline in Slate Regular, the tagline about 1.64 times the
+ * The card is the signboard's lockup on a #f5f5f5 card: the agency in the wordmark face
+ * over the tagline in the heavier face, the tagline about 1.64 times the
  * wordmark's width (the user's signboard, 2026-10-03). It turns over to the
  * person and the office, and its front turns into a QR code that opens the
  * same page on somebody else's phone. Save contact hands the phone a vCard.
@@ -149,7 +149,7 @@
     }
     /* The lockup in golden proportion to the card it is on: the wordmark
        runs the card's width over φ², and the tagline, set at 0.46 of the
-       wordmark's size (the signboard), runs it over φ. Optima sets ADspace
+       wordmark's size (the signboard), runs it over φ. The wordmark face sets the name
        about 3.9 times its size wide. */
     var stage = host.querySelector('.nc-stage');
     var fit = function () {

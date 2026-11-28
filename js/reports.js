@@ -619,7 +619,7 @@
 
   /* The white-label client whose wide logo the report carries (2026-10-07),
      while it is still ticked and the report's brand takes it, or null (a
-     brand set to ADspace's logo). A refused read leaves the head as it was:
+     brand set to the agency's logo). A refused read leaves the head as it was:
      the PDF reads its own. */
   function labelOf(cid, brand) {
     if (!cid) return Promise.resolve(null);

@@ -1,8 +1,8 @@
 /*
- * ADspace portal chrome.
+ * The portal chrome.
  *
  * The top bar and the footer were written out by hand in every page, so the
- * ADspace mark, the divider, the kicker and the fallback behaviour when the
+ * Mark, the divider, the kicker and the fallback behaviour when the
  * logo fails to load existed in three copies that had already drifted apart.
  * This is the single copy. A new page includes this script and says what
  * section it is; everything else comes from here.
@@ -67,7 +67,7 @@
      deliberately NOT one of them: it has to be in the markup or the page
      flashes unstyled. */
   function head() {
-    /* The ADspace wordmark on white, from the site itself (2026-09-28: the
+    /* The agency's wordmark on white, from the site itself (2026-09-28: the
        wordmark, never the monogram, and no page's icon hangs on the CDN). */
     [['icon', cfg.brandIcon || '/img/favicon-192.png'], ['apple-touch-icon', cfg.brandIcon || '/img/apple-touch-icon.png']].forEach(function (pair) {
       if (document.querySelector('link[rel="' + pair[0] + '"]')) return;

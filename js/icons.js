@@ -1,4 +1,4 @@
-/* ADspace Digital Portal · one icon set, and the booking's step track (the user, 2026-10-07: the client
+/* The portal · one icon set, and the booking's step track (the user, 2026-10-07: the client
    pages read plain; the proposal's set, outline glyphs at the portal's own
    15px and 1.8 stroke, in ink). One glyph, one meaning, on every page:
    ADspaceIcons.svg(name, cls) answers the markup, and a name it does not
@@ -366,8 +366,8 @@
       (o.cards || []).filter(Boolean).join('') + '</div>' +
       (o.foot ? '<div class="qs-foot">' + o.foot + '</div>' : '');
   }
-  /* A shaded card under its heading, holding any markup (Contact ADspace,
-     Follow ADspace, Your request). */
+  /* A shaded card under its heading, holding any markup (Contact {agency},
+     Follow {agency}, Your request). */
   function card(title, body) {
     var esc = window.ADspaceWords.esc;
     return '<section class="sumcard"><div class="sumcard-head"><h2>' + esc(title) + '</h2></div>' + body + '</section>';

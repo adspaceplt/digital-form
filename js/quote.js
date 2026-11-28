@@ -1329,7 +1329,7 @@
      colleague who took the lead stands under each step. */
   function sideHtml(q) {
     /* With no colleague named yet, every step still offers a way to reach
-       ADspace: the office's Chat on WhatsApp (2026-10-27, QTE-2). */
+       the agency: the office's Chat on WhatsApp (2026-10-27, QTE-2). */
     var w = t(), st = stageOf(q), rep = q.rep ? '<div class="qs-side-rep">' + repHtml(q) + '</div>'
       : '<a class="btn" href="' + esc(waLink(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a>';
     if (st === 'expired' || st === 'closed') {
@@ -1914,7 +1914,7 @@
     if (SG.step === 3 && SG.sentAt) resendTick();
   }
   /* Signed (SIGNED DOCUMENT SEAL, 2026-11-17): Accepted, awaiting
-     ADspace's confirmation, who signed and when to the second; then
+     the agency's confirmation, who signed and when to the second; then
      Confirmed with the Document ID and the sealed copy to download. */
   function acceptedHtml(q) {
     if (q.reviewed) return confirmedHtml(q) + '<p>' + esc(t().sg.doneP) + '</p>';
@@ -2216,7 +2216,7 @@
     }).catch(function () { paint.off = true; paint(); });
   }
   /* The link read, kept as a step of the signed document's record (never a
-     colleague's preview); once ADspace has confirmed it, its Document ID and
+     colleague's preview); once the agency has confirmed it, its Document ID and
      whether the sealed copy is kept (SIGNED DOCUMENT SEAL, 2026-11-17). */
   function sealRead(k) {
     if (!Q || PREVIEW) return;

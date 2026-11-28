@@ -4753,7 +4753,7 @@
   }
   /* META (2026-10-08): the ad accounts, Page and Instagram account a
      client's reports are read from by Import from Meta, picked from what
-     ADspace's system user can see (the `meta-import` function), never typed.
+     the agency's system user can see (the `meta-import` function), never typed.
      A white-label client's brands each link their own, from the brand's ⋯
      (Meta accounts), read in that sheet. */
   var metaSeq = 0, metaSheetSeq = 0, metaLinks = [], metaFor = null;

@@ -142,7 +142,7 @@
       (ctl ? '<span class="refl-ctl">' + ctl + '</span>' : '') + '</div>' + inner + '</div></div>';
   }
   /* Before a colleague agrees, the company's own words come first (the user,
-     2026-10-07: say that ADspace cares about their health at work and at
+     2026-10-07: say that the agency cares about their health at work and at
      home, ask for honest answers, and invite them to seek help), then what
      agreeing means. The one place in the console that speaks as "we". The
      words are the database's, each version kept whole (`health_wordings`,

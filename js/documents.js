@@ -10,7 +10,7 @@
  *
  * Numbers: AQT/INT/YYMMXXX, sequence per month.
  *
- * The layout is the ADspace letterhead: wordmark, registration and address
+ * The layout is the agency's letterhead: wordmark, registration and address
  * left, the monogram and the office contact right, PRIVATE & CONFIDENTIAL,
  * Our Ref / Date / To / Attn, the subject, the salutation, the body with the
  * lines and totals, Yours sincerely, the acceptance block and the page
@@ -397,9 +397,9 @@
     });
     return assetCache[url];
   }
-  /* The four faces the letterhead uses: body (Slate Book), the heavier lines
-     (Slate Regular), the headings (Slate Medium, falling back to the heavier
-     face where the file is not there) and the wordmark (Optima). `extra` may
+  /* The four faces the letterhead uses: body (the body face), the heavier lines
+     (the heavier face), the headings (the heading face, falling back to the heavier
+     face where the file is not there) and the wordmark (the wordmark face). `extra` may
      name a fifth, the Chinese face a letter with a Chinese block embeds; it is
      fetched only then, and its absence is reported as `cjk: null` so the
      caller can refuse by name rather than draw boxes. */
@@ -484,7 +484,7 @@
   }
   var INTERNAL = 'FOR INTERNAL USE';
   /* A title on a document that is not a letter: the body (11pt) times φ
-     (the user, 2026-11-20). A letter's title is the body's size in Slate
+     (the user, 2026-11-20). A letter's title is the body's size in the body face
      Medium, as the template sets it. */
   var TITLE = 17.8;
   /* The Date beside Our Ref: the portal's date (20 Nov 2026), never the
@@ -539,8 +539,8 @@
     var acl = tpl === 'ACL_SIGN' || tpl === 'ACL_NOSIGN';
     /* The paper's inks, the user's palette (2026-11-20: "white with
        #515151, #f5f5f5 with #1a1a1a"; then the foot and the wordmark): the
-       body and the ADspace wordmark #515151; a title, headings, PRIVATE &
-       CONFIDENTIAL in the body and ADSPACE PLT #1a1a1a; the head's and the
+       body and the agency's wordmark #515151; a title, headings, PRIVATE &
+       CONFIDENTIAL in the body and the agency's legal name #1a1a1a; the head's and the
        foot's marks (the page count, FOR INTERNAL USE, the foot's PRIVATE &
        CONFIDENTIAL, the verify line, Co. Reg., the page's reference)
        #a1a1a1; hairlines #cfd0d4; a shaded box #f5f5f5. */
@@ -668,7 +668,7 @@
     };
     p.footMark = function (i, n) { p.foot(i, n); };
     /* An ACL letter's opening, as the template sets it: PRIVATE &
-       CONFIDENTIAL in Slate Medium, then Our Ref and Date with their colons
+       CONFIDENTIAL in the heading face, then Our Ref and Date with their colons
        in one column, each value wrapping under itself. */
     p.pc = function (yy) { p.spaced('PRIVATE & CONFIDENTIAL', M, yy, 11, med, strong); return yy - G.afterPc; };
     p.ref = function (yy, label, value, f) {
@@ -696,7 +696,7 @@
     logoWarn = '';
     return embedImage(pdf, ORG.logo || CFG.brandLogo, function () { logoWarn = 'Logo not loaded.'; });
   }
-  /* (60)18 762 5233 from 60187625233; anything else is printed as typed. */
+  /* (60)12 345 6789 from 60123456789; anything else is printed as typed. */
   function phoneWord(p) {
     var d = String(p || '').replace(/[^0-9]/g, '');
     if (d.length === 11 && d.indexOf('60') === 0) return '(60)' + d.slice(2, 4) + ' ' + d.slice(4, 7) + ' ' + d.slice(7);
@@ -709,7 +709,7 @@
      (js/quotepdf.js, which /quote/ draws without letters.js). It answers the
      pen, the pages and where the closing ended; the caller draws the foot
      (`letterFoot`). */
-  /* The template's body: Slate Book 11pt on single lines (12.5pt) with a
+  /* The template's body: the body face 11pt on single lines (12.5pt) with a
      blank line between paragraphs. */
   var LH = G.line, PARA = G.line, BODY = 11, FLOOR = BOT + 4;
   function paragraphs(s) {
@@ -761,8 +761,8 @@
     var hr = doc.family === 'hr';
 
     /* The template's opening: PRIVATE & CONFIDENTIAL, Our Ref and Date,
-       then the recipient's name (Slate Regular) over the lines under it
-       (Slate Book), each block a blank line from the next. */
+       then the recipient's name (the heavier face) over the lines under it
+       (the body face), each block a blank line from the next. */
     y = pn.pc(y);
     y = pn.ref(y, 'Our Ref', doc.serial);
     y = pn.ref(y, 'Date', refDate(doc.issued_at));
@@ -788,7 +788,7 @@
     if (String(doc.salutation || '').trim()) { line(doc.salutation); y -= LH; }
 
     /* One block per language, in the order they were ticked, a hairline
-       between two. Chinese has no spaces and no Slate, so it takes the
+       between two. Chinese has no spaces and no body face, so it takes the
        Chinese face and breaks by glyph. */
     var body = doc.body || {};
     langs.forEach(function (l, i) {
@@ -799,7 +799,7 @@
     });
 
     /* The closing, as the template signs off: Yours sincerely, then
-       ADSPACE PLT in Slate Medium, and for a signed kind a space to sign
+       the agency's legal name in the heading face, and for a signed kind a space to sign
        over the name and the designation. Reserved together: a signature on
        a page of its own is a signature to nothing. */
     var sig = doc.signatory || {};
@@ -990,7 +990,7 @@
       var taxed = MON.sstOf(doc.lines || [], lineTax === false ? 0 :
         price.sstPct != null ? price.sstPct : MON.setting('sst_pct', dayOf(doc.issued_at)));
       /* The template's opening: PRIVATE & CONFIDENTIAL, Our Ref and Date,
-         then the client's registered name (Slate Regular) over its Attn
+         then the client's registered name (the heavier face) over its Attn
          line. The contact is addressed with their salutation where one is
          held (2026-10-14). */
       var who = ADspaceWords.person(b.contact_salutation, b.contact);
@@ -1339,7 +1339,7 @@
   /* Every PDF's properties (the user, 2026-11-12): its title the name it is
      saved under, the reference keeping its slashes (a file name cannot hold
      one; wa-send and supplier-mail look for the reference in the title),
-     ADSPACE PLT as author, ADspace Digital Portal as creator and producer. */
+     the agency's legal name as author, the portal's name as creator and producer. */
   function meta(pdf, title, subject) {
     pdf.setTitle(String(title || '').replace(/\.pdf$/i, ''));
     pdf.setAuthor('ADSPACE PLT');

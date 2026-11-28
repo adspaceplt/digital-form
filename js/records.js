@@ -1,4 +1,4 @@
-/* ADspace records — one way to draw what happened.
+/* Records — one way to draw what happened.
  *
  * Every history in the console (the Activity record, a client's and a
  * campaign's Activity, a task's log and its recent activity) is drawn here:

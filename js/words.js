@@ -83,7 +83,7 @@
     pausedTitle: 'Temporarily unavailable',
     pausedText: 'Please check again later.',
     pausedChat: 'Chat on WhatsApp',
-    // Chat on WhatsApp where a page offers ADspace's chat (2026-11-22, /careers/).
+    // Chat on WhatsApp where a page offers the agency's chat (2026-11-22, /careers/).
     chatWhatsApp: 'Chat on WhatsApp',
     closed: 'Selection closed',
     closedText: 'Please contact your ADspace account manager for any changes.',
@@ -516,7 +516,7 @@
     addrGoneWhen: 'Deleted after 12 months',
     bodyGone: 'The message was deleted after 12 months.',
     /* A document's own date (2026-11-12): backdated where chosen, never
-       before ADSPACE PLT's registration or after today. */
+       before the agency's registration or after today. */
     docDate: 'Choose a date from 14 Aug 2023 to today.',
     /* A document's own terms (2026-11-12): a quotation's and a letter's. */
     terms: 'Enter up to ten terms, each of up to 400 characters.',

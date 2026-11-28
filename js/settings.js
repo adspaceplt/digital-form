@@ -504,7 +504,7 @@
         biz && W.ADspaceOps && { id: 'meetmsg', name: 'Meeting message', kind: 'edit', meta: line('meetmsg'),
           open: function (btn) { if (W.ADspaceOps.openMeetMessage) W.ADspaceOps.openMeetMessage(btn, rowSay('meetmsg')); } },
         /* Website quotations (2026-10-29): how many a day are sent on
-           WhatsApp, each a message ADspace pays for. */
+           WhatsApp, each a message the agency pays for. */
         biz && { id: 'quotewa', name: 'Quotation portal on WhatsApp', kind: 'edit',
           meta: qwa == null ? '' : qwa === 0 ? 'Not sent on WhatsApp' : 'Up to ' + plural(qwa, 'quotation', 'quotations') + ' per day on WhatsApp' }]]]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');

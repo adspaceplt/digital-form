@@ -1,4 +1,4 @@
-/* ADspace charts — one way to draw a figure.
+/* Charts — one way to draw a figure.
  *
  * Every chart in the console and the client portal is drawn here, in the
  * page's own tokens, so it follows the theme and reads in the same words as

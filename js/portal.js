@@ -1079,7 +1079,7 @@
     });
   }
 
-  /* Client feedback (CLIENT FEEDBACK, 2026-11-24): a request ADspace sent
+  /* Client feedback (CLIENT FEEDBACK, 2026-11-24): a request the agency sent
      is the Overview's first card until it is answered, the lead question on
      it and the rest of the form under it once a score is chosen; the
      Feedback tab holds past answers, read only, once there is one. The
@@ -1327,7 +1327,7 @@
     if (mgr) {
       /* The Person in charge alone, never a stand-in (CLIENT REPRESENTATIVE,
          2026-11-27): with nobody assigned, the company and its two ways to
-         reach the team, under Contact ADspace. */
+         reach the team, under Contact {agency}. */
       mgr.hidden = false;
       $('ovMgrHead').textContent = c.owner ? w.yourManager : w.contactUs;
       $('ovMgrBox').innerHTML = (c.owner ? '<div class="cp-who"><span class="cx-tile is-round">' + glyph('user') + '</span><span class="cp-led-words"><b class="cp-person">' + esc(c.owner) + '</b><small>' + esc(w.manager) + '</small></span></div>' : '') + '<div class="cp-reach">' +

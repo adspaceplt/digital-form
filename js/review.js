@@ -1126,7 +1126,7 @@
     var kept = restoring && restoring.stage;
     stage = kept && (kept === 'all' || counts[kept]) ? kept : counts.pending ? 'pending' : 'all';
     /* A short link naming a set (#s-{the first eight characters of its id},
-       hi.adspace.me/r/…, 2026-10-12) opens on that set alone, unfolded, on
+       {link host}/r/…, 2026-10-12) opens on that set alone, unfolded, on
        the stage that holds its posts. The mark is then taken out of the
        address, so the reader's own choices are kept from there. */
     var named = (/^#s-([0-9a-f]{8})$/.exec(location.hash) || [])[1];

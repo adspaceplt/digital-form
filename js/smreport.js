@@ -14,8 +14,8 @@
  * browser, so an HTML template rendered server-side is not available; this
  * is the deterministic renderer that is.
  *
- * Three faces and an image: Slate for Latin text, the Chinese face the
- * letters already embed for every glyph Slate lacks, and an emoji drawn by
+ * Three faces and an image: the body face for Latin text, the Chinese face the
+ * letters already embed for every glyph the body face lacks, and an emoji drawn by
  * the browser to a canvas and placed as a small image, because no embedded
  * font carries colour emoji. Each character picks its face by whether the
  * face has the glyph, so a caption that mixes English, Chinese, hashtags and
@@ -25,12 +25,12 @@
   var CFG = window.ADSPACE_CONFIG || {};
 
   // ---- Page geometry ----------------------------------------------------------
-  /* Every measurement below is the ADspace Rate Card & Packages template's
+  /* Every measurement below is the agency's Rate Card & Packages template's
      own (v2.0.5, read off the file the user sent on 2026-09-23): a 54pt
-     margin, the Optima wordmark and a small capitals label on one line at the
+     margin, the wordmark face and a small capitals label on one line at the
      head, PRIVATE & CONFIDENTIAL over an italic reference line and the page
-     count at the foot, the page title in Slate Regular 18pt, all text in the
-     one ink #404040. The report is an ADspace document, so it wears the same
+     count at the foot, the page title in the heavier face 18pt, all text in the
+     one ink #404040. The report is an agency document, so it wears the same
      paper as the rate card and the packages. */
   /* 2026-09-25, second revision: the user found the 54pt margin left too
      much white paper, and asked for the margins, the type, the line heights
@@ -802,8 +802,8 @@
       return out;
     }
     function ch(cp) { return String.fromCodePoint(cp); }
-    /* Which face draws a code point: Slate where it has the glyph, the Chinese
-       face where Slate does not, and an image where neither does. */
+    /* Which face draws a code point: the body face where it has the glyph, the Chinese
+       face where the body face does not, and an image where neither does. */
     function faceOf(cp, face) {
       if (cp === 0xfe0f || cp === 0xfe0e || cp === 0x200d) return null;   // invisible on their own
       if (hasGlyph(face, cp) && !(isEmojiCp(cp) && cp > 0x2000)) return face;
@@ -1142,14 +1142,14 @@
     var para = function (s, x, w, size, lh, f, color) {
       sh.linesOf(s, w, size, f || book).forEach(function (ln) { need(lh); sh.draw(pg.page, ln, x, y, size, color || INK); y -= lh; });
     };
-    /* The page title in Slate Regular at S(3), the first block S(2) under
+    /* The page title in the heavier face at S(3), the first block S(2) under
        it. Every section starts a page of its own, so a report with little in
        it is shorter by whole sections and never squeezed onto half a page. */
     /* The template stays English in a Chinese report (the user, 2026-10-01):
        the cover, each page's title and the head and foot; what sits under
        a title (table titles, column heads, notes, dates) reads Chinese. */
     var pageTitle = function (s) { var z = ZH; ZH = false; tline(s, M, y, TY.title, reg, DARK, CW); ZH = z; y -= TY.title * 0.25 + SP.under; };
-    /* A block's title in Slate Regular at S(1), the block S(-1) under it.
+    /* A block's title in the heavier face at S(1), the block S(-1) under it.
        `y` is always the top edge of what comes next, so the space between
        two blocks is exactly S(4) whatever they are, and under a title S(2).
        `keep` is the height of what must follow it on the same page. */
@@ -1229,7 +1229,7 @@
         sh.linesOf(part, w - T.padX * 2, size, f).forEach(function (ln) { out.push({ ln: ln, f: f, size: size }); });
       });
       if (c.items) {
-        /* A numbered list inside a cell: the number in Slate Medium, the item
+        /* A numbered list inside a cell: the number in the heading face, the item
            hanging S(1) in, the row's own padding between items. */
         c.items.forEach(function (it, i) {
           var t0 = typeof it === 'string' ? it : it.t;
@@ -1385,7 +1385,7 @@
     }
 
     /* The figures that head a page: the rate card's table, a label row over a
-       value row, the value in Slate Medium. */
+       value row, the value in the heading face. */
     function figures(cells) {
       var cols = cells.map(function () { return { w: 1 / cells.length, align: 'center' }; });
       table(cols, cells.map(function (c) { return c.label; }), [{
@@ -1866,7 +1866,7 @@
         ls.forEach(function (ln, i) { y -= i ? S(2) : TY.body * 0.72; sh.draw(pg.page, ln, M, y, TY.body, SOFT); });
         y -= TY.body * 0.28 + SP.under;
       };
-      /* A reading note: a grey panel, its title in Slate Regular and its
+      /* A reading note: a grey panel, its title in the heavier face and its
          paragraphs in the body size, kept whole on one page. */
       var panel = function (title, paras) {
         var PADP = S(2), LH = S(1), GAPP = S(-1);
@@ -2068,8 +2068,8 @@
         // A line an objective: what it was for, what it bought and at what price.
         var xs = [], acc = RX + PAD;
         LCOLS.forEach(function (f) { xs.push(acc); acc += (RW - PAD * 2) * f; });
-        /* The head reads as every table's head in the report: Slate
-           Regular on the #f5f5f5 title row, the rows in Slate Book on white
+        /* The head reads as every table's head in the report: the heavier
+           face on the #f5f5f5 title row, the rows in the body face on white
            (the user, 2026-10-01: the labels and the figures were hard to
            tell apart). Each line carries what it spent, which its cost per
            result is read against. */
@@ -2341,7 +2341,7 @@
        2026-11-24): its snapshot carries it, so the file kept, the client's
        copy and every redraw print it; a draft carries none. A white-label
        report keeps the page count alone: its partner fronts it, and the
-       verify line would name ADspace's address on the partner's paper. */
+       verify line would name the agency's address on the partner's paper. */
     var pn = window.ADspaceDocs.pen(PDF, fonts, null, { kind: 'report',
       code: rep.partner ? '' : (window.ADspaceDocs.codeWord ? window.ADspaceDocs.codeWord(mdl.code) : '') });
     /* The head's mark: the template's wordmark, or for a partner's client

@@ -2064,7 +2064,7 @@
     var v = String(c || '');
     return v.length === 8 ? v.slice(0, 4) + '-' + v.slice(4) : v;
   }
-  /* Sent as the short link (hi.adspace.me/p/{code}, 2026-10-13), so a chat
+  /* Sent as the short link ({link host}/p/{code}, 2026-10-13), so a chat
      app's preview names the booking's campaign and brand. */
   function creatorLink(c) {
     var long = location.origin + '/creator/?k=' + encodeURIComponent(c || '');
@@ -2734,7 +2734,7 @@
   }
 
   function campaignUrl(c) { return location.origin + '/creators/?k=' + c.access_token; }
-  /* The address and Copy link give the short link (hi.adspace.me/c/{key},
+  /* The address and Copy link give the short link ({link host}/c/{key},
      2026-10-13); Open is the page itself. */
   function campaignShare(c) { return bridge.shortLink ? bridge.shortLink('campaign', c.access_token, campaignUrl(c)) : campaignUrl(c); }
 

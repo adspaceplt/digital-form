@@ -448,7 +448,7 @@
   }
 
   /* ---- 5. No date before the company existed --------------------------
-     ADSPACE PLT was registered on 14 Aug 2023, so nothing this portal
+     The agency was registered on 14 Aug 2023, so nothing this portal
      records happened before it, and a year keyed as 0003 or 20266 is a slip
      (the user, 2026-09-26). Every date, month and date-time field takes
      14 Aug 2023 as its floor and 31 Dec 2099 as its ceiling: the picker

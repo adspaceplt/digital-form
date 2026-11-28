@@ -142,7 +142,7 @@
           y -= 8;
         });
         /* The NRIC copies, each on the form's last pages, as the paper keeps
-           them: FOR ADSPACE USE ONLY. */
+           them: FOR {agency} USE ONLY. */
         pics.images.forEach(function (im) {
           var maxW = R - M, maxH = 300, sc = Math.min(maxW / im.img.width, maxH / im.img.height, 1);
           need(im.img.height * sc + 40);

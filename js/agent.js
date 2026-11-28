@@ -1,4 +1,4 @@
-/* ADspace Digital Portal — the Assistant (2026-11-13; the user: "ok approve,
+/* The portal — the Assistant (2026-11-13; the user: "ok approve,
  * all colleagues, build all phases", after the Assistant mockup).
  *
  * A colleague asks in words from Ask in the console's head (⌘ J). This

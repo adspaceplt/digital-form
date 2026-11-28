@@ -50,7 +50,7 @@
      Everything under content/ opens only with CloudFront's signed cookies
      once `privateMedia` is on (docs/S3-STORAGE.md §6). A page that has proved
      its link, code or sign-in asks `media-pass` for them before it draws a
-     file, and they are set on adspace.me so mycdn.adspace.me receives them.
+     file, and they are set on the parent domain so the CDN receives them.
      Stored addresses never change. The pass lasts twelve hours and is asked
      again on a page load or a return to the tab once under two hours are left;
      a file that fails in the meantime asks again once and loads again,
@@ -83,7 +83,7 @@
     return h.toString(36);
   }
   function fresh(margin) { return cookie(FOR) === tagOf(proof) && until() - Date.now() > margin; }
-  /* adspace.me on the real site; the host alone anywhere else (the tests). */
+  /* the parent domain on the real site; the host alone anywhere else (the tests). */
   function scope() {
     var d = s3().mediaCookieDomain, h = location.hostname;
     return d && (h === d || h.slice(-(d.length + 1)) === '.' + d) ? '; domain=' + d : '';
@@ -158,7 +158,7 @@
         if (!passes.some(function (x) { return x.path === '/' || x.path === '/content/'; })) {
           CF.forEach(function (n) { put(n, '', 0); put(n, '', 0, '/content/'); });
         }
-        // Only a folder under content/, never another path on adspace.me.
+        // Only a folder under content/, never another path on the parent domain.
         passes = passes.filter(function (x) { return x.path === '/' || FOLDER.test(String(x.path || '')); });
         var now = passes.map(function (x) { return x.path; });
         known().forEach(function (path) { if (now.indexOf(path) < 0 && FOLDER.test(path)) drop(path); });

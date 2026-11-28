@@ -4,7 +4,7 @@
  * percentages as they stood when it was published), never stored.
  *
  * It keeps the card as the team issued it (v.2.0.6, six A4 pages; the
- * user, 2026-10-13: "their exact format"): the Optima wordmark at the head
+ * user, 2026-10-13: "their exact format"): the wordmark face at the head
  * of every page with FOR INTERNAL USE beside it, PRIVATE & CONFIDENTIAL and
  * the page count at the foot over the version line (`v.2.0.6 exp.
  * 20261231`), the 54pt margin of the letterhead, tables of white cells

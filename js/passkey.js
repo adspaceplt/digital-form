@@ -3,7 +3,7 @@
  *
  * A passkey is Touch ID, Face ID or the device password standing in for the
  * emailed code: no email to wait for, nothing to type, and nothing a phishing
- * page can reuse, because the browser only offers it to digital.adspace.me.
+ * page can reuse, because the browser only offers it to the portal's domain.
  * The email stays the way in for a new colleague and for a new device, so
  * this is a second button on the sign-in card and never a replacement.
  *

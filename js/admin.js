@@ -5779,7 +5779,7 @@
   }
 
   /* Large videos can live anywhere that serves the file directly, such as
-     mycdn.adspace.me. We read the dimensions off the URL the same way. */
+     the CDN. We read the dimensions off the URL the same way. */
   function probeUrl(url) {
     return new Promise(function (resolve) {
       var settled = false;
@@ -6784,7 +6784,7 @@
     v = Number(v);
     return v ? ADspaceClock.month(Math.floor(v / 100) + '-' + String(v % 100).padStart(2, '0') + '-01') : '';
   }
-  /* The months a YYYYMM setting offers: ADSPACE PLT's registration to now. */
+  /* The months a YYYYMM setting offers: the agency's registration to now. */
   function monthChoices() {
     var out = [], k = ADspaceClock.today().slice(0, 7);
     while (k >= '2023-08') { out.push([k.replace('-', ''), monthOfSetting(k.replace('-', ''))]); k = ADspaceClock.addMonths(k, -1); }
@@ -8325,7 +8325,7 @@
   }
 
   /* ---- Short Links -------------------------------------------------------
-     This list is live: hi.adspace.me is a Cloudflare Worker (workers/links/)
+     This list is live: the link host is a Cloudflare Worker (workers/links/)
      that reads it one slug at a time through link_resolve, so a row saved here
      redirects as soon as it is saved and a row paused here stops redirecting.
      The page used to carry a "Not live yet." line under the table; the Worker
@@ -8333,20 +8333,20 @@
 
      The host is one value in js/config.js, read here and written into the
      field's prefix, because it was typed into this file and into the console's
-     markup and the two could disagree. go.adspace.me is retired (2026-11-26). This value decides what the next link is built with. */
+     markup and the two could disagree. The old link host is retired (2026-11-26). This value decides what the next link is built with. */
   var LINK_HOST = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me';
   if ($('slugPrefix')) $('slugPrefix').textContent = LINK_HOST + '/';
   /* The host a link redirects from is a standing fact about the route, so it
      is the quiet line under the register: the team asked where these links
      live, and the field's prefix is only on screen while one is being added.
-     go.adspace.me is named because the QR codes printed before this portal
+     the old link host is named because the QR codes printed before this portal
      encode it whole and keep working. */
   /* Both hosts open, because the fastest way to know a redirector is alive is
      to follow it, and the bare host answers rather than refusing: the Worker
      sends it to the website, since somebody who types it has half a URL. Drawn
      the way the Register's routenote draws /verify: the outlined chip inline
      in its sentence, in a new tab (no underlined words, 2026-09-28). */
-  /* go.adspace.me is retired (the user, 2026-11-26), so the line names the
+  /* the old link host is retired (the user, 2026-11-26), so the line names the
      one host that redirects. */
   if ($('linkNote')) $('linkNote').innerHTML = 'Short links redirect from ' + hostLink(LINK_HOST) + '.';
   function hostLink(h) {
@@ -8358,7 +8358,7 @@
      slugs are in use). Null where the read failed. */
   var cards = [];
   /* The addresses the links host answers by itself (2026-10-14; the user:
-     "there should have a place to see all hi.adspace.me/{slugs}"): a
+     "there should have a place to see all {link host}/{slugs}"): a
      client's review link (/r/), Video Scripts (/s/), a campaign's creator
      selection (/c/) and a creator's own page (/p/), each the key its long
      link carries. Each is read only where the colleague may open its
@@ -8929,7 +8929,7 @@
      so there is no revoking the image. Each code therefore carries its own
      identity and the redirector is what turns a revoked one away:
 
-         https://go.adspace.me/<slug>?q=<code>
+         https://{old link host}/<slug>?q=<code>
 
      One slug can hold several, so a single placement can be pulled without
      taking the rest of the campaign down with it. The encoded text never

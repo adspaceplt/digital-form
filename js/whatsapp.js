@@ -1132,7 +1132,7 @@
     var rep = reportWord();
     /* A link button's variable: a creator's code; on the approval
        reminder, the link to approve past the button's own fixed base
-       (`https://digital.adspace.me/{{1}}` takes `review/?k=…` or
+       (`https://{portal}/{{1}}` takes `review/?k=…` or
        `creators/?k=…`). */
     if (kind === 'u') {
       if (approving(r)) {

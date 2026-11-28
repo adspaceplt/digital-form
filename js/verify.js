@@ -1,7 +1,7 @@
 /*
  * Verify — the public page the foot of every document names.
  *
- * One exact reference in; the first answer says only that ADSPACE PLT issued
+ * One exact reference in; the first answer says only that the agency issued
  * a document with this reference, what kind it is, when (the month) and
  * whether it stands (`verify_serial`). Its days and steps are shown only to
  * somebody holding the copy: the Document ID printed at the foot of every
@@ -78,7 +78,7 @@
     }
   };
   /* The issuer's own names, as the page's settings hold them: the demo
-     (js/demo.js) answers for its sample agency, never as ADspace. */
+     (js/demo.js) answers for its sample agency, never as the real agency. */
   (function names() {
     var cfg = window.ADSPACE_CONFIG || {}, org = ORG.name, brand = cfg.agencyName;
     if (org === 'ADSPACE PLT' && brand === 'ADspace') return;

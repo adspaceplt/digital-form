@@ -21,7 +21,7 @@
   var root = function () { return $('crRoot'); };
   function day(iso) { return window.ADspaceClock.date(iso, { long: true }); }
   /* The careers mailbox, the database's (`careers_read` answers it on every
-     answer; 2026-11-20): every line asking the candidate to contact ADspace
+     answer; 2026-11-20): every line asking the candidate to contact the agency
      names it. */
   var CONTACT = '';
   function reach(line) {
@@ -81,7 +81,7 @@
       '<div><dt>Duration</dt><dd>' + esc(i.minutes) + ' minutes</dd></div>';
   }
   /* The way to change an interview's time, before its confirmation and after
-     it until it is held (2026-11-22, the user): ADspace's WhatsApp chat, never
+     it until it is held (2026-11-22, the user): the agency's WhatsApp chat, never
      its number. */
   function change() {
     var I = window.ADspaceIcons, chat = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.quoteWhatsApp) || 'https://wa.me/adspace';
@@ -109,8 +109,8 @@
     /* A time chosen, not yet confirmed (2026-11-22, the user: "Before
        confirmation … a candidate won't actually see any like Google Meet
        details or office details"): the time and its length alone, never where
-       (`careers_read` withholds it), the time said to wait on ADspace, and
-       the way to change it, ADspace's WhatsApp chat, never its number. */
+       (`careers_read` withholds it), the time said to wait on the agency, and
+       the way to change it, the agency's WhatsApp chat, never its number. */
     if (i.state === 'picked') {
       return '<section class="qs-sec cr-iv" id="crIv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Time chosen</dt><dd>' + esc(when(i.at)) + '</dd></div>' +
         '<div><dt>Duration</dt><dd>' + esc(i.minutes) + ' minutes</dd></div></dl>' +
@@ -125,7 +125,7 @@
     /* Cancelled (2026-11-20): no time and no way to join, only what follows. */
     if (i.state === 'cancelled') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will contact you to arrange another time.</p></section>';
     if (i.state === 'none') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will send you other times by email.</p></section>';
-    /* Interview held (2026-11-20): when it was, and by when ADspace will
+    /* Interview held (2026-11-20): when it was, and by when the agency will
        inform the candidate of the outcome, in place of the way to join. */
     if (i.state === 'confirmed' && i.held) {
       return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Date and time</dt><dd>' + esc(when(i.at, true)) + '</dd></div></dl>' +
@@ -147,7 +147,7 @@
     return '';
   }
   /* Interview missed (2026-11-26): its date, then what follows: the new
-     times (drawn after it), the closing line, or that ADspace will contact
+     times (drawn after it), the closing line, or that the agency will contact
      the candidate. */
   function missed(d) {
     var m = d.missed;
@@ -428,7 +428,7 @@
   }
   /* An application only received (the board ReceivedCareers, 2026-11-25;
      js/icons.js received): where it stands, what was sent and how to reach
-     ADspace. */
+     the agency. */
   function paintReceived(d) {
     var I = window.ADspaceIcons, chat = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.quoteWhatsApp) || 'https://wa.me/adspace';
     var mail = CONTACT && window.ADspaceWords.emailOk(CONTACT) ? '<a class="plink" href="mailto:' + esc(CONTACT) + '">' + I.svg('mail') + esc(CONTACT) + '</a>' : '';
