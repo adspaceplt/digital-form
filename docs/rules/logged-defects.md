@@ -78,3 +78,9 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   repository's main (f69f372) does not yet, so a rebuild from today's
   stand-in would take that behaviour out of the demo. Not rebuilt here.
   Held until the stand-in and the engine agree.
+- `quoteintakesql` (found 2026-11-28 by the Undo send release, on main at
+  7d341bf too): `quote_intake_check` and `client_details_read` are no longer
+  the schema's last definitions from `2026-11-27-quote-details-asked.sql`
+  and `2026-11-27-client-representative.sql`; a later band restated them and
+  the suite's list was not moved. Held until the suite names their later
+  files.
