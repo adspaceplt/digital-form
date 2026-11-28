@@ -1171,7 +1171,7 @@ begin
   select * into me from public.team_members where auth_user_id = auth.uid() and active limit 1;
 
   -- A letter is signed by a person. issued_by is this row's name, so a team
-  -- row named "Superadmin" printed that word under the agency's name on a client's
+  -- row named "Superadmin" printed that word under the issuer's name on a client's
   -- letterhead. Refuse rather than draw a permission as a signatory.
   if not public.issuer_name_ok(me.name) then
     return jsonb_build_object('error', 'issuer-name', 'name', coalesce(me.name, ''));
@@ -1199,7 +1199,7 @@ begin
            -- The line's own tax code and its rate as issued (2026-10-22);
            -- none is the client's SST, as before.
            'tax_code', cs.tax_code,
-           'tax_pct', (select t.rate from public.tax_codes t where t.code = cs.tax_code),
+           'tax_pct', (select t.rate from public.tax_codes t where t.id = cs.tax_code_id),
            'service_id', cs.id)
            order by cs.created_at)
     into v_lines
@@ -1209,7 +1209,7 @@ begin
   /* A line's tax code is one the team holds and offers (2026-10-22). */
   if exists (select 1 from public.client_services cs
               where cs.id = any(p_services) and cs.tax_code is not null
-                and not exists (select 1 from public.tax_codes t where t.code = cs.tax_code and t.active)) then
+                and not exists (select 1 from public.tax_codes t where t.id = cs.tax_code_id and t.active)) then
     return jsonb_build_object('error', 'bad-tax');
   end if;
 
@@ -1273,7 +1273,7 @@ begin
                 /* each line its own percentage, as the quotation priced it
                    (2026-11-24); one with none takes the largest held */
                 'pct', case when coalesce(cs.term_adjust, false) then cs.term_pct end,
-                'sst', (select t.rate from public.tax_codes t where t.code = cs.tax_code))), '[]'::jsonb)
+                'sst', (select t.rate from public.tax_codes t where t.id = cs.tax_code_id))), '[]'::jsonb)
          from public.client_services cs where cs.id = any(p_services)),
       v_qterm, v_tp, v_pct);
     v_month := jsonb_typeof(v_qt->'month') = 'object';
@@ -1317,7 +1317,7 @@ begin
                     else case greatest(1, coalesce(cs.tenure, 1))
                            when 3 then 1 / 0.9 when 12 then 0.95 when 24 then 0.9 else 1 end
                end, 2) as v,
-             coalesce((select t.rate from public.tax_codes t where t.code = cs.tax_code), v_pct) as r
+             coalesce((select t.rate from public.tax_codes t where t.id = cs.tax_code_id), v_pct) as r
         from public.client_services cs where cs.id = any(p_services)
     ), y as (
       select r,

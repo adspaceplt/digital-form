@@ -186,7 +186,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `in-use` naming each code a service line, a quotation or a letter holds
   (`tax_code_uses`), the count typed back for several;
   `2026-10-22-tax-codes-chosen-and-deleted.sql`). A service line's Tax (`#svTax`,
-  `client_services.tax_code`) and a Build quote line's (`.qb-tax`, the
+  `client_services.tax_code_id`, the code its snapshot, a code written alone
+  taking its row; `issue_letter` reads the rate by id) and a Build quote line's (`.qb-tax`, the
   edit's `tax`; its rate set by `quote_tax_edits` from the table, never the
   page's; `bad-tax`) default to the client's SST (none where exempt) and
   else name an active code. Every total groups the lines by rate and rounds

@@ -24,17 +24,17 @@
     client_document_services: 'document_id service_id created_at',
     client_documents: 'id client_id kind number issued_at market subtotal tax total bill_to lines issued_by created_at voided_at signed_at verified_at verified_by superseded_by client_code idem_key voided_by void_reason doc_code',
     client_requests: 'id client_id contact_id contact_name kind service_id service_label note state fee reply decided_by withdrawn_at created_at updated_at idem recorded_by request_ref',
-    client_services: 'id client_id service_slug label qty rate unit state note created_at archived_at tenure start_on detail term_adjust term_pct quotation_id tax_code',
+    client_services: 'id client_id service_slug label qty rate unit state note created_at archived_at tenure start_on detail term_adjust term_pct quotation_id tax_code tax_code_id',
     public_holidays: 'day name updated_at updated_by',
     departments: 'key name active in_prize criteria position updated_at updated_by ac_code',
-    industries: 'name name_zh updated_at updated_by',
+    industries: 'id name name_zh updated_at updated_by',
     client_checklists: 'id client_id kind version template answers sections_na status prepared_by prepared_name prepared_at reviewed_by reviewed_name reviewed_at history created_at updated_at',
     client_detail_forms: 'id client_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by',
     suppliers: 'id code name kind brn nric tin sst_no phone address contact_name designation email mobile payment_term currency payee_name bank_name bank_account finance_email swift bank_address status created_at created_by updated_at approved_at approved_by client_id',
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
     quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by made_by_id submitted_by_id contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines doc_code commence_on',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
-    clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner owner_id market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id commence_on portal_kept_at portal_kept_by stage_next stage_next_on stage_next_reason stage_next_note',
+    clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry industry_id owner owner_id market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id commence_on portal_kept_at portal_kept_by stage_next stage_next_on stage_next_reason stage_next_note',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
     creator_profiles: 'id creator_id platform url handle created_at',
     creators: 'id name followers cost_rate client_rate industries notes active created_by created_at updated_at access_code code_issued_at whatsapp creator_code inactive_reason',
@@ -639,7 +639,7 @@
     quote_catalogue: '', quote_preflight: 'p_sel p_seen p_key', quote_website_preview: 'p_key p_sel', quote_change_request: 'p_key p_sel',
     public_holidays_between: 'p_from p_to',
     departments_list: '',
-    industries_list: '', industry_save: 'p_was p_name p_name_zh', industry_delete: 'p_name',
+    industries_list: '', industry_save: 'p_id p_name p_name_zh', industry_delete: 'p_id',
     id_formats_list: '', id_format_set: 'p_kind p_prefix p_width p_next p_pattern', campaign_job_ref: 'p_option',
     creator_pay_form: 'p_code', creator_pay_submit: 'p_code p_values', creator_pay_address: 'p_code p_address', creator_pay_list: 'p_creator', creator_pay_states: '',
     creator_pay_decide: 'p_id p_ok p_note', creator_pay_add: 'p_creator p_values', creator_email_templates_get: '', creator_email_templates_save: 'p_rows', creator_email_again: 'p_id',
@@ -879,6 +879,11 @@
   });
 
   stampHandOwners();
+
+  (DB.industries || []).forEach(function (x, i) { if (!x.id) x.id = 'ind-x' + (i + 1); });
+  (DB.tax_codes || []).forEach(function (x, i) { if (!x.id) x.id = 'tx-x' + (i + 1); });
+  (DB.clients || []).forEach(function (c) { if (!c.industry_id) lookupFix('clients', c, null); });
+  (DB.client_services || []).forEach(function (c) { if (!c.tax_code_id) lookupFix('client_services', c, null); });
 
   (function () {
     var oneOf = function (nm) {
@@ -1332,9 +1337,36 @@
       });
     });
   }
+
+  function lookupFix(table, nw, old) {
+    var L = table === 'clients' ? ['industry', 'industry_id', 'industries', 'name'] : table === 'client_services' ? ['tax_code', 'tax_code_id', 'tax_codes', 'code'] : null;
+    if (!L) return nw;
+    var t = L[0], k = L[1], rows = DB[L[2]] || [], col = L[3];
+    if (old && (nw[t] || null) === (old[t] || null) && (nw[k] || null) === (old[k] || null)) return nw;
+    if (nw[k] && (!old || nw[k] !== old[k])) { var h = rows.filter(function (x) { return x.id === nw[k]; })[0]; nw[t] = h ? h[col] : nw[t]; return nw; }
+    if (!nw[k] && old && old[k]) { nw[t] = null; return nw; }
+    var v = String(nw[t] || '').trim();
+    if (!v) { nw[t] = null; nw[k] = null; return nw; }
+    var hit = rows.filter(function (x) { return table === 'clients' ? String(x[col]).toLowerCase() === v.toLowerCase() : x[col] === v; })[0];
+    nw[k] = hit ? hit.id : null; if (hit && table === 'clients') nw[t] = hit[col];
+    return nw;
+  }
+
+  function stampHandLookups() {
+    (DB.clients || []).forEach(function (c) {
+      var h = (DB.industries || []).filter(function (x) { return x.id === c.industry_id; })[0];
+      if (!h || String(h.name).toLowerCase() !== String(c.industry || '').trim().toLowerCase()) { c.industry_id = null; lookupFix('clients', c, null); }
+    });
+    (DB.client_services || []).forEach(function (c) {
+      var h = (DB.tax_codes || []).filter(function (x) { return x.id === c.tax_code_id; })[0];
+      if (!h || h.code !== c.tax_code) { c.tax_code_id = null; lookupFix('client_services', c, null); }
+    });
+  }
   function withOwner(table, r, pending) {
     var nx = Object.assign({}, r, pending);
     if ((table === 'clients' || table === 'campaigns') && ('owner' in pending || 'owner_id' in pending)) ownerFix(nx, r);
+    if ((table === 'clients' && ('industry' in pending || 'industry_id' in pending)) ||
+        (table === 'client_services' && ('tax_code' in pending || 'tax_code_id' in pending))) lookupFix(table, nx, r);
     return nx;
   }
   function scopeRowOk(stage, owner, ownerId, level, salesBy) {
@@ -1464,6 +1496,7 @@
 
   function builder(table) {
     if (table === 'clients' || table === 'campaigns') stampHandOwners();
+    if (table === 'clients' || table === 'client_services') stampHandLookups();
 
     if (table === 'batches') DB.batches.forEach(function (x) {
       if (!('period' in x)) x.period = x.created_at ? new Date(new Date(x.created_at).getTime() + 8 * 3600e3).toISOString().slice(0, 7) : null;
@@ -2151,6 +2184,7 @@
           if (dup) err = { message: 'duplicate key value violates unique constraint' };
         }
         if (table === 'clients' || table === 'campaigns') ownerFix(x, null);
+        if (table === 'clients' || table === 'client_services') lookupFix(table, x, null);
 
         if (table === 'quotations') {
           var qMe = opsMe(), qBy = String(x.made_by || '').trim();
@@ -11391,13 +11425,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
     }
 
     if (name === 'tax_codes_list' || name === 'tax_codes_save' || name === 'tax_codes_delete') {
+      stampHandLookups();
       var tr0 = window.__refuseRpc && window.__refuseRpc[name];
       if (tr0) return Promise.resolve({ data: null, error: { message: tr0 } });
       DB.tax_codes = DB.tax_codes || [];
       var tList = function () {
         return { ok: true, codes: JSON.parse(JSON.stringify(DB.tax_codes.slice().sort(function (a, b) {
           return (b.active - a.active) || (b.rate - a.rate) || (a.code < b.code ? -1 : 1); }).map(function (t) {
-          return { code: t.code, name: t.name, rate: Number(t.rate), active: t.active, bukku: !!t.bukku_id }; }))) };
+          return { id: t.id, code: t.code, name: t.name, rate: Number(t.rate), active: t.active, bukku: !!t.bukku_id }; }))) };
       };
       if (!opsMe()) return Promise.resolve({ data: { error: 'denied' }, error: null });
       if (name === 'tax_codes_list') return Promise.resolve({ data: tList(), error: null });
@@ -11409,7 +11444,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!dc.length || dc.length > 100) return Promise.resolve({ data: { error: 'bad-row' }, error: null });
         var uses = function (c) {
           var q = '"tax_code":' + JSON.stringify(c);
-          return (DB.client_services || []).some(function (s) { return s.tax_code === c; }) ||
+          var cid = (DB.tax_codes.filter(function (t) { return t.code === c; })[0] || {}).id;
+          return (DB.client_services || []).some(function (s) { return cid && s.tax_code_id === cid; }) ||
             (DB.quotations || []).some(function (x) { return JSON.stringify(x.lines || []).indexOf(q) > -1 || JSON.stringify(x.selection || {}).indexOf('"tax":' + JSON.stringify(c)) > -1; }) ||
             (DB.client_documents || []).some(function (x) { return JSON.stringify(x).indexOf(q) > -1; });
         };
@@ -11433,7 +11469,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       rowsIn.forEach(function (r) {
         var c = String(r.code).trim(), was = DB.tax_codes.filter(function (t) { return t.code === c; })[0];
         var on = r.active !== false, nm = String(r.name || '').trim(), rt = Number(r.rate);
-        if (!was) { DB.tax_codes.push({ code: c, name: nm, rate: rt, active: on, bukku_id: r.bukku_id || null }); tAdd++; }
+        if (!was) { DB.tax_codes.push({ id: nid('tx'), code: c, name: nm, rate: rt, active: on, bukku_id: r.bukku_id || null }); tAdd++; }
         else if (was.name !== nm || Number(was.rate) !== rt || was.active !== on) {
           tMoved.push(c + (Number(was.rate) !== rt ? ': ' + Number(was.rate) + '% → ' + rt + '%' : '') + (was.active !== on ? (on ? ': on' : ': off') : ''));
           was.name = nm; was.rate = rt; was.active = on; if (r.bukku_id) was.bukku_id = r.bukku_id;
@@ -11499,41 +11535,43 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var ir = window.__refuseRpc && window.__refuseRpc[name];
       if (ir) return Promise.resolve({ data: null, error: { message: ir } });
       var ia = args || {}, iMe = opsMe(), iOut;
+      stampHandLookups();
       DB.industries = DB.industries || [];
       var iSorted = function () { return DB.industries.slice().sort(function (a, b) { return ((a.name === 'Other') - (b.name === 'Other')) || a.name.toLowerCase().localeCompare(b.name.toLowerCase()); }); };
-      var iUse = function (n) { return (DB.clients || []).filter(function (c) { return c.industry === n; }).length; };
-      var iOf = function (n) { return DB.industries.filter(function (x) { return x.name === n; })[0]; };
+      var iUse = function (id) { return (DB.clients || []).filter(function (c) { return c.industry_id === id; }).length; };
+      var iOf = function (id) { return DB.industries.filter(function (x) { return x.id === id; })[0]; };
       if (name === 'industries_list') {
-        iOut = iMe ? iSorted().map(function (x) { return { name: x.name, name_zh: x.name_zh || null, clients: iUse(x.name) }; })
-          : iSorted().map(function (x) { return { name: x.name, name_zh: x.name_zh || null }; });
+        iOut = iMe ? iSorted().map(function (x) { return { id: x.id, name: x.name, name_zh: x.name_zh || null, clients: iUse(x.id) }; })
+          : iSorted().map(function (x) { return { id: x.id, name: x.name, name_zh: x.name_zh || null }; });
       } else if (!opsGranted('team.settings', 'work')) iOut = { error: 'denied' };
       else if (name === 'industry_save') {
         var iName = String(ia.p_name || '').replace(/\s+/g, ' ').trim(), iZh = String(ia.p_name_zh || '').replace(/\s+/g, ' ').trim() || null;
-        var iWas = ia.p_was ? iOf(ia.p_was) : null;
+        var iWas = ia.p_id ? iOf(ia.p_id) : null;
         if (iName.length < 2 || iName.length > 40) iOut = { error: 'bad-name' };
         else if (iZh && iZh.length > 40) iOut = { error: 'bad-name-zh' };
-        else if (ia.p_was && !iWas) iOut = { error: 'not-found' };
+        else if (ia.p_id && !iWas) iOut = { error: 'not-found' };
         else if (iWas && iWas.name === 'Other' && iName !== 'Other') iOut = { error: 'fixed' };
         else if (DB.industries.some(function (x) { return x.name.toLowerCase() === iName.toLowerCase() && x !== iWas; })) iOut = { error: 'taken' };
         else if (!iWas) {
-          DB.industries.push({ name: iName, name_zh: iZh });
+          var iNew = { id: nid('ind'), name: iName, name_zh: iZh };
+          DB.industries.push(iNew);
           logAct('team.changed', 'Industries', 'Added: ' + iName);
-          iOut = { ok: true, name: iName };
+          iOut = { ok: true, id: iNew.id, name: iName };
         } else {
           var iMv = [], iN = 0;
           if (iWas.name !== iName) iMv.push('Name: ' + iWas.name + ' → ' + iName);
           if ((iWas.name_zh || null) !== iZh) iMv.push('Chinese name: ' + (iWas.name_zh || 'not set') + ' → ' + (iZh || 'not set'));
           if (iMv.length) {
-            if (iWas.name !== iName) (DB.clients || []).forEach(function (c) { if (c.industry === iWas.name) { c.industry = iName; iN++; } });
+            if (iWas.name !== iName) (DB.clients || []).forEach(function (c) { if (c.industry_id === iWas.id) { c.industry = iName; iN++; } });
             logAct('team.changed', 'Industries', iName + ' · ' + iMv.join(' · ') + (iN === 1 ? ' · 1 client updated' : iN > 1 ? ' · ' + iN + ' clients updated' : ''));
             iWas.name = iName; iWas.name_zh = iZh;
           }
-          iOut = { ok: true, name: iName, clients: iN };
+          iOut = { ok: true, id: iWas.id, name: iName, clients: iN };
         }
       } else {
-        var iOne = iOf(ia.p_name), iU = iOne ? iUse(iOne.name) : 0;
-        if (!iOne) iOut = { error: 'not-found' };
-        else if (!opsGranted('team.settings', 'manage')) iOut = { error: 'denied' };
+        var iOne = iOf(ia.p_id), iU = iOne ? iUse(iOne.id) : 0;
+        if (!opsGranted('team.settings', 'manage')) iOut = { error: 'denied' };
+        else if (!iOne) iOut = { error: 'not-found' };
         else if (iOne.name === 'Other') iOut = { error: 'fixed' };
         else if (iU) iOut = { error: 'in-use', clients: iU };
         else { DB.industries = DB.industries.filter(function (x) { return x !== iOne; }); logAct('team.changed', 'Industries', 'Deleted: ' + iOne.name); iOut = { ok: true }; }
@@ -17576,7 +17614,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         'rpc:announcement_delete': ['team.announce', 'p_id', 'Announcement', 'announcements', 'id', 'body_en'],
         'rpc:campaign_file_delete': ['campaigns.files_delete', 'p_file', 'Approved file'],
         'rpc:department_delete': ['team.settings', 'p_key', 'Department', 'departments', 'key', 'name'],
-        'rpc:industry_delete': ['team.settings', 'p_name', 'Industry', 'industries', 'name', 'name'],
+        'rpc:industry_delete': ['team.settings', 'p_id', 'Industry', 'industries', 'id', 'name'],
         'rpc:public_holiday_delete': ['team.settings', 'p_day', 'Public holiday', 'public_holidays', 'day', 'name'],
         'rpc:tax_codes_delete': ['team.settings', 'p_codes', 'Tax code'],
         'rpc:doc_type_delete': ['register.types', 'p_id', 'Document type', 'doc_types', 'id', 'name'],
