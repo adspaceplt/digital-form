@@ -86,7 +86,7 @@ Schema lines are `supabase/schema.sql` (last definition cited). Checked at HEAD 
 | e-Invoice (MyInvois) | bukku-sync/index.ts:897, :1031, :1067 `myinvois_action:'NORMAL'`; :238 LHDN list | Draft invoice flag | CODE | — |
 | e-Invoice mailbox | schema.sql:128874-128885 `mail_boxes` 'einvoice' | Reply-to | SETTING (seeded) | — |
 | TIN | schema.sql:47765, :51842 (uppercased, spaces removed); js/details.js:22, :123 (maxlength 24) | Field | CODE (normalise only) | No format check |
-| BRN / SSM 12-digit | schema.sql:162925-162934 (`^\d{12}$`, year 1900..now, entity code 01/02/03/04); js/quote.js:956-958; js/supplierform.js:231 | Validation | CODE | details.js:215 is looser (`[A-Za-z0-9-]{6,20}`), so the forms are inconsistent |
+| BRN / SSM 12-digit | `brn_check` (schema.sql, ONE BRN RULE) and `ADspaceWords.brnCheck` (js/words.js): 12 digits, year 1900..now, entity code 01/02/03/04, a Singapore client's UEN | Validation | CODE | One rule since 2026-11-28 (draft); the country's shapes become profile settings with item 18 |
 | SG UEN / reg. no. | js/quote.js:1751-1752 | Validation | CODE | — |
 | NRIC / IC / passport | js/supplierform.js:232 (`^\d{12}$`); js/personnel.js:49-51, :290 (masked fields); schema 124 hits | Field / validation | CODE | Masked in the DB (#1580) |
 | EPF / SOCSO / EIS / PCB | js/personnel.js:86-87, :866-886 (payroll export header) | Fields, export | CODE | Stored and exported only; no calculation |
@@ -107,7 +107,7 @@ Schema lines are `supabase/schema.sql` (last definition cited). Checked at HEAD 
 **Counts per topic (rows / code spots)**
 - SST: 6 rows; code 4 (fallback 8, SV8 literals, wording, SST-no regex). Issuer facts sit in config.
 - e-Invoice/TIN: 3 rows; code 2 (`myinvois_action`, TIN normalise).
-- BRN/SSM/UEN: 2 rows; code 2 (4 validators across 3 files plus SQL).
+- BRN/SSM/UEN: 2 rows; code 2 (one validator a side since 2026-11-28; four until then).
 - NRIC/IC/passport: 1 row; code 1.
 - EPF/SOCSO/EIS/PCB: 1 row; code 1.
 - Currency/FX/locale: 5 rows; code 4 (FX is a setting).
@@ -200,7 +200,7 @@ One area per release. Sizes: **S** under half a day, **M** a day, **L** two or m
 | 15 | Consent and privacy lines (careers, supplier, details, personnel); Health agreement, feedback questions and checklist template get their editor | 3 | S | Ride-along per page |
 | 16 | First-visit guides (`admin.js` GUIDES), performance categories (`perf.js`), ad-report explainer (`smreport.js`) | 3 | S each | Ride-along |
 | 17 | AI prompts (8 functions) into the store, read by `_shared` | 3 | M | After 11 |
-| 18 | Country: time zone, currency, locale, tax labels and registration formats as profile settings; one BRN validator (today four disagree) | 2 | M | Last; only when a non-Malaysian install is sold. The BRN fix rides along with Clients |
+| 18 | Country: time zone, currency, locale, tax labels and registration formats as profile settings; one BRN validator (one since 2026-11-28) | 2 | M | Last; only when a non-Malaysian install is sold. The BRN fix rides along with Clients |
 
 Releases 1, 5, 6 and 11 carry migrations and are major releases on their own PR (CLAUDE.md §3). Everything else is a train item.
 
@@ -215,4 +215,4 @@ Releases 1, 5, 6 and 11 carry migrations and are major releases on their own PR 
 7. 437 server-side values (edge functions, SQL text, workers) have no store to read from.
 8. Legal wording (Letter of Offer, quotation terms, contract clauses) lives in code: a change of terms needs a deploy, and an install inherits ADspace's.
 9. AI prompts, eight functions, are code only and unversioned.
-10. Country logic: 1,298 `Asia/Kuala_Lumpur` literals in SQL, four BRN validators that disagree, and commercial fonts whose licence does not pass to another agency.
+10. Country logic: 1,298 `Asia/Kuala_Lumpur` literals in SQL, one BRN validator (four until 2026-11-28), and commercial fonts whose licence does not pass to another agency.
