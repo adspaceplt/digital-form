@@ -11,7 +11,7 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   equal to the seed by `tests/agencysql.js`. `ADSPACE_ORG` and
   `ADSPACE_CONFIG`'s agency fields alias it (`ADspaceAgency.alias`), never a
   copy; a script reads them with no typed fallback (`brandguard` counts
-  `|| 'ADspace'`). The General mailbox is `mail_boxes`, answered as
+  one). The General mailbox is `mail_boxes`, answered as
   `email`, never copied into the profile; a sender's address is held to
   the profile's `sender_domain`.
 - `js/api.js` is the only Supabase client. Demo content is only for a copy
