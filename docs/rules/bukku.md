@@ -26,6 +26,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Bukku's others kept after it (a list sent replaces Bukku's whole), each
   other person's role and lists kept; read from each list's first, the old
   single field still read (`listOf`, `mailOf`, `phoneOf` in `bukku-sync`).
+  A detail whose key Bukku's answer does not carry (`SOURCE` in
+  `valuesOf`) is not read: never taken, never filed as changed, so a
+  renamed field never empties the portal's copy (2026-11-28).
   The address is read into Bukku's parts (street, postcode, city, state,
   country; a line break a comma), and an address or a billing person Bukku
   already holds however set out (the same letters and digits; every word of
