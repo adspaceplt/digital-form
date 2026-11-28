@@ -29,6 +29,10 @@ window.ADspaceAgency = {
   favicon_url: '/favicon.ico',
   touch_icon_url: '/img/apple-touch-icon.png',
   icon_url: '/img/icon-512.png',
+  font_text: '/css/fonts/text.ttf',
+  font_bold: '/css/fonts/bold.ttf',
+  font_medium: '/css/fonts/medium.ttf',
+  font_mark: '/css/fonts/mark.ttf',
   verify_url: 'digital.adspace.me/verify',
   service_terms_url: 'hi.adspace.me/svc-terms',
   ink_token: '--ink',
@@ -52,24 +56,19 @@ window.ADSPACE_ORG = window.ADspaceAgency.alias({
   // The KOC job form a creator fills in for payment, named on their own page
   // once their work has been approved.
   ap01: '/ap01.html',
-  // The letterhead: the monogram top right (the letterhead only), the wordmark
-  // set in Optima, the text in Slate Book, the heavier lines in Slate
-  // Regular.
-  // Files, not font names, same origin or served with CORS. A blank mark
-  // uses brandLogo below; blank fonts fall back to Helvetica.
-  font: '/css/SlateBook.TTF',
-  fontBold: '/css/SlateRg.TTF',
-  fontMark: '/css/OPTIMA.TTF',
-  // The letters' headings are Slate Medium, as the Word templates set them.
-  // Blank or missing, they take fontBold, which is what the Letter of Offer
-  // already uses.
-  fontMed: '/css/SlateMedium.TTF',
-  // Slate carries no Chinese, so a letter with a Chinese block embeds this
+  // The letterhead's faces are the profile's (font_text, font_bold,
+  // font_medium, font_mark, aliased below): the monogram top right (the
+  // letterhead only), the wordmark in the mark face, the text in the text
+  // face, the heavier lines in the bold one, the letters' headings in the
+  // medium one (blank, they take the bold). Files, not font names, same
+  // origin or served with CORS; blank fonts fall back to Helvetica.
+  // The brand faces carry no Chinese, so a letter with a Chinese block embeds this
   // face for that block alone. Fetched only when a Chinese block is drawn,
   // and refused by name when it cannot be, rather than drawing boxes.
   fontCjk: '/css/NotoSansSC-Regular.ttf'
 }, { name: 'legal_name', regno: 'reg_no', sst: 'tax_no', address: 'address', email: 'email', phone: 'phone',
-     website: 'website', map: 'map_url', logo: 'monogram_url', verifyUrl: 'verify_url' });
+     website: 'website', map: 'map_url', logo: 'monogram_url', verifyUrl: 'verify_url',
+     font: 'font_text', fontBold: 'font_bold', fontMed: 'font_medium', fontMark: 'font_mark' });
 
 window.ADSPACE_CONFIG = {
   supabaseUrl: 'https://hwwuigvdfubuymchsvyx.supabase.co',
