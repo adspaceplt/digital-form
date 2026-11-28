@@ -1,4 +1,4 @@
-<!-- triggers: js/api.js js/money.js js/acts.js js/clock.js js/otp.js js/copy.js js/icons.js js/words.js js/captcha.js js/decide.js js/swipe.js js/chart.js -->
+<!-- triggers: js/api.js js/money.js js/acts.js js/clock.js js/otp.js js/copy.js js/icons.js js/words.js js/captcha.js js/decide.js js/swipe.js js/chart.js js/tpl.js -->
 # Shared mechanisms
 
 Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is the one copy of its mechanism: no page keeps its own.
@@ -184,3 +184,16 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
 - A short month is `Sept`, never the browser's `Sep` (Safari): every English
   short-month format ends `.replace(/\bSep\b/, 'Sept')`, and My Work builds
   its dates from `MON_SHORT`.
+- The template store (`templates`, `2026-11-28-template-store.sql`; restructure
+  release 11, layer 3): agency wording a person reads is one row a version,
+  a key in a language (`en`, `zh`), its `kind` naming the sender's field
+  list (`template_fields`). The database renders what is sent
+  (`template_render(key, lang, record, values, at, strict)`: the version in
+  force on the Malaysian day, 中文 going out in English where none is live
+  and saying so, a record's fields bound at the reader's access by
+  `template_values`, a value given never overriding a record's); `js/tpl.js`
+  (`ADspaceTpl.fill`, `names`, `render`, `said`) previews what is typed the
+  same way, and `templatesql` holds the two equal case by case. A value is
+  escaped where it is inserted (`ADspaceWords.esc`); a field with no value
+  is kept as `{field}` and named in `missing`, refused `missing-field` where
+  `strict`, never sent blank.
