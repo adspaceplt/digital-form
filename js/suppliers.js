@@ -1061,6 +1061,7 @@
             var dd = x.data || {};
             if (x.error || dd.error) { b.disabled = false; msg('supRecMsg', dd.error === 'sent' ? window.ADspaceWords.line.mailTooLate : said(x), 'err'); emails(id); return; }
             msg('supRecMsg', window.ADspaceWords.line.mailCancelled, 'ok');
+            if (window.ADspaceAdmin && window.ADspaceAdmin.mailUndoShut) window.ADspaceAdmin.mailUndoShut(b.getAttribute('data-src'), b.getAttribute('data-cancel'));
             emails(id);
           });
         });

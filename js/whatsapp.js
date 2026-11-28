@@ -568,8 +568,12 @@
     var msg = $('emlMsg');
     var say = function (t, tone) { msg.hidden = !t; msg.className = 'msg' + (tone ? ' ' + tone : ''); msg.textContent = t || ''; };
     btn.disabled = true;
-    rpc('mail_cancel', { p_source: x.source === 'manual' ? 'manual' : x.source, p_id: x.id }).then(function () {
+    rpc('mail_cancel', { p_source: x.source, p_id: x.id }).then(function () {
       btn.hidden = true;
+      x.status = 'cancelled';
+      var chip = $('emlSheetBody').querySelector('.eml-facts .chip-state'), cs = mlState(x);
+      if (chip) { chip.className = 'chip-state ' + cs[1]; chip.textContent = cs[0]; }
+      if (bridge().mailUndoShut) bridge().mailUndoShut(x.source, x.id);
       say(window.ADspaceWords.line.mailCancelled, 'ok');
       mlLoad();
       try { window.dispatchEvent(new CustomEvent('adspace:email-sent', { detail: { cancelled: true } })); } catch (z) {}

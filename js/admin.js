@@ -4398,7 +4398,7 @@
     var W = window.ADspaceWords.line, secs = Number(list[0].seconds) || 60;
     var say = function (t, tone) { host.hidden = !t; host.textContent = t || ''; host.className = 'msg' + (t && tone ? ' ' + tone : ''); };
     var WHY = { sent: W.mailTooLate, denied: 'You do not have permission to cancel this email. Please ask an admin.' };
-    return undoHere(list.length > 1 ? W.mailsQueued(list.length, secs) : W.mailQueued(name, secs), function () {
+    var bar = undoHere(list.length > 1 ? W.mailsQueued(list.length, secs) : W.mailQueued(name, secs), function () {
       Promise.all(list.map(function (x) {
         return db.rpc('mail_cancel', { p_source: x.source, p_id: x.id }).then(function (r) {
           var d = r.data || {};
@@ -4410,6 +4410,15 @@
         if (after) after(!bad.length);
       });
     }, host, secs * 1000);
+    if (bar) list.forEach(function (x) { mailBars[x.source + ':' + x.id] = bar; });
+    return bar;
+  }
+  /* An email cancelled elsewhere (its sheet, its record) takes its bar away. */
+  var mailBars = {};
+  function mailUndoShut(source, id) {
+    var bar = mailBars[source + ':' + id];
+    delete mailBars[source + ':' + id];
+    if (bar && bar.parentNode) { clearTimeout(bar.undoTimer); bar.parentNode.removeChild(bar); }
   }
 
   $('copyLink').addEventListener('click', function () {
@@ -7315,6 +7324,7 @@
     figsHidden: figsHidden,
     undoHere: undoHere,
     mailUndo: mailUndo,
+    mailUndoShut: mailUndoShut,
     /* The latest build (2026-11-17): what this page loaded, what Pages
        serves now, and the build required. */
     build: function () { return { loaded: build.loaded, live: build.live, min: build.min }; },
