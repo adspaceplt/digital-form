@@ -188,7 +188,7 @@ Moved from `CLAUDE.md` §2, Sign-in, security, secrets, on 2026-11-23. Secrets a
   cannot see, as its error, which the task card's Repeats line shows
   (`2026-10-18-failed-jobs-named.sql`), and of the automatic WhatsApp
   messages that failed in the window, counted (`2026-10-26-jobs-watch-whatsapp.sql`); `jobs_prune()` (`jobs-prune`, 03:40 MYT) removes job history
-  over 14 days and notices read over 90 days ago or unread over 180
+  over `jobs_keep_days` (7, Settings, Company, Activity history; 2026-11-28) and notices read over 90 days ago or unread over 180
   (`2026-10-19-unread-notices-pruned.sql`), never a colleague's notice. Neither is a page's to call.
 - The database is kept every night (`workers/db-backup/`,
   `.github/workflows/db-backup.yml`, 02:37 MYT; the user, 2026-10-10: the

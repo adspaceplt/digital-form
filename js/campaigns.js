@@ -815,19 +815,31 @@
   }
   function paneCrActivity(c, host) {
     UI.skeleton(host, 3);
-    db.from('activity_log').select('*').eq('creator_id', c.id).order('created_at', { ascending: false }).limit(50).then(function (r) {
+    /* The last days first, Show more reading older pages
+       (`ADspaceRecords.pager`, 2026-11-28). */
+    var R = window.ADspaceRecords, A = window.ADspaceAdmin, rows = [];
+    var pg = R.pager(function () { return db.from('activity_log').select('*').eq('creator_id', c.id); }, 50);
+    var fail = function (m, retry) { UI.failLine(host, 'The Activity record', m, retry); };
+    function draw() {
       if ($('crRecPane') !== host) return;
-      if (r.error) { UI.failLine(host, 'The Activity record', r.error.message, function () { paneCrActivity(c, host); }); return; }
-      var rows = r.data || [];
-      if (!rows.length) { host.innerHTML = '<div class="panel crr-card"><p class="emptyline">No entries.</p></div>'; return; }
-      var A = window.ADspaceAdmin;
+      if (!rows.length && !pg.more) { host.innerHTML = '<div class="panel crr-card"><p class="emptyline">No entries.</p></div>'; return; }
       host.innerHTML = '<div class="softpanel recpanel"></div>';
-      window.ADspaceRecords.paint(host.firstChild, rows.map(function (x) {
+      R.paint(host.firstChild, rows.map(function (x) {
         var e = A && A.record ? A.record(x) : { at: x.created_at, who: x.actor || 'System', what: x.action, detail: x.detail || '' };
         if (e.key == null) e.key = 'creator';
         return e;
-      }));
-    }).catch(function (e) { UI.failLine(host, 'The Activity record', e.message, function () { paneCrActivity(c, host); }); });
+      }), { empty: R.none(pg.days) });
+      if (pg.more) R.earlier(host.firstChild, more);
+    }
+    function took(r, retry) {
+      if ($('crRecPane') !== host) return;
+      if (r.error) { fail(r.error.message, retry); return; }
+      rows = rows.concat(r.data || []);
+      draw();
+    }
+    function more() { pg.next().then(function (r) { took(r, more); }).catch(function (e) { fail(e && e.message, more); }); }
+    var again = function () { paneCrActivity(c, host); };
+    pg.first().then(function (r) { took(r, again); }).catch(function (e) { fail(e && e.message, again); });
   }
   /* Totals (the user, 2026-11-12): what clients were billed for this
      creator (each booking's client rate from Confirmed on) and what was paid
@@ -3820,26 +3832,34 @@
     var c = state.campaign;
     if (!box || !c) return;
     UI.skeleton(box, 3);
-    db.from('activity_log').select('*').eq('campaign_id', c.id)
-      .order('created_at', { ascending: false }).limit(50)
-      .then(function (r) {
-        if (r.error) { UI.failLine(box, 'The Activity record', r.error.message, loadCampLog); return; }
-        var rows = r.data || [];
-        /* One line an entry; the campaign is named by the record itself. */
-        var A = window.ADspaceAdmin;
-        box.innerHTML = '<div class="softpanel recpanel"></div>';
-        window.ADspaceRecords.paint(box.firstChild, rows.map(function (x) {
-          var r = A && A.record ? A.record(x) : { at: x.created_at, who: x.actor || 'System', what: x.action, detail: x.detail || '' };
-          /* The campaign is this page; a booking's entry is about its
-             creator, named on the first row, with what changed under it. */
-          r.on = r.lead || '';
-          if (r.lead) r.detail = r.rest || '';
-          if (r.key == null) r.key = 'campaign';
-          return r;
-        }));
-      });
+    /* The last days first, Show more reading older pages
+       (`ADspaceRecords.pager`, 2026-11-28). */
+    var R = window.ADspaceRecords, A = window.ADspaceAdmin, rows = [];
+    var pg = R.pager(function () { return db.from('activity_log').select('*').eq('campaign_id', c.id); }, 50);
+    var fail = function (m, retry) { UI.failLine(box, 'The Activity record', m, retry); };
+    function draw() {
+      if (state.campaign !== c) return;
+      /* One line an entry; the campaign is named by the record itself. */
+      box.innerHTML = '<div class="softpanel recpanel"></div>';
+      R.paint(box.firstChild, rows.map(function (x) {
+        var r = A && A.record ? A.record(x) : { at: x.created_at, who: x.actor || 'System', what: x.action, detail: x.detail || '' };
+        /* The campaign is this page; a booking's entry is about its
+           creator, named on the first row, with what changed under it. */
+        r.on = r.lead || '';
+        if (r.lead) r.detail = r.rest || '';
+        if (r.key == null) r.key = 'campaign';
+        return r;
+      }), pg.more && !rows.length ? { empty: R.none(pg.days) } : null);
+      if (pg.more) R.earlier(box.firstChild, more);
+    }
+    function took(r, retry) {
+      if (r.error) { fail(r.error.message, retry); return; }
+      rows = rows.concat(r.data || []);
+      draw();
+    }
+    function more() { pg.next().then(function (r) { took(r, more); }).catch(function (e) { fail(e && e.message, more); }); }
+    pg.first().then(function (r) { took(r, loadCampLog); }).catch(function (e) { fail(e && e.message, loadCampLog); });
   }
-
 
   /* ---- What this campaign is waiting on us for --------------------------
      Derived from the bookings on every repaint, never stored: a state written
