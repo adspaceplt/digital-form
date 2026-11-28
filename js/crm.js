@@ -145,12 +145,11 @@
   /* Who logged a call or visit, by name. Entries logged before 2026-10-15
      hold the sign-in email; it is read as the colleague's name, and an
      address no active colleague holds is left unsaid. */
-  function whoLogged(v) {
-    v = String(v || '');
-    if (v.indexOf('@') < 0) return v;
-    var m = (state.team || []).filter(function (t) { return String(t.email || '').toLowerCase() === v.toLowerCase(); })[0];
-    return m ? m.name : '';
+  function whoLogged(tc) {
+    var v = String(bridge.whoIs(tc && tc.by_whom_id, tc && tc.by_whom) || '');
+    return v.indexOf('@') < 0 ? v : '';
   }
+
 
   function niceDate(d) {
     if (!d) return '';
@@ -6277,7 +6276,7 @@
       '<div class="touch-body">' +
         '<p class="touch-summary">' + esc(tc.summary) + '</p>' +
         '<p class="touch-meta">' +
-          [tc.contact_name ? 'With ' + tc.contact_name : '', whoLogged(tc.by_whom) ? 'by ' + whoLogged(tc.by_whom) : '',
+          [tc.contact_name ? 'With ' + tc.contact_name : '', whoLogged(tc) ? 'by ' + whoLogged(tc) : '',
            tc.updated_at ? 'edited' : '']
             .filter(Boolean).map(esc).join(' · ') +
         '</p>' +
@@ -7332,7 +7331,7 @@
     row.className = 'svc-row doc-row rq-row' + (gone ? ' is-off' : '');
     /* Who asked: the client's contact, or the colleague who recorded it for
        them (2026-10-31). */
-    var by = q.recorded_by ? 'Recorded by ' + q.recorded_by + (q.contact_name ? ' for ' + q.contact_name : '') : q.contact_name;
+    var by = q.recorded_by ? 'Recorded by ' + bridge.whoIs(q.recorded_by_id, q.recorded_by) + (q.contact_name ? ' for ' + q.contact_name : '') : q.contact_name;
     /* Its reference first (ONE REQUEST REFERENCE, 2026-11-26). */
     var sub = [q.request_ref, by, niceDate(q.created_at), q.note].filter(Boolean).join(' · ');
     row.innerHTML =
@@ -7592,7 +7591,7 @@
     var row = document.createElement('div');
     row.className = 'svc-row doc-row ltr-row' + (d.voided_at || d.superseded_by ? ' is-off' : '');
     row.setAttribute('data-doc', d.id);
-    var sub = [DOC_WORD[d.kind] || d.kind, niceDate(d.issued_at), d.issued_by].filter(Boolean).join(' · ');
+    var sub = [DOC_WORD[d.kind] || d.kind, niceDate(d.issued_at), d.issued_by && bridge.whoIs(d.issued_by_id, d.issued_by)].filter(Boolean).join(' · ');
     var lines = docLines(d);
     row.innerHTML =
       /* The reference is the everyday act on this row: it is copied into a
@@ -7602,7 +7601,7 @@
         esc(d.number) + '</button></b><small>' + esc(sub) + '</small>' +
         (lines.length ? '<small>' + esc(lines.join(' · ')) + '</small>' : '') +
         (d.verified_at ? '<small>' + esc('Verified ' + niceDate(d.verified_at) +
-          (d.verified_by ? ' · ' + d.verified_by : '')) + '</small>' : '') + '</span>' +
+          (d.verified_by ? ' · ' + bridge.whoIs(d.verified_by_id, d.verified_by) : '')) + '</small>' : '') + '</span>' +
       '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(d.total, d.market)) + '</b></span>' +
       '<span class="svc-state"><span class="tone ' + w[1] + '">' + esc(w[0]) + '</span></span>' +
       /* A signed letter's next step, Verify, stands on the row (MENU-9,
@@ -8320,7 +8319,7 @@
     var box = $('svcVersions');
     if (!svcVers) {
       skeleton(box, 3);
-      db.from('rate_card_versions').select('id, version, valid_until, note, published_at, published_by')
+      db.from('rate_card_versions').select('id, version, valid_until, note, published_at, published_by, published_by_id')
         .order('published_at', { ascending: false }).then(function (r) {
           if (r.error) {
             window.ADspaceState.failLine(box, 'Versions', r.error.message, function () { svcVers = null; paintVersions(); });
@@ -8347,7 +8346,7 @@
           var row = document.createElement('div');
           row.className = 'svc-row cat-row rcv-row';
           row.innerHTML = '<span class="svc-name"><b>v.' + esc(v.version) + '</b><small>' +
-              esc(niceDate(String(v.published_at).slice(0, 10)) + (v.published_by ? ' · ' + v.published_by : '') + (v.note ? ' · ' + v.note : '')) + '</small></span>' +
+              esc(niceDate(String(v.published_at).slice(0, 10)) + (v.published_by ? ' · ' + bridge.whoIs(v.published_by_id, v.published_by) : '') + (v.note ? ' · ' + v.note : '')) + '</small></span>' +
             '<span class="svc-rate">' + (i === 0 ? '<span class="chip-state is-live">Live</span>' : '<span class="chip-state is-off">Replaced</span>') + '</span>' +
             /* A phone hides the heading, so the date names itself there
                (ux-audit SVC-4). */
@@ -9091,7 +9090,7 @@
           (due ? '<em>overdue</em>' : soon ? '<em>this week</em>' : '') + '</span>' +
         '<button class="due-client" type="button">' + esc(c ? c.name : 'Client') + '</button>' +
         '<span class="due-what">' + esc(t.next_action) +
-          (whoLogged(t.by_whom) ? '<small>' + esc(whoLogged(t.by_whom)) + '</small>' : '') + '</span>' +
+          (whoLogged(t) ? '<small>' + esc(whoLogged(t)) + '</small>' : '') + '</span>' +
         '<button class="btn btn-sm" data-a="done" type="button">Done</button>';
       row.querySelector('.due-client').addEventListener('click', function () { if (c) openClient(c); });
       row.querySelector('[data-a="done"]').addEventListener('click', function () {
