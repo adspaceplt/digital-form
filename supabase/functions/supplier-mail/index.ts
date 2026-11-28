@@ -75,7 +75,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { pdfFrom, namesRef } from '../_shared/pdfref.ts';
 import { cors, json } from '../_shared/cors.ts';
-import { layout, resend, sender, button, VERIFY_URL } from '../_shared/mail.ts';
+import { layout, resend, sender, button, VERIFY_URL, queue } from '../_shared/mail.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 /* Who each email is from and where its replies go (EVERY EMAIL IN
@@ -145,6 +145,7 @@ Deno.serve(async (req) => {
   if (!secret('RESEND_API_KEY')) return json({ error: 'mail-not-set-up' }, 200, origin);
   let body: Record<string, any> = {};
   try { body = await req.json(); } catch { return json({ error: 'bad-request' }, 400, origin); }
+  if (body.action === 'drain') return drain(req, origin);
   const uuid = /^[0-9a-f-]{36}$/i;
   if (body.manual === true) return manualMail(req, body, origin, uuid);
   if (body.client === true) return clientMail(req, body, origin, uuid);
@@ -197,6 +198,8 @@ Deno.serve(async (req) => {
   if (b.cc) msg.cc = [String(b.cc)];
   if (attach) msg.attachments = [attach];
 
+  const q = await queue({ source: 'supplier', log_id: String(b.id), msg, idem: String(b.id), to_name: String((b.to || {}).name || ''), what: doc ? String(doc.kind || 'Document') + ' ' + String(doc.serial || '') : 'Supplier approved' });
+  if (q) return json({ ok: true, id: b.id, queued: q }, 200, origin);
   const { status, provider, error } = await resend(msg, String(b.id), secret('RESEND_API_KEY'));
   const done = await db.rpc('supplier_email_done', { p_id: b.id, p_status: status, p_provider: provider || null, p_error: error || null });
   if (done.error) console.error('supplier-mail: not closed', done.error.message);
@@ -245,6 +248,8 @@ async function clientMail(req: Request, body: Record<string, any>, origin: strin
   };
   if (b.cc) msg.cc = [String(b.cc)];
 
+  const q = await queue({ source: 'client', log_id: String(b.id), msg, idem: String(b.id), to_name: String((b.to || {}).name || ''), what: ({ quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter' } as Record<string, string>)[kind] + ' ' + String(doc.serial || doc.reference || '') });
+  if (q) return json({ ok: true, id: b.id, queued: q }, 200, origin);
   const { status, provider, error } = await resend(msg, String(b.id), secret('RESEND_API_KEY'));
   const done = await db.rpc('client_email_done', { p_id: b.id, p_status: status, p_provider: provider || null, p_error: error || null });
   if (done.error) console.error('supplier-mail: client email not closed', done.error.message);
@@ -305,6 +310,8 @@ async function manualMail(req: Request, body: Record<string, any>, origin: strin
   const cc = Array.isArray(b.cc_list) ? b.cc_list.map(String).filter(Boolean) : [];
   if (cc.length) msg.cc = cc;
   if (file) msg.attachments = [file];
+  const q = await queue({ source: 'manual', log_id: String(b.id), msg, idem: String(b.id), to_name: String(b.to_name || ''), what: String(b.subject || '') });
+  if (q) return json({ ok: true, id: b.id, queued: q, to: b.to, to_name: b.to_name || null, cc: b.cc || null }, 200, origin);
   const { status, provider, error } = await resend(msg, String(b.id), secret('RESEND_API_KEY'));
   const done = await db.rpc('email_new_done', { p_id: b.id, p_status: status, p_provider: provider || null, p_error: error || null });
   if (done.error) console.error('supplier-mail: new email not closed', done.error.message);
@@ -334,6 +341,8 @@ async function feedbackMail(req: Request, body: Record<string, any>, origin: str
     from: who.from, to: [String(b.to_email || '')], reply_to: who.reply_to,
     subject: String(b.subject || ''), html, text: String(b.body || '') + '\n\n' + url
   };
+  const q = await queue({ source: 'feedback', log_id: String(b.id), msg, idem: String(b.id), to_name: String(b.to_name || ''), what: kind === 'quick' ? 'Service rating' : 'Performance review' });
+  if (q) return json({ ok: true, id: b.id, queued: q, to: b.to_email, to_name: b.to_name }, 200, origin);
   const { status, provider, error } = await resend(msg, String(b.id), secret('RESEND_API_KEY'));
   const done = await db.rpc('feedback_mail_done', { p_id: b.id, p_status: status, p_provider: provider || null, p_error: error || null });
   if (done.error) console.error('supplier-mail: feedback email not closed', done.error.message);
@@ -364,10 +373,40 @@ async function quoteAskMail(req: Request, body: Record<string, any>, origin: str
     from: who.from, to: [String(b.to_email || '')], reply_to: who.reply_to,
     subject: String(b.subject || ''), html, text: String(b.body || '') + '\n\n' + url
   };
+  const q = await queue({ source: 'client', log_id: String(b.id), msg, idem: String(b.id), to_name: String(b.to_name || ''), what: 'Details request' });
+  if (q) return json({ ok: true, id: b.id, queued: q, to: b.to_email, to_name: b.to_name }, 200, origin);
   const { status, provider, error } = await resend(msg, String(b.id), secret('RESEND_API_KEY'));
   const done = await db.rpc('client_email_done', { p_id: b.id, p_status: status, p_provider: provider || null, p_error: error || null });
   if (done.error) console.error('supplier-mail: details email not closed', done.error.message);
   if (status !== 'sent') console.error('supplier-mail:', status, error);
   return json(status === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name }
     : { error: status === 'unknown' ? 'not-confirmed' : 'not-sent' }, 200, origin);
+}
+
+/* Undo send's drain (2026-11-28): woken by the database alone
+   (`mail_queue_kick`, pg_cron `mail-queue` every minute while an email is
+   due) with the wake secret; each due email claimed once
+   (`mail_queue_claim`), sent as its sender built it, and closed
+   (`mail_queue_close`) through that sender's own close. Never sent again
+   by itself; no send starts after 90 seconds. */
+async function drain(req: Request, origin: string | null): Promise<Response> {
+  const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
+  const given = req.headers.get('x-adspace-wake') || '';
+  const woken = given.length >= 32 ? await svc.rpc('wake_secret_ok', { p_given: given }) : null;
+  if (!woken || woken.error || woken.data !== true) return json({ error: 'denied' }, 401, origin);
+  const began = Date.now();
+  let sent = 0, failed = 0;
+  for (let round = 0; round < 40 && Date.now() - began < 90000; round++) {
+    const c = await svc.rpc('mail_queue_claim', { p_n: 1 });
+    if (c.error) return json({ error: 'claim', reason: c.error.message, sent, failed }, 200, origin);
+    const rows = (Array.isArray(c.data) ? c.data : []) as { id: string; msg: Record<string, unknown>; idem: string }[];
+    if (!rows.length) break;
+    for (const r of rows) {
+      const out = await resend(r.msg, r.idem, secret('RESEND_API_KEY'));
+      const done = await svc.rpc('mail_queue_close', { p_id: r.id, p_status: out.status, p_provider: out.provider || null, p_error: out.error || null });
+      if (done.error) console.error('supplier-mail: queued email not closed', done.error.message);
+      if (out.status === 'sent') sent++; else { failed++; console.error('supplier-mail: queued', out.status, out.error); }
+    }
+  }
+  return json({ ok: true, sent, failed }, 200, origin);
 }

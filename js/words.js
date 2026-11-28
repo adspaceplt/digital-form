@@ -486,6 +486,14 @@
     /* A send refused by the portal's switch or the group's (GROUP
        SWITCHES, 2026-11-17). */
     emailSendOff: 'Sending email is turned off for you. Please ask an admin.',
+    /* Undo send (2026-11-28): every email a colleague sends waits its
+       window (`send_undo_seconds`) with a way to cancel it. */
+    mailQueued: function (name, secs, zh) { return W.line.sendsIn((zh ? '发给' + (name || '收件人') + '的邮件' : 'Email to ' + (name || 'the recipient')), secs || 60, zh); },
+    mailsQueued: function (n, secs, zh) { return W.line.sendsIn(zh ? n + '封邮件' : n + ' emails', secs || 60, zh); },
+    mailCancel: 'Cancel email',
+    mailCancelled: 'Email cancelled.',
+    mailUndone: 'Undone. The email was not sent.',
+    mailTooLate: 'Not cancelled. The email has already been sent.',
     whatsappSendOff: 'Sending WhatsApp is turned off for you. Please ask an admin.',
     /* A send by hand drawn off by Settings (SEND SWITCHES, 2026-11-21): the
        act stays drawn, disabled, and says which switch and where. */

@@ -155,7 +155,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
-import { esc, FONT, layout, resend, sender, button } from '../_shared/mail.ts';
+import { esc, FONT, layout, resend, sender, button, queue } from '../_shared/mail.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 
@@ -1642,6 +1642,10 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
     subject: String(b.subject || ''), html, text };
   const ccs = Array.isArray(b.cc_list) ? b.cc_list.map(String).filter(Boolean) : (b.cc ? [String(b.cc)] : []);
   if (ccs.length) msg.cc = ccs;
+  /* Undo send (2026-11-28): queued, going once its minute passes. */
+  const q = await queue({ source: 'invoice', log_id: String(b.id), msg, idem: String(b.id), to_name: String((bc && (bc.legal_name || bc.other_name)) || lines[0].contact_name || ''),
+    what: (deliver ? 'Invoice ' : 'Overdue reminder ') + lines.map((l) => l.number).join(', ') });
+  if (q) return json({ ok: true, id: b.id, to: b.to, cc: b.cc || null, queued: q, ...left }, 200, origin);
   const sent = await resend(msg, String(b.id), secret('RESEND_API_KEY'));
   const done = await svc.rpc('invoice_email_done', { p_id: b.id, p_status: sent.status, p_provider: sent.provider || null, p_error: sent.error || null });
   if (done.error) console.error('bukku-sync: reminder not closed', done.error.message);

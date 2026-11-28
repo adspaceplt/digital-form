@@ -2986,7 +2986,9 @@
         return '';
       }
       if (d.error) return FB_SAID[d.error] || FB_SAID['not-sent'];
-      msg('crmWorkMsg', 'Sent to ' + (d.to_name || d.to || 'the primary contact') + '.', 'ok');
+      var who = d.to_name || d.to || 'the primary contact';
+      msg('crmWorkMsg', d.queued ? '' : 'Sent to ' + who + '.', 'ok');
+      if (d.queued) window.ADspaceAdmin.mailUndo(d.queued, who, $('crmWorkMsg'), function () { if (TABS[groupOf(pane)].indexOf('feedback') > -1) loadFeedback(); });
       if (TABS[groupOf(pane)].indexOf('feedback') > -1) loadFeedback();
       return '';
     }).catch(function () { return FB_SAID['not-sent']; });
@@ -5722,7 +5724,8 @@
   }
   window.addEventListener('adspace:email-sent', function (e) {
     var d = e.detail || {};
-    if (state.client && d.audience === 'client' && d.party === state.client.id) loadEmails(true);
+    if (state.client && ((d.audience === 'client' && d.party === state.client.id) || d.cancelled)) loadEmails(true);
+    if (d.queued && state.client && d.party === state.client.id) window.ADspaceAdmin.mailUndo(d.queued, d.to, $('crmWorkMsg'), function () { loadEmails(true); });
   });
   $('crmNewEmail').addEventListener('click', function () {
     window.ADspaceWhatsApp.newEmail($('crmNewEmail'), { audience: 'client', party: state.client && state.client.id });
@@ -7687,7 +7690,7 @@
             return { blob: new Blob([bytes], { type: 'application/pdf' }), name: DOCS.fileName(d) };
           });
         } },
-        onSent: function (line) { loadDocuments(); msg('crmDocMsg', line, 'ok'); } });
+        onSent: function (line, q, who) { loadDocuments(); msg('crmDocMsg', line, 'ok'); if (q) window.ADspaceAdmin.mailUndo(q, who, $('crmDocMsg'), function () { loadDocuments(); }); } });
     });
     on('sign', function () {
       shut();

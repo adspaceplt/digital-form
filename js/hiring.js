@@ -23,6 +23,21 @@
   function admin() { return may('team.hiring', 'work'); }
   function day(iso) { return iso ? window.ADspaceClock.date(iso) : ''; }
   function msg(id, text, kind) { var m = $(id); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (kind && text ? ' ' + kind : ''); }
+  /* Undo send (2026-11-28): a step's email queued for its window says so
+     in the bar under the record's line, with Undo (`ADspaceAdmin.mailUndo`);
+     one sent at once says `sent`, else `plain` (the step alone). */
+  /* Sent, or waiting its window to go: no Email candidate is offered. */
+  function mailHeld(v) { return v === 'sent' || v === 'queued' || v === 'sending'; }
+  function mailSaid(r, sent, plain, tone) {
+    if (r && r.queued) {
+      msg('hirRecMsg', plain || '', tone || 'ok');
+      var rec = state.rec;
+      if (bridge.mailUndo) bridge.mailUndo(r.queued, rec && rec.name, $('hirRecMsg'), function () { if (state.rec && rec && state.rec.id === rec.id) load(); });
+      return;
+    }
+    if (r) msg('hirRecMsg', sent, tone || 'ok');
+    else if (plain) msg('hirRecMsg', plain, tone || 'ok');
+  }
 
   var BUCKET = 'hiring', SIGN_SECS = 60, MAX_MB = 20;
   var SOURCE = { jobstreet: 'JobStreet', linkedin: 'LinkedIn', indeed: 'Indeed', referral: 'Referral', website: 'Website', walk_in: 'Walk-in', other: 'Other' };
@@ -609,13 +624,13 @@
     var M = window.ADspaceMoney, s = M && M.setting ? Number(M.setting('send_undo_seconds')) : NaN;
     return (s > 0 ? s : 60) * 1000;
   }
-  function mailBar(c) { return window.ADspaceWords.line.sendsIn('Outcome email to ' + c.name, undoMs() / 1000); }
+  function mailBar(c, secs) { return window.ADspaceWords.line.sendsIn('Outcome email to ' + c.name, secs || undoMs() / 1000); }
   var MEET_KEPT = ' The Google Meet could not be removed from the shared calendar. Remove it there.';
   function outcomeMail(id, hand) {
     var c = { id: id || state.rec.id };
     return fnCall('hiring-mail', { candidateId: c.id, kind: 'outcome', byHand: Boolean(hand) }).then(function (d) {
       if (d.error) { msg('hirRecMsg', SAID[d.error] || said({ data: d }), d.error === 'unknown' ? 'warn' : 'err'); return false; }
-      return !d.skipped;
+      return d.queued ? { queued: d.queued } : !d.skipped;
     });
   }
   function decide(o) {
@@ -641,25 +656,32 @@
         var wait = mails && mailWanted(o, v);
         return Promise.all((d.meets || []).map(function (id) { return fnCall('meet-create', { interviewId: id, action: 'delete' }); })).then(function (offs) {
           var kept = offs.some(function (m) { return m && m.error; });
-          return (wait ? rpc('hiring_outcome_mail_queue', { p_id: c.id }) : Promise.resolve({ data: {} })).then(function (q) {
-            var qd = (q && q.data) || {}, queued = wait && !q.error && !qd.error;
+          /* Undo send (2026-11-28): the decision's email is queued by
+             hiring-mail in the one queue every email a colleague sends
+             waits in, going once its window passes; Undo reopens the
+             decision and cancels it (a reopened decision's email is never
+             sent), so a tab shut meanwhile still sends it. */
+          return (wait ? fnCall('hiring-mail', { candidateId: c.id, kind: 'outcome' }) : Promise.resolve({})).then(function (qd) {
+            var queued = wait && qd && !qd.error ? qd.queued || null : null, handled = Boolean(wait && qd && !qd.error);
+            var winMs = queued ? (Number(queued.seconds) || 60) * 1000 : 0;
             state.pane = 'scores';
             load().then(function () {
               msg('hirRecMsg', (queued && !mailOff(o) ? 'Decided. The candidate will be emailed.' : 'Decided.') +
-                (kept ? MEET_KEPT : '') + (wait && !queued ? ' The email was not queued. Use Email candidate to send it.' : ''),
-                kept || (wait && !queued) ? 'warn' : 'ok');
-              if (bridge.undoHere) bridge.undoHere(queued ? mailBar(c) : 'Decided: ' + REC[o] + '.', function () {
+                (kept ? MEET_KEPT : '') + (wait && !handled ? ' The email was not sent. Use Email candidate to send it.' : ''),
+                kept || (wait && !handled) ? 'warn' : 'ok');
+              if (bridge.undoHere) bridge.undoHere(queued ? mailBar(c, queued.seconds) : 'Decided: ' + REC[o] + '.', function () {
+                if (queued) rpc('mail_cancel', { p_source: queued.source, p_id: queued.id });
                 return rpc('hiring_decide', { p_id: c.id, p_outcome: 'reopen', p_note: null }).then(function (x) {
                   /* Undone only once the reopen is held: a refused one
                      says so, and the queued email still goes. */
                   if (x.error || (x.data && x.data.error)) { msg('hirRecMsg', said(x), 'err'); return; }
                   return openRec(c.id).then(function () { msg('hirRecMsg', 'Undone.', 'ok'); });
                 });
-              }, $('hirRecMsg'), queued ? undoMs() : 0);
-              /* The record is read again once the email is due, and five
-                 minutes on (the drain is woken every five), so an open tab
-                 shows it sent; nothing is sent from here. */
-              if (queued) [undoMs() + 3000, undoMs() + 305000].forEach(function (ms) {
+              }, $('hirRecMsg'), winMs);
+              /* The record is read again once the email is due, and a minute
+                 on (the drain is woken every minute), so an open tab shows it
+                 sent; nothing is sent from here. */
+              if (queued) [winMs + 3000, winMs + 65000].forEach(function (ms) {
                 setTimeout(function () {
                   var r0 = state.rec;
                   if (r0 && r0.id === c.id && (((state.outcome || {}).outcome || {}).mail || 'queued') === 'queued') load();
@@ -675,7 +697,7 @@
 
   var IV_STATE = { invited: ['Waiting for the candidate', 'is-warn'], picked: ['Time chosen', 'is-warn'], none: ['New times requested', 'is-warn'],
     confirmed: ['Confirmed', 'is-ok'], cancelled: ['Cancelled', 'is-off'], expired: ['Expired', 'is-off'], missed: ['Did not attend', 'is-off'] };
-  var MAIL = { sent: 'Emailed', unknown: 'Not confirmed', failed: 'Not emailed', queued: 'Queued', sending: 'Sending' };
+  var MAIL = { sent: 'Emailed', unknown: 'Not confirmed', failed: 'Not emailed', queued: 'Queued', sending: 'Sending', cancelled: 'Cancelled' };
   /* Interview completed (Interview held, 2026-11-20; renamed 2026-11-26): a
      confirmed interview once it has taken place, its decision date while no
      decision is made. Did not attend (2026-11-26) stays as it was marked. */
@@ -712,11 +734,11 @@
         '<button class="btn btn-sm" type="button" data-h="ivmissed" data-id="' + esc(i.id) + '">Did not attend</button>';
     if (live && i.held_at && i.decide_by && undecided()) {
       acts += '<button class="btn btn-sm" type="button" data-h="ivmove" data-id="' + esc(i.id) + '">Change decision date</button>';
-      if (i.held_mail !== 'sent') acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-gate="email" data-kind="' + (i.decide_moved ? 'moved' : 'held') + '" data-id="' + esc(i.id) + '">Email candidate</button>';
+      if (!mailHeld(i.held_mail)) acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-gate="email" data-kind="' + (i.decide_moved ? 'moved' : 'held') + '" data-id="' + esc(i.id) + '">Email candidate</button>';
     }
     /* A time changed whose email did not go (2026-11-22): Email candidate
        sends the time change by hand; else the confirmation, as before. */
-    if (live && i.state === 'confirmed' && !i.held_at && (i.meeting_link || i.mode === 'office') && i.confirm_mail !== 'sent')
+    if (live && i.state === 'confirmed' && !i.held_at && (i.meeting_link || i.mode === 'office') && !mailHeld(i.confirm_mail))
       acts += i.moved_from && i.reschedule_mail
         ? '<button class="btn btn-sm" type="button" data-h="ivmail" data-gate="email" data-kind="rescheduled" data-id="' + esc(i.id) + '">Email candidate</button>'
         : '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="confirm" data-id="' + esc(i.id) + '">Email confirmation</button>';
@@ -724,7 +746,7 @@
        its cancellation did not go, while no newer interview was sent. */
     if (can && i.state === 'cancelled' && i.approved_at && (i.cancel_mail === 'failed' || i.cancel_mail === 'unknown') && state.interviews[0] === i)
       acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-gate="email" data-kind="cancelled" data-id="' + esc(i.id) + '">Email candidate</button>';
-    if (live && i.state === 'invited' && i.invite_mail !== 'sent')
+    if (live && i.state === 'invited' && !mailHeld(i.invite_mail))
       acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="invite" data-id="' + esc(i.id) + '">Email invitation</button>';
     var menu = live && !i.held_at ? '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions for interview ' + i.round + '" aria-expanded="false">' + DOTS + '</button>' +
       '<div class="kmenu" hidden>' + (i.state === 'picked' || i.state === 'confirmed'
@@ -896,7 +918,7 @@
       }
       if (d.state === 'sent') {
         if (part) acts += '<button class="btn btn-sm" type="button" data-h="docpreview"' + id + '>Preview PDF</button>';
-        if (!d.expired && d.mail !== 'sent') acts += '<button class="btn btn-sm" type="button" data-h="docmail" data-gate="email"' + id + '>Email candidate</button>';
+        if (!d.expired && !mailHeld(d.mail)) acts += '<button class="btn btn-sm" type="button" data-h="docmail" data-gate="email"' + id + '>Email candidate</button>';
         item(4, 'docmark', 'Mark signed'); item(2, 'docreplace', 'Replace'); if (!d.expired) item(5, 'docwithdraw', 'Withdraw');
       }
       if (d.state === 'withdrawn') {
@@ -1046,7 +1068,7 @@
   function docMail(d, hand) {
     return fnCall('hiring-mail', { docId: d.id, kind: 'doc', byHand: Boolean(hand) }).then(function (x) {
       if (x.error) { msg('hirRecMsg', SAID[x.error] || said({ data: x }), x.error === 'unknown' ? 'warn' : 'err'); return false; }
-      return !x.skipped;
+      return x.queued ? { queued: x.queued } : !x.skipped;
     });
   }
   /* The candidate told that the document was confirmed (2026-11-20): its
@@ -1054,7 +1076,7 @@
   function confirmedMail(d, hand) {
     return fnCall('hiring-mail', { docId: d.id, kind: 'confirmed', byHand: Boolean(hand) }).then(function (x) {
       if (x.error) { msg('hirRecMsg', (x.error === 'not-confirmed' ? DOC_SAID[x.error] : SAID[x.error]) || said({ data: x }), x.error === 'unknown' ? 'warn' : 'err'); return false; }
-      return !x.skipped;
+      return x.queued ? { queued: x.queued } : !x.skipped;
     });
   }
   function docSend(d, b) {
@@ -1066,7 +1088,7 @@
       return rpc('hiring_doc_send', { p_doc: d.id }).then(function (r) {
         var x = r.data || {};
         if (r.error || x.error) return docSaid(r);
-        docMail(d).then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); }); });
+        docMail(d).then(function (ok) { openRec(c.id).then(function () { mailSaid(ok, 'Sent.'); }); });
         return '';
       });
     });
@@ -1126,7 +1148,7 @@
     function (v) {
       return rpc('hiring_doc_send_back', { p_doc: d.id, p_note: String(v.note || '').trim() }).then(function (r) {
         if (r.error || (r.data || {}).error) return docSaid(r);
-        docMail(d).then(function () { openRec(c.id); });
+        docMail(d).then(function (ok) { openRec(c.id).then(function () { mailSaid(ok, '', ''); }); });
         return '';
       });
     });
@@ -1141,7 +1163,7 @@
       return rpc('hiring_doc_confirm', { p_doc: d.id, p_stamp_no: String(v.stamp || '').trim() || null, p_stamp_path: null }).then(function (r) {
         if (r.error || (r.data || {}).error) return docSaid(r);
         (mailWanted('confirmed', v) ? confirmedMail(d) : Promise.resolve(false)).then(function (sent) { return openRec(c.id).then(function () { return sent; }); }).then(function (sent) {
-          msg('hirRecMsg', sent ? 'Confirmed. The candidate was emailed.' : 'Confirmed.', 'ok');
+          mailSaid(sent, 'Confirmed. The candidate was emailed.', 'Confirmed.');
           var now = (state.docs || []).filter(function (x) { return x.id === d.id; })[0];
           if (now) docSealed(now, null);
         });
@@ -1280,7 +1302,7 @@
   function sendMail(id, kind, hand) {
     return fnCall('hiring-mail', { interviewId: id, kind: kind, byHand: Boolean(hand) }).then(function (d) {
       if (d.error) { msg('hirRecMsg', SAID[d.error] || said({ data: d }), d.error === 'unknown' ? 'warn' : 'err'); return false; }
-      return !d.skipped;
+      return d.queued ? { queued: d.queued } : !d.skipped;
     });
   }
   /* The online meetings already on the shared calendar over the next two
@@ -1341,7 +1363,7 @@
           if (d.error === 'slot-window') return 'Choose times within ' + d.days + ' days of each other.';
           if (r.error || d.error) return said(r);
           state.pane = 'interview';
-          sendMail(d.id, 'invite').then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Invitation sent.', 'ok'); }); });
+          sendMail(d.id, 'invite').then(function (ok) { openRec(c.id).then(function () { mailSaid(ok, 'Invitation sent.'); }); });
           return '';
         });
       });
@@ -1373,7 +1395,7 @@
         });
         return;
       }
-      sendMail(id, 'confirm').then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Confirmation sent.', 'ok'); }); });
+      sendMail(id, 'confirm').then(function (ok) { openRec(c.id).then(function () { mailSaid(ok, 'Confirmation sent.'); }); });
     });
   }
   /* Send new times on a confirmed interview not yet held asks first and
@@ -1447,7 +1469,7 @@
               return;
             }
             (auto ? sendMail(id, 'rescheduled') : mailWanted('confirm', v) ? sendMail(id, 'confirm') : Promise.resolve(false)).then(function (sent) {
-              openRec(c.id).then(function () { msg('hirRecMsg', sent ? 'Saved. The candidate was emailed.' : 'Saved.', 'ok'); });
+              openRec(c.id).then(function () { mailSaid(sent, 'Saved. The candidate was emailed.', 'Saved.'); });
             });
           });
           return '';
@@ -1477,8 +1499,7 @@
           if (r.error || (r.data || {}).error) return said(r);
           (told && mailWanted('cancelled', v) ? sendMail(id, 'cancelled') : Promise.resolve(false)).then(function (sent) {
             openRec(c.id).then(function () {
-              if (sent || kept) msg('hirRecMsg', (sent ? 'Cancelled. The candidate was emailed.' : 'Cancelled.') +
-                (kept ? MEET_KEPT : ''), kept ? 'warn' : 'ok');
+              if (sent || kept) mailSaid(sent, 'Cancelled. The candidate was emailed.' + (kept ? MEET_KEPT : ''), 'Cancelled.' + (kept ? MEET_KEPT : ''), kept ? 'warn' : 'ok');
               if (then) then();
             });
           });
@@ -1528,7 +1549,7 @@
         if (r.error || (r.data || {}).error) return said(r);
         state.pane = 'interview';
         (mailWanted('held', v) ? sendMail(id, 'held') : Promise.resolve(false)).then(function (sent) {
-          openRec(c.id).then(function () { msg('hirRecMsg', sent ? 'Saved. The candidate was emailed.' : 'Saved.', 'ok'); });
+          openRec(c.id).then(function () { mailSaid(sent, 'Saved. The candidate was emailed.', 'Saved.'); });
         });
         return '';
       });
@@ -1571,13 +1592,16 @@
         var wait = mailWanted('missed', v);
         return Promise.all((d.meets || []).map(function (m) { return fnCall('meet-create', { interviewId: m, action: 'delete' }); })).then(function (offs) {
           var kept = offs.some(function (m) { return m && m.error; });
-          return (wait ? rpc('hiring_outcome_mail_queue', { p_id: c.id }) : Promise.resolve({ data: {} })).then(function (q) {
-            var qd = (q && q.data) || {}, queued = wait && !q.error && !qd.error;
+          return (wait ? fnCall('hiring-mail', { candidateId: c.id, kind: 'outcome' }) : Promise.resolve({})).then(function (qd) {
+            var queued = wait && qd && !qd.error ? qd.queued || null : null, handled = Boolean(wait && qd && !qd.error);
             load().then(function () {
               msg('hirRecMsg', (queued && !mailOff('missed') ? 'Application closed. The candidate will be emailed.' : 'Application closed.') +
-                (kept ? MEET_KEPT : '') + (wait && !queued ? ' The email was not queued. Use Email candidate to send it.' : ''),
-                kept || (wait && !queued) ? 'warn' : 'ok');
-              if (bridge.undoHere) bridge.undoHere(queued ? mailBar(c) : 'Application closed.', undo, $('hirRecMsg'), queued ? undoMs() : 0);
+                (kept ? MEET_KEPT : '') + (wait && !handled ? ' The email was not sent. Use Email candidate to send it.' : ''),
+                kept || (wait && !handled) ? 'warn' : 'ok');
+              if (bridge.undoHere) bridge.undoHere(queued ? mailBar(c, queued.seconds) : 'Application closed.', function () {
+                if (queued) rpc('mail_cancel', { p_source: queued.source, p_id: queued.id });
+                return undo();
+              }, $('hirRecMsg'), queued ? (Number(queued.seconds) || 60) * 1000 : 0);
             });
             return '';
           });
@@ -1605,7 +1629,7 @@
           var d = r.data || {};
           if (r.error || d.error) return said(r);
           (mailWanted('moved', v) && !d.same ? sendMail(id, 'moved') : Promise.resolve(false)).then(function (sent) {
-            openRec(c.id).then(function () { msg('hirRecMsg', sent ? 'Saved. The candidate was emailed.' : 'Saved.', 'ok'); });
+            openRec(c.id).then(function () { mailSaid(sent, 'Saved. The candidate was emailed.', 'Saved.'); });
           });
           return '';
         });
@@ -1707,13 +1731,13 @@
     on('docpay', function (b) { docPay(docOf(b), b); });
     on('docpreview', function (b) { docPreview(docOf(b), b); });
     on('docsend', function (b) { docSend(docOf(b), b); });
-    on('docmail', function (b) { b.disabled = true; docMail(docOf(b), true).then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); }); }); });
+    on('docmail', function (b) { b.disabled = true; docMail(docOf(b), true).then(function (ok) { openRec(c.id).then(function () { mailSaid(ok, 'Sent.'); }); }); });
     on('docwithdraw', function (b) { docWithdraw(docOf(b), false); });
     on('docrestore', function (b) { docWithdraw(docOf(b), true); });
     on('docmark', function (b) { docMark(docOf(b)); });
     on('docback', function (b) { docBack(docOf(b)); });
     on('docconfirm', function (b) { docConfirm(docOf(b), b); });
-    on('docconfirmmail', function (b) { b.disabled = true; confirmedMail(docOf(b), true).then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); }); }); });
+    on('docconfirmmail', function (b) { b.disabled = true; confirmedMail(docOf(b), true).then(function (ok) { openRec(c.id).then(function () { mailSaid(ok, 'Sent.'); }); }); });
     on('docseal', function (b) { docSealed(docOf(b), b); });
     on('docscan', function (b) { openPath(docOf(b).signed.path, b); });
     on('docrecord', function (b) { docRecord(docOf(b), b); });
@@ -1726,7 +1750,7 @@
     on('ivmail', function (b) {
       b.disabled = true;
       sendMail(b.getAttribute('data-id'), b.getAttribute('data-kind'), true).then(function (ok) {
-        openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); });
+        openRec(c.id).then(function () { mailSaid(ok, 'Sent.'); });
       });
     });
     on('ivcancel', function (b) { cancelIv(b.getAttribute('data-id')); });
@@ -1737,7 +1761,7 @@
     on('score', score);
     on('ivpdf', function (b) { window.ADspaceHrForms.download(b, 'sheet', c.name, function () { return Promise.resolve(sheetForm(c)); }, $('hirRecMsg')); });
     on('decide', function (b) { decide(b.getAttribute('data-o')); });
-    on('outmail', function (b) { b.disabled = true; outcomeMail(null, true).then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); }); }); });
+    on('outmail', function (b) { b.disabled = true; outcomeMail(null, true).then(function (ok) { openRec(c.id).then(function () { mailSaid(ok, 'Sent.'); }); }); });
     on('reopen', function () {
       rpc('hiring_decide', { p_id: c.id, p_outcome: 'reopen', p_note: null }).then(function (r) {
         if (r.error || (r.data || {}).error) { msg('hirRecMsg', said(r), 'err'); return; }
