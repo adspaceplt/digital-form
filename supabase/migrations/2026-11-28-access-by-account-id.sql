@@ -64,19 +64,11 @@
 
 -- ACCESS BY ACCOUNT ID -------------------------------------------------------
 
-alter table public.team_members add column if not exists auth_user_id uuid;
-alter table public.client_contacts add column if not exists auth_user_id uuid;
+alter table public.team_members add column if not exists auth_user_id uuid references auth.users(id) on delete set null;
+alter table public.client_contacts add column if not exists auth_user_id uuid references auth.users(id) on delete set null;
 do $$ begin
-  if not exists (select 1 from pg_constraint where conname = 'team_members_auth_user_id_fkey') then
-    alter table public.team_members add constraint team_members_auth_user_id_fkey
-      foreign key (auth_user_id) references auth.users(id) on delete set null;
-  end if;
   if not exists (select 1 from pg_constraint where conname = 'team_members_auth_user_id_key') then
     alter table public.team_members add constraint team_members_auth_user_id_key unique (auth_user_id);
-  end if;
-  if not exists (select 1 from pg_constraint where conname = 'client_contacts_auth_user_id_fkey') then
-    alter table public.client_contacts add constraint client_contacts_auth_user_id_fkey
-      foreign key (auth_user_id) references auth.users(id) on delete set null;
   end if;
 end $$;
 create index if not exists client_contacts_auth_user_id_idx on public.client_contacts (auth_user_id);
@@ -1264,7 +1256,7 @@ begin
   select * into me from public.team_members where auth_user_id = auth.uid() and active limit 1;
 
   -- A letter is signed by a person. issued_by is this row's name, so a team
-  -- row named "Superadmin" printed that word under ADSPACE PLT on a client's
+  -- row named "Superadmin" printed that word under the agency's name on a client's
   -- letterhead. Refuse rather than draw a permission as a signatory.
   if not public.issuer_name_ok(me.name) then
     return jsonb_build_object('error', 'issuer-name', 'name', coalesce(me.name, ''));
