@@ -32,3 +32,33 @@ export async function agency(key: string): Promise<string> {
   const v = (await agencyProfile())[key];
   return v == null ? '' : String(v);
 }
+
+/*
+ * How a profile's values read in an email or a message, made from the
+ * values alone so an install's own profile reads the same way.
+ *   addressLines(a)  the address, a line a part
+ *   addressLocal(a)  on one line, less its country (the last line's last part)
+ *   phoneLine(a)     the phone as the issuer's lines print it: (cc)NN NNN NNNN
+ *   mailSite(a)      the site an email names and opens: the sending domain's
+ *                    own domain (sc.example.com → example.com)
+ *   portalUrl(a)     https:// and the portal's domain
+ */
+type Profile = Record<string, string>;
+export const addressLines = (a: Profile): string[] =>
+  String(a.address || '').split('\n').map((l) => l.trim()).filter(Boolean);
+export function addressLocal(a: Profile): string {
+  const ls = addressLines(a);
+  if (!ls.length) return '';
+  const last = ls[ls.length - 1], cut = last.lastIndexOf(',');
+  return ls.slice(0, -1).concat(cut > 0 ? [last.slice(0, cut).trim()] : []).join(', ');
+}
+export function phoneLine(a: Profile): string {
+  const d = String(a.phone || '').replace(/\D/g, '');
+  const m = /^(\d{2})(1\d)(\d{3,4})(\d{4})$/.exec(d);
+  return m ? '(' + m[1] + ')' + m[2] + ' ' + m[3] + ' ' + m[4] : (d ? '+' + d : '');
+}
+export function mailSite(a: Profile): string {
+  const parts = String(a.sender_domain || '').split('.').filter(Boolean);
+  return (parts.length > 2 ? parts.slice(1) : parts).join('.');
+}
+export const portalUrl = (a: Profile): string => a.portal_domain ? 'https://' + a.portal_domain : '';

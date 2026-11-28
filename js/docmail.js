@@ -56,7 +56,7 @@
     'email-off': 'Send by email is off. Turn it on in Settings, Messages.'
   };
   /* Resend's word on an email, as the record's line reads it. */
-  var STATE = { sending: 'Sending', sent: '', delivered: 'Delivered', opened: 'Opened', failed: 'Not sent',
+  var STATE = { queued: 'Queued', cancelled: 'Cancelled', sending: 'Sending', sent: '', delivered: 'Delivered', opened: 'Opened', failed: 'Not sent',
     bounced: 'Bounced', complained: 'Marked as spam', unknown: 'Not confirmed' };
 
   function db() { return API && API.client; }
@@ -215,7 +215,11 @@
         if (!code && r.data && r.data.ok) {
           forget(mine.o.clientId);
           window.ADspaceSheet.close();
-          if (mine.o.onSent) mine.o.onSent((mine.o.doc.title || 'Document') + ' emailed.');
+          /* Undo send (2026-11-28): queued, its bar under the line the
+             record writes in, the whole window (`ADspaceAdmin.mailUndo`). */
+          var q = r.data.queued || null;
+          var to = ((mine.prep || {}).contacts || []).filter(function (k) { return k.id === f.contact; })[0] || (mine.prep || {}).to || {};
+          if (mine.o.onSent) mine.o.onSent(q ? '' : (mine.o.doc.title || 'Document') + ' emailed.', q, to.name || to.email || '');
           return;
         }
         if (code === 'recent') {

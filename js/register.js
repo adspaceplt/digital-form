@@ -582,7 +582,7 @@
             return { blob: new Blob([bytes], { type: 'application/pdf' }), name: LET.fileName(d) };
           });
         } },
-        onSent: function (line) { msg(el.closest('#crmPanes') ? 'crmDocMsg' : sayTo, line, 'ok'); if (onChange) onChange(); } });
+        onSent: function (line, q, who) { var id = el.closest('#crmPanes') ? 'crmDocMsg' : sayTo; msg(id, line, 'ok'); if (onChange) onChange(); if (q) window.ADspaceAdmin.mailUndo(q, who, document.getElementById(id), function () { if (onChange) onChange(); }); } });
     });
     on('del', function () { openDelete(d, onChange); });
     return el;

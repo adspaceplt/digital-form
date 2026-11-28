@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
        words it was seeded with: the code in the shaded box, never in the
        subject or the preview line a lock screen shows. */
     const tpl = await admin.rpc('code_email_template_read');
-    const mail = codeEmail(tpl.error ? null : (tpl.data as Record<string, string> | null),
+    const mail = await codeEmail(tpl.error ? null : (tpl.data as Record<string, string> | null),
       { name: d.name, code: d.code, minutes: 15, purpose: 'to sign the quotation ' + d.ref });
     const who = await sender('clients');
     const msg = { from: who.from, reply_to: who.reply_to, to: [d.email], subject: mail.subject, html: mail.html, text: mail.text };

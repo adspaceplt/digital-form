@@ -67,10 +67,6 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   and passes alone on the same commit; the check reads the next step before
   the record repaints from the seeded touch. Held here until its wait is
   fixed at the cause.
-- 2026-11-27, `settings` (the same release's re-run): "Sign-in and codes:
-  its Settings row counts its templates" read an empty count once (its
-  5-second wait for the row's line) and passes alone on the same commit.
-  Held here until its wait is fixed at the cause.
 - 2026-11-27, `demo` (CONFIDENTIAL-LINE's affected run, on main a8b2820
   merged in): "demo/engine.js is the stand-in of today" fails on main's
   own engine: it holds a website request's console Save
@@ -78,3 +74,10 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   repository's main (f69f372) does not yet, so a rebuild from today's
   stand-in would take that behaviour out of the demo. Not rebuilt here.
   Held until the stand-in and the engine agree.
+- 2026-11-28, `reqrefsql` (release 8's affected run, code it does not
+  touch): "every draw is a code held nowhere" failed once with
+  `public_request_ref: no free number` (free 0) on a month the suite fills
+  all but a few, then passed on the branch and on main. The draw is random,
+  so a run that keeps missing the few free codes runs out of tries. Not
+  re-run to green as a result: held until the draw walks the free codes
+  rather than retrying at random, or the suite seeds its own draws.

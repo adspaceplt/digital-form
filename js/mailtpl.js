@@ -65,12 +65,14 @@
   /* Who opens a recipient's templates: a supplier's at Suppliers Full
      Access or Business settings, every other at Business settings. */
   function mayRec(rec) { return rec === 'suppliers' ? sup() : biz(); }
-  /* A client's feedback request (2026-11-24): each form in English and
-     Chinese, its subject, message and button (feedback_email_templates). */
+  /* A client's feedback request (2026-11-24): its subject, message and
+     button (feedback_email_templates). Every email is in English alone
+     (the user, 2026-11-28: "email we only do one, all in international
+     English. No Chinese email."): the 中文 rows stay stored, never sent and
+     never offered here. */
   var FB_WORD = { quick: 'Service rating', review: 'Performance review' };
   var LANG_WORD = { en: 'English', zh: '中文' };
-  var LANGS = ['en', 'zh'];
-  /* An email with no 中文 goes out in English. */
+  var LANGS = ['en'];
   var L_NOT = { en: 'English not written', zh: '中文 not written' };
   /* Each family's name: its Settings row and the sheet's title, one copy. */
   var REC_WORD = { clients: 'Client email templates', suppliers: 'Supplier email templates', creators: 'Creator email templates',
@@ -150,10 +152,8 @@
           } });
       });
       /* A client's feedback request and a website request's Ask for details
-         (QUOTE DETAILS ASKED, 2026-11-27) are each one email in English and
-         中文: one row, its editor switching the language (the user,
-         2026-11-27: "use a switch in one item"); each language stays its
-         own row in the database, saved with its p_lang. */
+         (QUOTE DETAILS ASKED, 2026-11-27): one row each, its English row
+         saved with its p_lang (English alone since 2026-11-28). */
       langRows(out, a[9], 'feedback', 'Feedback', function (k) { return FB_WORD[k] || k; }, 'feedback_email_template_save');
       langRows(out, a[10], 'quote', 'Quotation requests', function () { return 'Ask for details'; }, 'quote_email_template_save');
       ((a[4] && a[4].rows) || []).forEach(function (t) {
@@ -258,7 +258,7 @@
     }).join('');
   }
   function rowHtml(i) {
-    var meta = i.sw && !i.on ? 'Off' : i.langs ? langLine(i) : i.subject;
+    var meta = i.sw && !i.on ? 'Off' : i.langs && i.langs.length > 1 ? langLine(i) : i.langs ? ((i.text || {}).en || {}).subject : i.subject;
     return '<div class="stg-row mt-row" data-id="' + esc(i.id) + '">' +
       '<div class="stg-what"><p class="stg-name">' + esc(i.name) + '</p><p class="stg-meta mt-subj">' + esc(meta) + '</p></div>' +
       '<div class="stg-ctl">' +

@@ -3,6 +3,12 @@
 
 Moved from `CLAUDE.md` §1 on 2026-11-23. Read whole before changing a suite or the stand-in. The setup, the gate command, the tiers and the before-merge loop stay in `CLAUDE.md`.
 
+- An edge-function suite serves the agency profile through
+  `tests/agencyfix.js` (`stage` and `rewrite` its imports, `intercept` its
+  read, the install's copy from `js/config.js`), and gives the function the
+  service role key it reads with; a Postgres fixture with no profile band
+  takes `sqlAgency`; a suite holding a function to its band's text accepts
+  release 8's restatement through `toAgency` alone (2026-11-28).
 - `tests/stub2.js`, the Supabase stand-in (its first rule, add every new table,
   function and refusal to it, stays in `CLAUDE.md`):
   - It is also the demo's engine: a push that changes it runs

@@ -412,7 +412,7 @@
     tiktok: 'tiktok', tt: 'tiktok', facebook: 'facebook', fb: 'facebook' };
   var DOC_FAMILY = { quote_cover: 'Quotation Cover', client: 'Client letter', hr: 'HR Letter', other: 'Other document' };
   var HB_CAT = { handbook: 'Employee Handbook', sop: 'SOPs', policy: 'Policies', template: 'Templates and forms', other: 'Other' };
-  var MAIL_STATE = { queued: 'Queued', sending: 'Sending', sent: 'Sent', delivered: 'Delivered', opened: 'Opened', bounced: 'Bounced',
+  var MAIL_STATE = { queued: 'Queued', cancelled: 'Cancelled', sending: 'Sending', sent: 'Sent', delivered: 'Delivered', opened: 'Opened', bounced: 'Bounced',
     complained: 'Marked as spam', failed: 'Not sent', unknown: 'Not confirmed' };
   var WA_PURPOSE = { report: 'Report', feedback: 'Feedback request', creator: 'Booking', approval: 'Approval reminder', reminder: 'Reminder',
     quotation: 'Quotation', offer: 'Letter of Offer', quote_ready: 'Quotation ready', representative: 'Representative introduction', message: 'Message' };

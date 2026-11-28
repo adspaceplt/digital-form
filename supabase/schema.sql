@@ -175368,3 +175368,1923 @@ end $$;
 -- END OF ACTIVITY KEPT BY KIND -----------------------------------------------
 
 select public.functions_tidy();
+
+-- ===========================================================================
+-- AGENCY VALUES ON THE SERVER (2026-11-28)
+-- ===========================================================================
+-- WHY: the restructure's release 8 (docs/MAP.md §G). Functions still typed
+-- the agency's values (the portal's domain in every link a notice or email
+-- carries, the link domain, the CDN a creator's file is held to, the
+-- agency's name where a record names no colleague): an install of another
+-- agency would have sent its people to this one's addresses.
+-- WHAT IT CHANGES: each function below is restated from its last definition
+-- with every such value read by `agency(key)` (`portal_domain`,
+-- `link_domain`, `cdn_base`, `trading_name`). Nothing else in any body
+-- changes, and every answer is the one it gave before while the profile
+-- holds its seed. Signatures, grants and refusals are unchanged.
+--   quotation_record, link_resolve, creator_add_file, ops_outstation_remind,
+--   mail_log, client_proposal_sent, creator_mail_queue, creator_mail_job,
+--   campaign_options_posted_mail, agent_schedule_do,
+--   creator_pay_requests_notice, hiring_person_set, hiring_tell,
+--   hiring_tell_once, health_daily, feedback_mail_begin, outstation_remind,
+--   feedback_wa_copy, quotation_details_ask, quote_details_mail_begin.
+-- Left as they stand: `client_brand_logo` (its stored logo value is an
+-- identifier a check holds), the function wake calls (the project's own
+-- address, not the agency's), the seeded templates' words (the template
+-- store's releases) and the checklist and personnel field templates.
+-- ORDER: `2026-11-28-agency-profile.sql` first (live), then this file. No
+-- page and no edge function changes with it; an open tab meets the same
+-- answers before and after.
+-- ROLLBACK: run each function's previous definition again (the band of
+-- schema.sql before this one that last defines it). Safe to run twice.
+
+-- AGENCY VALUES ON THE SERVER ------------------------------------------------
+
+create or replace function public.quotation_record(p_id uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  q public.quotations;
+  s jsonb;
+  v_steps jsonb := '[]'::jsonb;
+begin
+  if not public.is_team() or not public.allowed('clients.quotes', 'view') then return jsonb_build_object('error', 'denied'); end if;
+  select * into q from public.quotations x where x.id = p_id;
+  if q.id is null or not public.client_scope_ok('client', q.client_id, 'view') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  s := q.signed;
+  v_steps := jsonb_build_array(jsonb_build_object('step', 'issued', 'at', q.issued_at,
+    'by', case when q.source = 'website' then null else q.made_by end, 'team', q.source <> 'website',
+    'note', 'Rate Card v.' || q.version));
+  if q.source = 'website' and q.released_at is not null then
+    v_steps := v_steps || jsonb_build_array(jsonb_build_object('step', 'sent', 'at', q.released_at, 'by', q.released_by,
+      'team', true, 'via', 'link'));
+  end if;
+  v_steps := v_steps || coalesce((
+    select jsonb_agg(jsonb_build_object('step', 'sent', 'at', w.created_at, 'by', coalesce(w.created_by, public.agency('trading_name')), 'team', true,
+             'via', 'whatsapp', 'to', w.to_name,
+             'state', case when w.read_at is not null then 'read' when w.delivered_at is not null then 'delivered' else w.state end))
+      from public.wa_outbox w
+     where w.ref_kind = 'quotation' and w.ref_id = q.id and coalesce(w.state, '') <> 'failed'), '[]'::jsonb);
+  v_steps := v_steps || coalesce((
+    select jsonb_agg(jsonb_build_object('step', 'sent', 'at', e.created_at,
+             'by', coalesce((select m.name from public.team_members m where m.id = e.sent_by), public.agency('trading_name')), 'team', true,
+             'via', 'email', 'to', e.to_email, 'state', e.status))
+      from public.client_emails e
+     where e.kind = 'quotation' and e.ref_id = q.id and e.status <> 'failed'), '[]'::jsonb);
+  v_steps := v_steps || coalesce((
+    select jsonb_agg(jsonb_build_object('step', g.step, 'at', g.at, 'team', false, 'email', g.email,
+             'in_contacts', g.in_contacts, 'ip', g.ip, 'country', g.country, 'device', g.device))
+      from public.signing_steps g
+     where g.doc_kind = 'quotation' and g.doc_id = q.id), '[]'::jsonb);
+  if q.signed_at is not null and s is not null then
+    v_steps := v_steps || jsonb_build_array(jsonb_build_object('step', 'signed', 'at', q.signed_at, 'team', false,
+      'by', s->'signer'->>'name', 'role', s->'signer'->>'designation', 'via', coalesce(s->>'via', 'online'),
+      'company', s->'company'->>'legal_name',
+      'email', s->'record'->>'email', 'in_contacts', (s->'record'->>'in_contacts')::boolean,
+      'ip', s->'record'->>'ip', 'country', s->'record'->>'country',
+      'device', coalesce(s->'record'->>'device', s->'record'->>'agent'),
+      'entered_by', case when s->>'via' = 'paper' then s->'record'->>'by' end));
+  end if;
+  if q.submitted_at is not null then
+    v_steps := v_steps || jsonb_build_array(jsonb_build_object('step', 'submitted', 'at', q.submitted_at, 'team', true,
+      'by', q.submitted_by, 'to', q.reviewer_name));
+  end if;
+  if q.returned_at is not null then
+    v_steps := v_steps || jsonb_build_array(jsonb_build_object('step', 'returned', 'at', q.returned_at, 'team', true,
+      'by', q.returned_by, 'note', q.return_note));
+  end if;
+  if q.reviewed_at is not null then
+    v_steps := v_steps || jsonb_build_array(jsonb_build_object('step', 'confirmed', 'at', q.reviewed_at, 'team', true,
+      'by', q.reviewed_by, 'role', q.reviewed_role));
+  end if;
+  if q.withdrawn_at is not null then
+    v_steps := v_steps || jsonb_build_array(jsonb_build_object('step', 'withdrawn', 'at', q.withdrawn_at, 'team', true,
+      'by', q.withdrawn_by, 'note', 'From ' || public.register_day(q.withdrawn_on) || ' · ' || q.withdrawn_reason));
+  end if;
+  if q.sealed_at is not null then
+    v_steps := v_steps || jsonb_build_array(jsonb_build_object('step', 'sealed', 'at', q.sealed_at, 'team', true,
+      'by', q.sealed_by, 'note', q.seal_sha));
+  end if;
+  return jsonb_build_object('id', q.id, 'ref', q.ref, 'brand', q.brand, 'company', s->'company'->>'legal_name',
+    'signed', q.signed_at is not null, 'confirmed', q.reviewed_at is not null,
+    'withdrawn', q.withdrawn_at is not null, 'declined', q.declined_at is not null,
+    'seal', case when q.seal_key is null then null else jsonb_build_object('sha', q.seal_sha, 'pages_sha', q.seal_pages_sha,
+                 'at', q.sealed_at, 'by', q.sealed_by) end,
+    'steps', coalesce((select jsonb_agg(x order by (x->>'at')::timestamptz, x->>'step') from jsonb_array_elements(v_steps) x), '[]'::jsonb));
+end $$;
+
+create or replace function public.link_resolve(p_slug text, p_qr text default null)
+returns table (url text, state text)
+language plpgsql security definer stable set search_path = public as $$
+declare
+  v_slug   text := lower(btrim(coalesce(p_slug, '')));
+  v_code   text := lower(btrim(coalesce(p_qr, '')));
+  v_target text;
+  v_live   boolean;
+begin
+  if v_slug = '' then
+    return query select null::text, 'missing'::text;
+    return;
+  end if;
+
+  select l.target_url, l.active into v_target, v_live
+    from public.links l
+   where l.slug = v_slug;
+
+  if v_target is null then
+    -- A colleague's namecard, while they are active and the card is on.
+    select 'https://' || public.agency('portal_domain') || '/card/?k=' || t.card_key into v_target
+      from public.team_members t
+     where t.card_slug = v_slug and t.active and t.card_on and t.card_key is not null;
+    if v_target is null then
+      return query select null::text, 'missing'::text;
+      return;
+    end if;
+    return query select v_target, 'ok'::text;
+    return;
+  end if;
+  if not v_live then
+    return query select null::text, 'paused'::text;
+    return;
+  end if;
+
+  -- A scan carries its code; a typed link does not, and is never turned away
+  -- by one. A code that belongs to another slug is as revoked as a dead one.
+  if v_code <> '' and not exists (
+       select 1 from public.link_qrs q
+        where q.code = v_code and q.slug = v_slug and q.active) then
+    return query select null::text, 'revoked'::text;
+    return;
+  end if;
+
+  return query select v_target, 'ok'::text;
+end $$;
+
+create or replace function public.creator_add_file(
+  p_code text, p_option uuid, p_url text, p_name text, p_kind text, p_bytes bigint)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_id   uuid;
+  v_lock integer;
+  cr     creators%rowtype;
+  o      campaign_options%rowtype;
+  new_id uuid;
+begin
+  -- The code through creator_code_try, so a wrong one is counted (audit 2026-11-15).
+  select t.o_creator, t.o_locked into v_id, v_lock from public.creator_code_try(p_code) t;
+  if v_lock is not null then return jsonb_build_object('error', 'locked', 'minutes', v_lock); end if;
+  select * into cr from creators where id = v_id and active;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  /* Qualified, and the variable is not called `id`. A declared `id` against an
+     unqualified `where id = p_option` is ambiguous, which PL/pgSQL raises at
+     run time rather than at create time: every upload failed in production
+     while the schema applied cleanly and every browser suite stayed green. */
+  select * into o from campaign_options co
+   where co.id = p_option and co.creator_id = cr.id;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.creator_can_deliver(o.state) then
+    return jsonb_build_object('error', 'closed');
+  end if;
+  /* Only the address sign-upload made for this booking: the CDN, the
+     creator's folder for this booking, a random name and a short extension.
+     Nothing in it can close the attribute a page draws it in (audit 2026-10-16). */
+  if p_url is null or p_url !~ ('^' || regexp_replace(public.agency('cdn_base'), '([.?*+^$|(){}\[\]\\])', '\\\1', 'g') || '/content/creator/' || p_option::text
+       || '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z0-9]{1,5}$') then
+    return jsonb_build_object('error', 'bad-file');
+  end if;
+  if p_name is null or char_length(btrim(p_name)) not between 1 and 255 then
+    return jsonb_build_object('error', 'bad-name');
+  end if;
+  if p_kind is not null and p_kind not in ('image', 'video', 'file') then
+    return jsonb_build_object('error', 'bad-kind');
+  end if;
+  insert into campaign_deliverables (option_id, url, name, kind, bytes, round)
+  values (p_option, p_url, p_name, coalesce(p_kind, 'file'), p_bytes,
+          greatest(o.revision_round, 1))
+  returning campaign_deliverables.id into new_id;
+  return jsonb_build_object('id', new_id);
+end $$;
+
+create or replace function public.ops_outstation_remind()
+returns integer
+language plpgsql security definer set search_path = public as $$
+declare r record; n integer := 0;
+begin
+  for r in
+    select e.id, e.meeting_at, coalesce((select t.id from public.team_members t where t.id = e.meeting_owner_id and t.active),
+                                       (select t.id from public.team_members t where t.id = e.manager_id and t.active)) as who, c.name as client_name
+      from public.ops_engagements e
+      left join public.clients c on c.id = e.client_id
+     where e.meeting_channel = 'onsite' and not e.meeting_na and e.meeting_at is not null
+       and e.outstation_told_at is null
+       and e.meeting_at + make_interval(mins => coalesce(e.meeting_minutes, 30)) <= now()
+       and coalesce(e.status, '') <> 'cancelled'
+     for update of e skip locked
+  loop
+    if r.who is not null and exists (select 1 from public.team_members t where t.id = r.who and t.active) then
+      insert into public.ops_notifications (team_member_id, kind, title, body, link, dedupe_key)
+      values (r.who, 'outstation', 'Submit the outstation record',
+              coalesce(r.client_name, 'Client') || ' · on-site meeting on ' ||
+                public.register_day((r.meeting_at at time zone 'Asia/Kuala_Lumpur')::date),
+              'https://' || public.agency('link_domain') || '/outstation',
+              'outstation.' || r.id::text || '.' || extract(epoch from r.meeting_at)::bigint::text)
+      on conflict (dedupe_key) do nothing;
+      n := n + 1;
+    end if;
+    update public.ops_engagements set outstation_told_at = now() where id = r.id;
+  end loop;
+  return n;
+end $$;
+
+create or replace function public.mail_log(p_month date default null)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  me     public.team_members := public.ops_me();
+  v_from date := date_trunc('month', coalesce(p_month, (now() at time zone 'Asia/Kuala_Lumpur')::date))::date;
+  v_a    timestamptz;
+  v_b    timestamptz;
+  v_sup  boolean;
+  v_bill boolean;
+  v_quo  boolean;
+  v_all  boolean;
+  v_cr   boolean;
+  v_team boolean;
+  v_con  boolean;
+begin
+  if me.id is null or not public.allowed('whatsapp', 'view') then return jsonb_build_object('error', 'denied'); end if;
+  v_a := v_from::timestamp at time zone 'Asia/Kuala_Lumpur';
+  v_b := (v_from + interval '1 month')::timestamp at time zone 'Asia/Kuala_Lumpur';
+  v_sup := public.allowed('suppliers', 'view');
+  v_bill := public.allowed('clients.billing', 'view');
+  v_quo := public.allowed('clients.quotes', 'view');
+  v_all := public.client_scope_free('view');
+  v_cr := public.allowed('campaigns.creators', 'view');
+  v_team := public.allowed('team', 'view');
+  v_con := public.allowed('clients.contacts', 'view');
+  return jsonb_build_object(
+    'month', v_from,
+    'senders', (select jsonb_object_agg(m.key, m.name || ' <' || m.address || '>') from public.mail_senders m),
+    'items', coalesce((select jsonb_agg(to_jsonb(x) order by x.created_at desc) from (
+        select * from (
+          select 'supplier'::text as source, e.id, e.purpose as kind, e.to_email, e.cc_email, e.subject, e.body,
+                 t.name as sent_by, e.created_at, e.status, e.error, e.sent_at, e.delivered_at, e.opened_at, e.bounced_at,
+                 null::uuid as client_id, null::text as client, e.supplier_id, s.name as supplier, s.code as supplier_code,
+                 d.serial as reference, null::text as to_name, null::uuid as ref_id, null::uuid as again_of
+            from public.supplier_emails e
+            left join public.suppliers s on s.id = e.supplier_id
+            left join public.documents d on d.id = e.document_id
+            left join public.team_members t on t.id = e.sent_by
+           where v_sup and e.created_at >= v_a and e.created_at < v_b
+          union all
+          select 'client', e.id, e.kind, e.to_email, e.cc_email, e.subject, e.body,
+                 t.name, e.created_at, e.status, e.error, e.sent_at, e.delivered_at, e.opened_at, e.bounced_at,
+                 e.client_id, c.name, null, null, null,
+                 e.reference, k.name, null, null
+            from public.client_emails e
+            left join public.clients c on c.id = e.client_id
+            left join public.client_contacts k on k.id = e.contact_id
+            left join public.team_members t on t.id = e.sent_by
+           where e.created_at >= v_a and e.created_at < v_b
+             and public.client_email_may(e.kind, 'view')
+             and (case when e.client_id is null then v_all else public.client_seen(e.client_id, 'view') end)
+          union all
+          select 'invoice', e.id, e.purpose, e.to_email, e.cc_email, e.subject, e.body,
+                 t.name, e.created_at, e.status, e.error, e.sent_at, e.delivered_at, e.opened_at, e.bounced_at,
+                 e.client_id, coalesce(c.name, e.client_name), null, null, null,
+                 (select string_agg(i->>'number', ', ' order by o) from jsonb_array_elements(e.invoices) with ordinality as a (i, o)),
+                 null, null, null
+            from public.invoice_emails e
+            left join public.clients c on c.id = e.client_id
+            left join public.team_members t on t.id = e.sent_by
+           where v_bill and e.created_at >= v_a and e.created_at < v_b
+             and (case when e.client_id is null then v_all else public.client_seen(e.client_id, 'view') end)
+          union all
+          select 'manual', e.id, 'message', e.to_email, e.cc_email, e.subject, e.body,
+                 t.name, e.created_at, e.status, e.error, e.sent_at, e.delivered_at, e.opened_at, e.bounced_at,
+                 e.client_id, c.name, e.supplier_id, s.name, s.code,
+                 e.attachment, e.to_name, null, null
+            from public.team_emails e
+            left join public.clients c on c.id = e.client_id
+            left join public.suppliers s on s.id = e.supplier_id
+            left join public.team_members t on t.id = e.sent_by
+           where e.created_at >= v_a and e.created_at < v_b
+             and (case when e.client_id is not null then public.allowed('clients.contacts', 'view') and public.client_seen(e.client_id, 'view')
+                       when e.supplier_id is not null then v_sup else true end)
+             and (not e.finance or v_bill)
+          union all
+          select 'creator', e.id, 'creator_' || e.purpose, e.to_email, null, e.subject, e.body,
+                 t.name, e.created_at, e.status, e.error, e.sent_at, e.delivered_at, e.opened_at, e.bounced_at,
+                 null, null, null, null, null,
+                 r.ref, k.name, null, e.again_of
+            from public.creator_emails e
+            left join public.creators k on k.id = e.creator_id
+            left join public.creator_pay_requests r on r.id = e.request_id
+            left join public.team_members t on t.id = e.sent_by
+           where v_cr and e.created_at >= v_a and e.created_at < v_b
+          union all
+          select 'system', e.id, e.kind, e.to_email, null, e.subject, e.body,
+                 t.name, e.created_at, e.status, e.error, e.sent_at, e.delivered_at, e.opened_at, e.bounced_at,
+                 e.client_id, c.name, null, null, null,
+                 e.reference, e.to_name, e.ref_id, e.again_of
+            from public.system_emails e
+            left join public.clients c on c.id = e.client_id
+            left join public.team_members t on t.id = e.sent_by
+           where e.created_at >= v_a and e.created_at < v_b
+             and (case when e.kind like 'hiring%' then public.hiring_role(e.candidate_id) is not null
+                       when e.kind = 'invite_team' then v_team
+                       when e.kind = 'invite_client' then v_con and e.client_id is not null and public.client_seen(e.client_id, 'view')
+                       else false end)
+          union all
+          select 'signing', g.id, 'signing', g.email, null, 'Your ' || public.agency('trading_name') || ' signing code for quotation ' || q.ref, null,
+                 null, g.created_at,
+                 case when g.used_at is not null then 'used' when g.expires_at < now() then 'expired' else 'requested' end,
+                 null, g.created_at, null, null, null,
+                 q.client_id, c.name, null, null, null,
+                 q.ref, nullif(btrim(coalesce(g.payload->'contact'->>'salutation', '') || ' ' || coalesce(g.payload->'contact'->>'name', '')), ''),
+                 null, null
+            from public.quote_sign_codes g
+            join public.quotations q on q.id = g.quotation_id
+            left join public.clients c on c.id = q.client_id
+           where v_quo and g.created_at >= v_a and g.created_at < v_b
+             and (case when q.client_id is null then v_all else public.client_seen(q.client_id, 'view') end)
+        ) u
+        order by u.created_at desc
+        limit 2000) x), '[]'::jsonb));
+end $$;
+
+create or replace function public.client_proposal_sent(p_client uuid, p_detail text)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_c public.clients;
+  v_me public.team_members;
+begin
+  update public.clients x set stage = 'proposal'
+   where x.id = p_client and x.stage in ('lead', 'contacted')
+  returning * into v_c;
+  if v_c.id is null then return; end if;
+  v_me := public.ops_me();
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(v_me.name, public.agency('trading_name')), 'client.stage', v_c.name, 'Proposal sent · ' || p_detail);
+end $$;
+
+create or replace function public.creator_mail_queue(p_purpose text, p_req uuid)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  t   public.creator_email_templates;
+  r   public.creator_pay_requests;
+  c   public.creators;
+  v_to text;
+  v_sub text;
+  v_body text;
+  v_vals jsonb;
+  w   public.creator_pay_requests;
+  v_day date;
+begin
+  select * into t from public.creator_email_templates x where x.purpose = p_purpose;
+  if t.purpose is null or not t.on_send then return; end if;
+  select * into r from public.creator_pay_requests x where x.id = p_req;
+  select * into c from public.creators x where x.id = r.creator_id;
+  -- Details changed goes to the email on file, the set it replaced.
+  select * into w from public.creator_pay_requests x where x.id = r.prior_id;
+  v_to := lower(btrim(coalesce(case when p_purpose = 'review' then t.to_email
+                                    when p_purpose = 'changed' then w.email else r.email end, '')));
+  v_day := (r.created_at at time zone 'Asia/Kuala_Lumpur')::date;
+  if v_to !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then return; end if;
+  v_sub := t.subject;
+  v_body := t.body;
+  v_vals := jsonb_build_object(
+    'creator name', c.name, 'creator id', coalesce(c.creator_code, ''), 'reference', r.ref, 'payee', r.payee,
+    'method', public.creator_pay_method(r.method, r.bank), 'account ending', right(r.account, 4),
+    'review link', 'https://' || public.agency('portal_domain') || '/admin/?s=campaigns&tab=roster&pay=' || c.id,
+    'date', public.register_day(v_day),
+    'chinese date', to_char(v_day, 'YYYY') || '年' || to_char(v_day, 'FMMM') || '月' || to_char(v_day, 'FMDD') || '日',
+    'changes', array_to_string(coalesce(r.changes, '{}'), E'\n'));
+  v_sub := public.creator_mail_fill(v_sub, v_vals);
+  -- A field filled empty (no changes) leaves no blank lines behind it.
+  v_body := regexp_replace(public.creator_mail_fill(v_body, v_vals), E'\n{3,}', E'\n\n', 'g');
+  -- Off, the email is kept as Not sent and never sent later (2026-11-10).
+  insert into public.creator_emails (purpose, creator_id, request_id, to_email, subject, body, status, error)
+  values (p_purpose, c.id, r.id, v_to, left(v_sub, 200), v_body,
+          case when public.auto_send_on('email') then 'queued' else 'failed' end,
+          case when public.auto_send_on('email') then null else 'off: Automatic emails are off.' end);
+  perform public.creator_mail_kick();
+end $$;
+
+create or replace function public.creator_mail_job(p_purpose text, p_option uuid)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  t   public.creator_email_templates;
+  fin public.creator_email_templates;
+  o   public.campaign_options;
+  c   public.creators;
+  m   public.campaigns;
+  r   public.creator_pay_requests;
+  b   public.creator_bills;
+  v_to text; v_sub text; v_body text; v_vals jsonb;
+begin
+  select * into t from public.creator_email_templates x where x.purpose = p_purpose;
+  if t.purpose is null or not t.on_send then return; end if;
+  select * into o from public.campaign_options x where x.id = p_option;
+  select * into c from public.creators x where x.id = o.creator_id;
+  select * into m from public.campaigns x where x.id = o.campaign_id;
+  select * into r from public.creator_pay_requests x where x.creator_id = c.id and x.status = 'approved'
+   order by x.decided_at desc limit 1;
+  -- The bill this email is about: the one just told paid, else the newest.
+  select * into b from public.creator_bills x where x.option_id = o.id and not x.gone
+   order by x.paid_told_at desc nulls last, x.bill_date desc nulls last limit 1;
+  select * into fin from public.creator_email_templates x where x.purpose = 'review';
+  v_to := lower(btrim(coalesce(case when p_purpose = 'request' then fin.to_email else r.email end, '')));
+  if v_to !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then return; end if;
+  v_sub := t.subject;
+  v_body := t.body;
+  v_vals := jsonb_build_object(
+    'creator name', c.name, 'creator id', coalesce(c.creator_code, ''),
+    'job reference', coalesce(public.creator_job_ref(o.id), '') || coalesce(' (' || o.earlier_job || ')', ''),
+    'campaign', coalesce(m.title, ''),
+    'posted date', coalesce(public.register_day(o.posted_on), ''),
+    'pay by', coalesce(public.register_day(o.pay_by), ''),
+    'payee', coalesce(r.payee, 'Payment details pending approval'),
+    'method', coalesce(public.creator_pay_method(r.method, r.bank), ''),
+    'account ending', coalesce(right(r.account, 4), ''),
+    'amount', case when b.amount is null then '' else
+      case coalesce(b.currency, 'MYR') when 'MYR' then 'RM ' when 'SGD' then 'S$ ' else b.currency || ' ' end ||
+      to_char(b.amount, 'FM999,999,990.00') end,
+    'bill number', coalesce(b.number, ''),
+    'review link', 'https://' || public.agency('portal_domain') || '/admin/?s=campaigns&tab=roster&pay=' || c.id);
+  v_sub := public.creator_mail_fill(v_sub, v_vals);
+  v_body := public.creator_mail_fill(v_body, v_vals);
+  -- Off, the email is kept as Not sent and never sent later (2026-11-10).
+  insert into public.creator_emails (purpose, creator_id, request_id, option_id, to_email, subject, body, status, error)
+  values (p_purpose, c.id, r.id, o.id, v_to, left(v_sub, 200), v_body,
+          case when public.auto_send_on('email') then 'queued' else 'failed' end,
+          case when public.auto_send_on('email') then null else 'off: Automatic emails are off.' end);
+  perform public.creator_mail_kick();
+end $$;
+
+create or replace function public.campaign_options_posted_mail()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare c public.creators; m public.campaigns; v_ref text;
+begin
+  if new.state is distinct from 'posted' or old.state in ('posted', 'completed') then return null; end if;
+  -- Told once a booking: a revert and a second move into Posted tell nobody again.
+  if exists (select 1 from public.creator_emails e where e.option_id = new.id and e.purpose in ('request', 'posted')) then return null; end if;
+  begin
+    perform public.creator_mail_job('request', new.id);
+    perform public.creator_mail_job('posted', new.id);
+    select * into c from public.creators x where x.id = new.creator_id;
+    select * into m from public.campaigns x where x.id = new.campaign_id;
+    v_ref := public.creator_job_ref(new.id);
+    insert into public.ops_notifications (team_member_id, kind, title, body, link, dedupe_key)
+    select tm.id, 'creator.payment', 'Creator payment request · ' || coalesce(v_ref, c.name),
+           c.name || ' · ' || coalesce(m.title, '') || coalesce(' · Pay by ' || public.register_day(new.pay_by) || ' (' || trim(to_char(new.pay_by, 'FMDay')) || ')', ''),
+           'https://' || public.agency('portal_domain') || '/admin/?s=campaigns&tab=payments&row=' || new.id,
+           'creator.payment:' || new.id || ':' || tm.id
+      from public.team_members tm
+     where tm.active and tm.removed_at is null and not coalesce(tm.system, false)
+       and public.allowed_of(tm.id, 'campaigns.pay', 'work')
+    on conflict (dedupe_key) do nothing;
+  exception when others then
+    return null;
+  end;
+  return null;
+end $$;
+
+create or replace function public.agent_schedule_do(s public.agent_schedules, m public.team_members)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  p jsonb := s.payload;
+  v jsonb;
+  b public.batches;
+  c public.clients;
+  v_on boolean;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_day   date;
+  v_n integer;
+  v_what text;
+  v_rec jsonb;
+begin
+  if s.kind = 'reminder' then
+    insert into public.ops_notifications (team_member_id, task_id, report_id, client_id, kind, title, body, dedupe_key)
+    values (m.id,
+            (select t.id from public.ops_tasks t where t.id = nullif(p ->> 'task_id', '')::uuid),
+            (select r.id from public.sm_reports r where r.id = nullif(p ->> 'report_id', '')::uuid),
+            (select x.id from public.clients x where x.id = nullif(p ->> 'client_id', '')::uuid),
+            'assistant.reminder', left(s.title, 200), left(p ->> 'message', 500), 'agent.' || s.id)
+    on conflict (dedupe_key) do nothing;
+    return jsonb_build_object('ok', true, 'said', 'Reminder sent to you.');
+  end if;
+  if s.kind = 'mark_sent' then
+    -- The record names the day written, never the day it ran (review 2026-11-24).
+    v_day := coalesce(nullif(p ->> 'sent_on', '')::date, v_today);
+    v := public.sm_report_sent((p ->> 'report_id')::uuid, v_day);
+    if v ? 'error' then return v; end if;
+    insert into public.activity_log (actor, action, subject, detail)
+    values (m.name, 'assistant.report', s.title, 'Marked as sent ' || public.register_day(v_day) || ' · scheduled through the Assistant');
+    return jsonb_build_object('ok', true, 'said', 'Marked as sent.');
+  end if;
+  if s.kind = 'add_task' then
+    v := public.ops_create_task(p, 'agent-schedule-' || s.id::text);
+    if v ? 'error' then return v; end if;
+    insert into public.activity_log (actor, action, subject, detail)
+    values (m.name, 'assistant.task', coalesce((select x.name from public.clients x where x.id = nullif(p ->> 'client_id', '')::uuid), 'Internal'),
+            'Task added: ' || coalesce(p ->> 'title', '') || ' · scheduled through the Assistant');
+    return jsonb_build_object('ok', true, 'said', 'Task added.', 'task_id', v ->> 'id');
+  end if;
+  if s.kind in ('publish_set', 'unpublish_set') then
+    if not public.allowed('review.sets', 'work') then return jsonb_build_object('error', 'denied'); end if;
+    select * into b from public.batches x where x.id = (p ->> 'set_id')::uuid for update;
+    if b.id is null or not public.client_seen(b.client_id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+    v_on := s.kind = 'publish_set';
+    if v_on and not exists (select 1 from public.posts po where po.batch_id = b.id) then
+      return jsonb_build_object('error', 'empty');
+    end if;
+    if b.published = v_on then return jsonb_build_object('ok', true, 'said', case when v_on then 'Already published.' else 'Already unpublished.' end); end if;
+    update public.batches x set published = v_on where x.id = b.id;
+    select * into c from public.clients x where x.id = b.client_id;
+    insert into public.activity_log (actor, action, subject, detail)
+    values (m.name, case when v_on then 'set.published' else 'set.withdrawn' end, c.name || ' — ' || b.title, null),
+           (m.name, 'assistant.set', c.name || ' — ' || b.title,
+            case when v_on then 'Published' else 'Unpublished' end || ' · scheduled through the Assistant');
+    return jsonb_build_object('ok', true, 'said', case when v_on then 'Published.' else 'Unpublished.' end);
+  end if;
+  if s.kind = 'whatsapp' then
+    v := public.wa_compose_prepare('contact', (p ->> 'to_id')::uuid, p ->> 'purpose', nullif(p ->> 'ref', '')::uuid);
+    if v ? 'error' then return v; end if;
+    if not exists (select 1 from public.wa_templates t where t.purpose = p ->> 'purpose' and t.active and t.name <> '') then
+      return jsonb_build_object('error', 'wa-off');
+    end if;
+    v_rec := public.wa_sent_recently('contact', (p ->> 'to_id')::uuid, p ->> 'purpose', nullif(p ->> 'ref', '')::uuid, null);
+    if coalesce((v_rec ->> 'recent')::boolean, false) then
+      return jsonb_build_object('skip', true, 'said', 'Not sent: it was sent on WhatsApp recently.');
+    end if;
+    /* What waits, as the composer words it: the set's undecided posts, or
+       the creator's draft. */
+    if p ->> 'purpose' = 'approval' then
+      select * into b from public.batches x where x.id = nullif(p ->> 'ref', '')::uuid;
+      if b.id is not null then
+        select count(*)::int into v_n from public.posts po
+         where po.batch_id = b.id
+           and not exists (select 1 from public.reviews r where r.post_id = po.id and r.undone_at is null
+                              and coalesce(r.round, 1) = coalesce(po.round, 1)
+                              and (po.review_reset_at is null or r.created_at > po.review_reset_at));
+        v_what := v_n || case when v_n = 1 then ' post' else ' posts' end || ' in ' || b.title;
+      else
+        v_what := coalesce(nullif(p ->> 'what', ''), 'A draft');
+      end if;
+    end if;
+    perform public.wa_enqueue(p ->> 'purpose', v ->> 'number', v ->> 'name',
+      jsonb_build_array(v ->> 'greeting', v ->> 'client',
+        case p ->> 'purpose' when 'approval' then v_what when 'representative' then v ->> 'rep' else '' end,
+        case when p ->> 'purpose' = 'approval' then 'https://' || public.agency('portal_domain') || '/' || coalesce(v ->> 'link', '') else '' end),
+      v ->> 'ref_kind', nullif(p ->> 'ref', '')::uuid, (v ->> 'client_id')::uuid,
+      case p ->> 'purpose' when 'approval' then v ->> 'link' when 'representative' then v ->> 'code' end);
+    /* Sent for a colleague, never Automatic. */
+    update public.wa_outbox o set created_by = m.name, to_kind = 'contact', to_id = (p ->> 'to_id')::uuid
+     where o.id = (select x.id from public.wa_outbox x where x.created_by = 'system' and x.created_at = now()
+                      and x.purpose = p ->> 'purpose' and x.to_number = v ->> 'number' order by x.id limit 1);
+    insert into public.activity_log (actor, action, subject, detail)
+    values (m.name, 'assistant.whatsapp', coalesce(v ->> 'subject', s.title),
+            'Sent on WhatsApp to ' || coalesce(v ->> 'name', '') || ' · scheduled through the Assistant');
+    return jsonb_build_object('ok', true, 'said', 'Sent on WhatsApp.');
+  end if;
+  return jsonb_build_object('error', 'bad-kind');
+end $$;
+
+create or replace function public.creator_pay_requests_notice()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare c public.creators;
+begin
+  if new.status is distinct from 'pending' then return null; end if;
+  begin
+    select * into c from public.creators x where x.id = new.creator_id;
+    insert into public.ops_notifications (team_member_id, kind, title, body, link, dedupe_key)
+    select tm.id, 'creator.details', 'Payment details to review · ' || coalesce(c.name, new.ref),
+           new.ref || ' · Sent on the creator page',
+           'https://' || public.agency('portal_domain') || '/admin/?s=campaigns&tab=payments&row=' || new.id,
+           'creator.details:' || new.id || ':' || tm.id
+      from public.team_members tm
+     where tm.active and tm.removed_at is null and not coalesce(tm.system, false)
+       and tm.department = 'marketing'
+       and (tm.is_admin or tm.role = 'admin'
+            or public.level_rank(coalesce(tm.access ->> 'campaigns.creators', tm.access ->> 'campaigns')) >= 1)
+    on conflict (dedupe_key) do nothing;
+  exception when others then
+    return null;
+  end;
+  return null;
+end $$;
+
+create or replace function public.hiring_person_set(p_id uuid, p_member uuid, p_role text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  c public.hiring_candidates;
+  t public.team_members;
+  v_was text;
+begin
+  if me.id is null or not public.ops_granted('team.hiring', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if coalesce(p_role, '') not in ('owner', 'interviews') then return jsonb_build_object('error', 'bad-role'); end if;
+  select * into c from public.hiring_candidates where id = p_id for update;
+  if c.id is null or c.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into t from public.team_members where id = p_member and active and removed_at is null and not system;
+  if t.id is null then return jsonb_build_object('error', 'bad-colleague'); end if;
+  select role into v_was from public.hiring_people where candidate_id = p_id and team_member_id = p_member;
+  if v_was = p_role then return jsonb_build_object('ok', true, 'same', true); end if;
+  insert into public.hiring_people (candidate_id, team_member_id, role, added_by)
+  values (p_id, p_member, p_role, me.id)
+  on conflict (candidate_id, team_member_id) do update set role = excluded.role;
+  perform public.hiring_log(p_id, 'candidate.people', t.name || case when v_was is null then ' added as ' else ': ' || initcap(v_was) || ' → ' end
+    || case p_role when 'owner' then 'Owner' else 'Interviewer' end);
+  if v_was is null and t.id <> me.id then
+    insert into public.ops_notifications (team_member_id, kind, title, body, link)
+    values (t.id, 'hiring.added', 'You were added to a candidate',
+            c.position || ' · ' || case p_role when 'owner' then 'Owner' else 'Interviewer' end || ' · added by ' || me.name,
+            'https://' || public.agency('portal_domain') || '/admin/?s=team&tab=hiring&candidate=' || c.id);
+  end if;
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.hiring_tell(p_candidate uuid, p_kind text, p_title text, p_body text)
+returns void language plpgsql security definer set search_path = public as $$
+declare me public.team_members := public.ops_me();
+begin
+  insert into public.ops_notifications (team_member_id, kind, title, body, link)
+  select t.id, p_kind, p_title, p_body, 'https://' || public.agency('portal_domain') || '/admin/?s=team&tab=hiring&candidate=' || p_candidate
+    from public.team_members t
+   where t.active and t.removed_at is null and not t.system and (me.id is null or t.id <> me.id)
+     and exists (select 1 from public.hiring_people p where p.candidate_id = p_candidate and p.team_member_id = t.id and p.role = 'owner');
+end $$;
+
+create or replace function public.hiring_tell_once(p_candidate uuid, p_kind text, p_title text, p_body text, p_key text)
+returns void language plpgsql security definer set search_path = public as $$
+declare me public.team_members := public.ops_me();
+begin
+  insert into public.ops_notifications (team_member_id, kind, title, body, link, dedupe_key)
+  select t.id, p_kind, p_title, p_body, 'https://' || public.agency('portal_domain') || '/admin/?s=team&tab=hiring&candidate=' || p_candidate,
+         p_key || ':' || t.id
+    from public.team_members t
+   where t.active and t.removed_at is null and not t.system and (me.id is null or t.id <> me.id)
+     and exists (select 1 from public.hiring_people p where p.candidate_id = p_candidate and p.team_member_id = t.id and p.role = 'owner')
+  on conflict (dedupe_key) do nothing;
+end $$;
+
+create or replace function public.health_daily(p_today date default null)
+returns integer
+language plpgsql security definer set search_path = public as $$
+declare
+  v_today  date := coalesce(p_today, public.health_today());
+  v_days   integer := coalesce(public.app_setting('health_remind_days', coalesce(p_today, public.health_today())), 2)::integer;
+  v_alert  boolean := coalesce(public.app_setting('health_alert', coalesce(p_today, public.health_today())), 1) = 1;
+  v_hol    boolean := public.public_holiday_on(coalesce(p_today, public.health_today())) is not null;
+  v_p      jsonb;
+  v_end    date;
+  m        record;
+  a        record;
+  n        integer := 0;
+begin
+  for m in select t.id, t.name from public.team_members t
+            where t.active and not coalesce(t.system, false) order by t.id loop
+    v_p := public.health_period(m.id, v_today);
+    v_end := (v_p ->> 'end')::date;
+    if v_days > 0 and not v_hol and (v_p ->> 'due')::boolean and public.health_agreed(m.id)
+       and v_today >= (v_p ->> 'start')::date + v_days and v_today <= v_end then
+      insert into public.ops_notifications (team_member_id, task_id, kind, title, body, dedupe_key)
+      values (m.id, null, 'health.remind',
+              'Check in on your health by ' || public.register_day(v_end) || ' (' || trim(to_char(v_end, 'FMDay')) || ').',
+              null, 'health.remind.' || m.id || '.' || (v_p ->> 'start'))
+      on conflict (dedupe_key) do nothing;
+      if found then n := n + 1; end if;
+    end if;
+    if v_alert and coalesce((v_p #>> '{load,heavy}')::boolean, false) then
+      for a in select t.id from public.team_members t
+                where t.active and t.id <> m.id and not coalesce(t.system, false)
+                  and (coalesce(t.is_admin, false) or t.role = 'admin') loop
+        insert into public.ops_notifications (team_member_id, task_id, kind, title, body, link, dedupe_key)
+        values (a.id, null, 'health.load', 'Check in with ' || m.name || '.',
+                'Their work this week is near their weekly capacity.',
+                'https://' || public.agency('portal_domain') || '/admin/?s=team&tab=health',
+                'health.load.' || m.id || '.' || (v_p #>> '{load,week}') || '.' || a.id)
+        on conflict (dedupe_key) do nothing;
+        n := n + 1;
+      end loop;
+    end if;
+  end loop;
+  return n;
+end $$;
+
+create or replace function public.feedback_mail_begin(p_client uuid, p_kind text, p_again boolean default false)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me    public.team_members := public.ops_me();
+  r     jsonb;
+  v_cl  public.clients;
+  v_ct  public.client_contacts;
+  v_t   public.feedback_email_templates;
+  v_zh  boolean;
+  v_s   text;
+  v_b   text;
+  v_btn text;
+  v_k   text;
+  v_v   text;
+begin
+  if me.id is null or not public.allowed('clients', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.send_ok('email') then return jsonb_build_object('error', 'send-off'); end if;
+  if coalesce(public.app_setting('client_email_on', (now() at time zone 'Asia/Kuala_Lumpur')::date), 0) <> 1 then
+    return jsonb_build_object('error', 'email-off');
+  end if;
+  if p_kind in ('quick', 'review')
+     and (select count(*) from public.feedback_email_templates x where x.kind = p_kind) < 2 then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  r := public.feedback_request(p_client, p_kind, p_again);
+  if r ? 'error' then return r; end if;
+  select * into v_cl from public.clients c where c.id = p_client;
+  select * into v_ct from public.client_contacts k
+   where k.id = (select q.contact_id from public.feedback_requests q where q.id = (r->>'id')::uuid);
+  v_zh := coalesce(v_ct.lang, 'en') = 'zh';
+  select * into v_t from public.feedback_email_templates x
+   where x.kind = p_kind and x.lang = case when v_zh then 'zh' else 'en' end;
+  v_s := v_t.subject;
+  v_b := v_t.body;
+  v_btn := v_t.button;
+  foreach v_k in array array['contact name', 'client name', 'link'] loop
+    v_v := case v_k when 'contact name' then public.contact_named(v_ct.salutation, v_ct.name)
+      when 'client name' then v_cl.name
+      else 'https://' || public.agency('portal_domain') || '/feedback/?k=' || (r->>'key') end;
+    v_s := regexp_replace(v_s, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+    v_b := regexp_replace(v_b, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+    v_btn := regexp_replace(v_btn, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+  end loop;
+  update public.feedback_requests q set mail_status = 'sending' where q.id = (r->>'id')::uuid;
+  return r || jsonb_build_object('subject', left(v_s, 200), 'body', v_b, 'button', v_btn, 'lang', case when v_zh then 'zh' else 'en' end);
+end $$;
+
+create or replace function public.outstation_remind()
+returns integer
+language plpgsql security definer set search_path = public as $$
+declare r record; n integer := 0;
+  v_hours numeric := coalesce(public.app_setting('outstation_remind_hours', (now() at time zone 'Asia/Kuala_Lumpur')::date), 3);
+begin
+  for r in
+    select t.id, t.ref, t.driver_id,
+           (select public.outstation_last_activity(s.id) from public.outstation_stops s where s.trip_id = t.id order by s.seq desc limit 1) as last_at
+      from public.outstation_trips t
+     where t.state = 'open' and t.reminded_at is null
+     for update of t skip locked
+  loop
+    continue when r.last_at is null or r.last_at + make_interval(mins => round(v_hours * 60)::int) > now();
+    insert into public.ops_notifications (team_member_id, kind, title, body, link, dedupe_key)
+    values (r.driver_id, 'outstation', 'Your trip is still open. Check out?', coalesce(r.ref, 'Outstation trip'),
+            'https://' || public.agency('portal_domain') || '/admin/?s=work&view=outstation', 'outstation.open.' || r.id::text)
+    on conflict (dedupe_key) do nothing;
+    update public.outstation_trips set reminded_at = now() where id = r.id;
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+
+create or replace function public.feedback_wa_copy(p_client uuid, p_kind text, p_again boolean default false)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me    public.team_members := public.ops_me();
+  r     jsonb;
+  v_cl  public.clients;
+  v_ct  public.client_contacts;
+  v_t   public.feedback_email_templates;
+  v_zh  boolean;
+  v_url text;
+  v_b   text;
+  v_btn text;
+  v_k   text;
+  v_v   text;
+begin
+  if me.id is null or not public.allowed('clients', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.send_ok('whatsapp') then return jsonb_build_object('error', 'send-off'); end if;
+  if p_kind in ('quick', 'review')
+     and (select count(*) from public.feedback_email_templates x where x.kind = p_kind) < 2 then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  r := public.feedback_request(p_client, p_kind, p_again, 'whatsapp');
+  if r ? 'error' then return r; end if;
+  select * into v_cl from public.clients c where c.id = p_client;
+  select * into v_ct from public.client_contacts k
+   where k.id = (select q.contact_id from public.feedback_requests q where q.id = (r->>'id')::uuid);
+  v_zh := coalesce(v_ct.lang, 'en') = 'zh';
+  select * into v_t from public.feedback_email_templates x
+   where x.kind = p_kind and x.lang = case when v_zh then 'zh' else 'en' end;
+  v_url := 'https://' || public.agency('portal_domain') || '/feedback/?k=' || (r->>'key');
+  v_b := v_t.body;
+  v_btn := v_t.button;
+  foreach v_k in array array['contact name', 'client name', 'link'] loop
+    v_v := case v_k when 'contact name' then public.contact_named(v_ct.salutation, v_ct.name)
+      when 'client name' then v_cl.name else v_url end;
+    v_b := regexp_replace(v_b, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+    v_btn := regexp_replace(v_btn, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+  end loop;
+  -- The email's button is the link's words here; a message already
+  -- holding the link keeps it where it was written.
+  if position(v_url in v_b) = 0 then
+    v_b := btrim(v_b) || E'\n\n' || btrim(v_btn) || case when v_zh then '：' else ': ' end || v_url;
+  end if;
+  return r || jsonb_build_object('text', v_b, 'lang', case when v_zh then 'zh' else 'en' end);
+end $$;
+
+create or replace function public.quotation_details_ask(p_id uuid, p_fields text[], p_note text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me     public.team_members := public.ops_me();
+  q      public.quotations;
+  v_f    text[];
+  v_note text := nullif(btrim(regexp_replace(coalesce(p_note, ''), '[ \t]+', ' ', 'g')), '');
+  v_due  timestamptz;
+  v_zh   boolean;
+  v_t    public.quote_email_templates;
+  v_link text;
+  v_body text;
+  v_k    text;
+  v_v    text;
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into q from public.quotations x where x.id = p_id for update;
+  if q.id is null or not public.client_scope_ok('client', q.client_id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  if q.source <> 'website' or q.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
+  if q.released_at is not null then return jsonb_build_object('error', 'sent'); end if;
+  if q.status = 'not_proceeding' then return jsonb_build_object('error', 'closed'); end if;
+  select coalesce(array_agg(distinct x), '{}') into v_f from unnest(coalesce(p_fields, '{}')) x;
+  if exists (select 1 from unnest(v_f) x where x not in ('registration', 'industry', 'online', 'commence')) then
+    return jsonb_build_object('error', 'bad-fields');
+  end if;
+  v_f := array(select x from unnest(array['registration', 'industry', 'online', 'commence']) x where x = any(v_f));
+  if v_note is not null and (length(v_note) > 500 or v_note ~* public.quote_link_like()) then return jsonb_build_object('error', 'bad-note'); end if;
+  if cardinality(v_f) = 0 and v_note is null then return jsonb_build_object('error', 'bad-fields'); end if;
+  v_due := public.ops_add_business_days(now(),
+    coalesce(public.app_setting('quote_details_days', (now() at time zone 'Asia/Kuala_Lumpur')::date), 3)::int);
+  update public.quotations x
+     set details_ask = jsonb_build_object('fields', to_jsonb(v_f), 'note', v_note),
+         details_asked_at = now(), details_asked_by = me.name, details_due = v_due, details_at = null, details = null
+   where x.id = q.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.quotation', q.brand, q.ref || ' · Details asked: ' ||
+          replace(substr(public.quote_details_lines(v_f, v_note, false), 3), E'\n• ', ', ') ||
+          ' · Reply by ' || public.register_day((v_due at time zone 'Asia/Kuala_Lumpur')::date));
+  -- The same words as the email, for WhatsApp by hand.
+  v_zh := coalesce(q.contact->>'lang', 'en') = 'zh';
+  select * into v_t from public.quote_email_templates x where x.kind = 'details' and x.lang = case when v_zh then 'zh' else 'en' end;
+  v_link := 'https://' || public.agency('portal_domain') || '/quote/?q=' || q.access_key;
+  v_body := coalesce(v_t.body, '');
+  foreach v_k in array array['contact name', 'brand', 'reference', 'details', 'reply by', 'link'] loop
+    v_v := case v_k when 'contact name' then public.contact_named(q.contact->>'salutation', q.contact->>'name')
+      when 'brand' then coalesce(q.contact->>'brand', q.brand) when 'reference' then q.ref
+      when 'details' then public.quote_details_lines(v_f, v_note, v_zh)
+      when 'reply by' then public.quote_day_word((v_due at time zone 'Asia/Kuala_Lumpur')::date, v_zh)
+      else v_link end;
+    v_body := regexp_replace(v_body, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+  end loop;
+  return jsonb_build_object('ok', true, 'due', v_due, 'key', q.access_key, 'text', v_body || E'\n\n' || v_link);
+end $$;
+
+create or replace function public.quote_details_mail_begin(p_id uuid)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me    public.team_members := public.ops_me();
+  q     public.quotations;
+  v_ds  text;
+  v_zh  boolean;
+  v_t   public.quote_email_templates;
+  v_s   text;
+  v_b   text;
+  v_btn text;
+  v_k   text;
+  v_v   text;
+  v_to  text;
+  v_ct  uuid;
+  v_id  uuid;
+  v_f   text[];
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.send_ok('email') then return jsonb_build_object('error', 'send-off'); end if;
+  if coalesce(public.app_setting('client_email_on', (now() at time zone 'Asia/Kuala_Lumpur')::date), 0) <> 1 then
+    return jsonb_build_object('error', 'email-off');
+  end if;
+  select * into q from public.quotations x where x.id = p_id;
+  if q.id is null or q.source <> 'website' or q.removed_at is not null
+     or not public.client_scope_ok('client', q.client_id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  if q.released_at is not null then return jsonb_build_object('error', 'sent'); end if;
+  v_ds := public.quote_details_state(q);
+  if v_ds not in ('asked', 'late') or q.status = 'not_proceeding' then return jsonb_build_object('error', 'closed'); end if;
+  if q.no_contact_at is not null then return jsonb_build_object('error', 'no-contact'); end if;
+  v_to := lower(btrim(coalesce(q.contact->>'email', '')));
+  if not (v_to ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$') then return jsonb_build_object('error', 'no-email'); end if;
+  v_zh := coalesce(q.contact->>'lang', 'en') = 'zh';
+  select * into v_t from public.quote_email_templates x where x.kind = 'details' and x.lang = case when v_zh then 'zh' else 'en' end;
+  if v_t.kind is null then return jsonb_build_object('error', 'not-found'); end if;
+  v_f := array(select jsonb_array_elements_text(q.details_ask->'fields'));
+  v_s := v_t.subject; v_b := v_t.body; v_btn := v_t.button;
+  foreach v_k in array array['contact name', 'brand', 'reference', 'details', 'reply by', 'link'] loop
+    v_v := case v_k when 'contact name' then public.contact_named(q.contact->>'salutation', q.contact->>'name')
+      when 'brand' then coalesce(q.contact->>'brand', q.brand) when 'reference' then q.ref
+      when 'details' then public.quote_details_lines(v_f, q.details_ask->>'note', v_zh)
+      when 'reply by' then public.quote_day_word((q.details_due at time zone 'Asia/Kuala_Lumpur')::date, v_zh)
+      else 'https://' || public.agency('portal_domain') || '/quote/?q=' || q.access_key end;
+    v_s := regexp_replace(v_s, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+    v_b := regexp_replace(v_b, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+    v_btn := regexp_replace(v_btn, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+  end loop;
+  select k.id into v_ct from public.client_contacts k
+   where k.client_id = q.client_id and k.archived_at is null and lower(btrim(coalesce(k.email, ''))) = v_to
+   order by k.is_primary desc, k.created_at limit 1;
+  insert into public.client_emails (client_id, kind, ref_id, reference, contact_id, to_email, reply_to, subject, body, sent_by)
+  values (q.client_id, 'details', q.id, q.ref, v_ct, v_to, public.mail_sender('clients')->>'reply_to', left(v_s, 200), v_b, me.id)
+  returning id into v_id;
+  return jsonb_build_object('ok', true, 'id', v_id, 'to_email', v_to,
+    'to_name', public.contact_named(q.contact->>'salutation', q.contact->>'name'),
+    'subject', left(v_s, 200), 'body', v_b, 'button', v_btn, 'key', q.access_key);
+end $$;
+
+-- END OF AGENCY VALUES ON THE SERVER ----------------------------------------
+
+select public.functions_tidy();
+
+-- ===========================================================================
+-- UNDO SEND — every email a colleague sends waits a minute (2026-11-28)
+-- ===========================================================================
+-- WHY: the user, 2026-11-28: "Can the 1 min delay apply not only to
+-- candidates? Clients too… a nice gesture of could revert or cancel within a
+-- minute." One mechanism for every email a colleague sends by hand or by a
+-- step: a client's quotation, Letter of Offer or letter, an invoice email or
+-- overdue reminder, a feedback request, Ask for details, a supplier's
+-- emails, a New email, and a candidate's step emails, sent by hand and sent
+-- again.
+-- WHAT IT CHANGES
+--   * `mail_queue` (RLS on, no policy, no grant): what Resend is sent, due
+--     `send_undo_seconds` on (an app setting, 60), Queued, then Sending,
+--     Sent, Failed or Not confirmed, or Cancelled; emptied once closed.
+--   * The email's own row reads Queued and Cancelled (each log's status
+--     check, a feedback request's mail_status; a candidate step's mail
+--     state alike), so the Email log, a record's Emails and the Activity
+--     record read them as they read Sent.
+--   * `mail_queue_put` (the service role's, called by each sender once its
+--     begin has filed the email as the caller), `mail_queue_claim` and
+--     `mail_queue_close` (supplier-mail's drain), closing through each
+--     sender's own close as the colleague who queued it; `mail_cancel`
+--     (the sender, or Messages at Full Access; `sent` once the drain took
+--     it); pg_cron `mail-queue` every five minutes (as every drain's wake)
+--     wakes the drain only while an email is due: one to six minutes.
+--   * Sent recently leaves a cancelled email out (supplier_email_prepare,
+--     client_email_prepare, invoice_mail_begin; a feedback request's is
+--     withdrawn); mail_sweep reads a queued email's time from its claim;
+--     mail_log, team_emails_of and supplier_emails_of answer the sender's
+--     id, so Cancel is drawn for the sender alone.
+--   * Every email in English (the user, 2026-11-28, through the coordinator:
+--     "email we only do one, all in international English. No Chinese
+--     email."): feedback_mail_begin and quote_details_mail_begin send the
+--     English template whatever the contact's language; the 中文 rows stay
+--     stored for the rollback, sent by nothing.
+-- EXCLUDED, still immediate: codes, sign-in links and invitations, what a
+--   client or visitor sends themselves, and what the portal sends by itself
+--   (reminders, expiry emails, creator emails, alerts).
+-- ORDER: this file, then supplier-mail, bukku-sync and hiring-mail, then
+--   the pages. An open tab's send is queued and reads Sent as before, its
+--   email going a minute later.
+-- ROLLBACK: deploy the three functions before this release, then
+--   select cron.unschedule('mail-queue'); update the queued rows' emails to
+--   'sending' and run their drain once; drop table public.mail_queue; drop
+--   function public.mail_queue_mark(public.mail_queue, text),
+--   public.mail_queue_note(public.mail_queue, text, text),
+--   public.mail_queue_put(jsonb), public.mail_queue_claim(int),
+--   public.mail_queue_close(uuid, text, text, text),
+--   public.mail_cancel(text, uuid), public.mail_queue_kick(),
+--   public.mail_queue_due(); the status checks may stay wider; the two
+--   English-only senders come back from their files before this one
+--   (feedback_mail_begin: 2026-11-25-retention-and-jobs-held.sql;
+--   quote_details_mail_begin: 2026-11-27-quote-details-asked.sql). Safe to
+--   run twice.
+
+-- A queued email and a cancelled one are states of the email's own row, so
+-- every list that reads the row (the Email log, a record's Emails, a
+-- document's emailed line) reads them without a reader of its own.
+alter table public.supplier_emails drop constraint if exists supplier_emails_status_check;
+alter table public.supplier_emails add constraint supplier_emails_status_check
+  check (status in ('queued', 'sending', 'sent', 'failed', 'unknown', 'delivered', 'opened', 'bounced', 'complained', 'cancelled'));
+alter table public.client_emails drop constraint if exists client_emails_status_check;
+alter table public.client_emails add constraint client_emails_status_check
+  check (status in ('queued', 'sending', 'sent', 'failed', 'unknown', 'delivered', 'opened', 'bounced', 'complained', 'cancelled'));
+alter table public.team_emails drop constraint if exists team_emails_status_check;
+alter table public.team_emails add constraint team_emails_status_check
+  check (status in ('queued', 'sending', 'sent', 'failed', 'unknown', 'delivered', 'opened', 'bounced', 'complained', 'cancelled'));
+alter table public.invoice_emails drop constraint if exists invoice_emails_status_check;
+alter table public.invoice_emails add constraint invoice_emails_status_check
+  check (status in ('queued', 'sending', 'sent', 'failed', 'unknown', 'delivered', 'opened', 'bounced', 'complained', 'cancelled'));
+alter table public.feedback_requests drop constraint if exists feedback_requests_mail_status_check;
+alter table public.feedback_requests add constraint feedback_requests_mail_status_check
+  check (mail_status in ('queued', 'sending', 'sent', 'failed', 'unknown', 'cancelled'));
+
+/* The window is ACTIVITY KEPT BY KIND's Business setting `send_undo_seconds`
+   (60; Settings, Messages, Undo before sending), read in force on the
+   Malaysian day. */
+
+/* The queue: one row an email, holding what Resend is sent (attachments
+   included) until it goes, then emptied. RLS on, no policy, no grant: the
+   functions below alone. */
+create table if not exists public.mail_queue (
+  id           uuid primary key default gen_random_uuid(),
+  source       text not null check (source in ('supplier', 'client', 'invoice', 'manual', 'feedback', 'system')),
+  log_id       uuid not null,
+  close        jsonb not null default '{}'::jsonb,
+  msg          jsonb not null default '{}'::jsonb,
+  idem         text not null,
+  to_name      text,
+  what         text,
+  status       text not null default 'queued' check (status in ('queued', 'sending', 'sent', 'failed', 'unknown', 'cancelled')),
+  send_at      timestamptz not null,
+  queued_by    uuid references public.team_members (id) on delete set null,
+  created_at   timestamptz not null default now(),
+  claimed_at   timestamptz,
+  closed_at    timestamptz,
+  cancelled_by uuid references public.team_members (id) on delete set null,
+  cancelled_at timestamptz,
+  provider_id  text,
+  error        text
+);
+alter table public.mail_queue enable row level security;
+revoke all on public.mail_queue from public, anon, authenticated;
+create unique index if not exists mail_queue_log_idx on public.mail_queue (source, log_id);
+create index if not exists mail_queue_due_idx on public.mail_queue (send_at) where status = 'queued';
+
+/* The email's own row set to a state of the queue: Queued as it is put,
+   Sending as the drain claims it, Cancelled at Cancel. A hiring email's
+   step reads the same word on the candidate's card. */
+create or replace function public.mail_queue_mark(q public.mail_queue, p_state text)
+returns void language plpgsql volatile security definer set search_path = public as $$
+declare v_was text := case p_state when 'queued' then 'sending' when 'sending' then 'queued' else 'queued' end;
+begin
+  if q.source = 'supplier' then update public.supplier_emails x set status = p_state, error = case when p_state = 'cancelled' then 'cancelled' else x.error end where x.id = q.log_id and x.status = v_was;
+  elsif q.source = 'client' then update public.client_emails x set status = p_state, error = case when p_state = 'cancelled' then 'cancelled' else x.error end where x.id = q.log_id and x.status = v_was;
+  elsif q.source = 'manual' then update public.team_emails x set status = p_state, error = case when p_state = 'cancelled' then 'cancelled' else x.error end where x.id = q.log_id and x.status = v_was;
+  elsif q.source = 'invoice' then update public.invoice_emails x set status = p_state, error = case when p_state = 'cancelled' then 'cancelled' else x.error end where x.id = q.log_id and x.status = v_was;
+  elsif q.source = 'feedback' then
+    -- A feedback request whose email is cancelled is withdrawn, as one that failed.
+    update public.feedback_requests x set mail_status = p_state,
+      closed_at = case when p_state = 'cancelled' and x.closed_at is null then now() else x.closed_at end,
+      closed_reason = case when p_state = 'cancelled' and x.closed_at is null then 'withdrawn' else x.closed_reason end
+     where x.id = q.log_id and x.mail_status = v_was;
+  elsif q.source = 'system' then
+    update public.system_emails x set status = p_state where x.id = q.log_id and x.status = v_was;
+    if p_state <> 'sending' then
+      if q.close->>'fn' = 'interview' then
+        update public.hiring_interviews i set
+          invite_mail = case when q.close->>'kind' = 'invite' then p_state else i.invite_mail end,
+          confirm_mail = case when q.close->>'kind' = 'confirm' then p_state else i.confirm_mail end,
+          reschedule_mail = case when q.close->>'kind' = 'rescheduled' then p_state else i.reschedule_mail end,
+          cancel_mail = case when q.close->>'kind' = 'cancelled' then p_state else i.cancel_mail end,
+          held_mail = case when q.close->>'kind' in ('held', 'moved') then p_state else i.held_mail end,
+          updated_at = now()
+         where i.id = (q.close->>'ref')::uuid;
+      elsif q.close->>'fn' = 'doc' then update public.hiring_docs d set mail = p_state, mail_at = now() where d.id = (q.close->>'ref')::uuid;
+      elsif q.close->>'fn' = 'confirmed' then update public.hiring_docs d set confirm_mail = p_state, confirm_mail_at = now() where d.id = (q.close->>'ref')::uuid;
+      elsif q.close->>'fn' = 'outcome' then update public.hiring_candidates c set outcome_mail = p_state, outcome_mail_at = now(), updated_at = now() where c.id = (q.close->>'ref')::uuid;
+      end if;
+    end if;
+  end if;
+end $$;
+revoke all on function public.mail_queue_mark(public.mail_queue, text) from public, anon, authenticated;
+
+/* The Activity record's line for a queued or cancelled email, under the
+   record its sender files the email under (a hiring email in the
+   candidate's own history, never the Activity record). */
+create or replace function public.mail_queue_note(q public.mail_queue, p_word text, p_actor text)
+returns void language plpgsql volatile security definer set search_path = public as $$
+declare v_action text; v_subject text; v_cand uuid;
+begin
+  if q.source = 'system' then
+    select coalesce(i.candidate_id, d.candidate_id, c.id) into v_cand
+      from (select 1) z
+      left join public.hiring_interviews i on q.close->>'fn' = 'interview' and i.id = (q.close->>'ref')::uuid
+      left join public.hiring_docs d on q.close->>'fn' in ('doc', 'confirmed') and d.id = (q.close->>'ref')::uuid
+      left join public.hiring_candidates c on q.close->>'fn' = 'outcome' and c.id = (q.close->>'ref')::uuid;
+    if v_cand is not null then
+      insert into public.hiring_events (candidate_id, actor, action, detail)
+      values (v_cand, coalesce(p_actor, 'system'), 'candidate.email', coalesce(q.what, 'Email') || ' ' || p_word || '.');
+    end if;
+    return;
+  end if;
+  if q.source = 'supplier' then
+    v_action := 'supplier.edited';
+    select coalesce(s.name, s.code, 'Supplier') into v_subject from public.supplier_emails e join public.suppliers s on s.id = e.supplier_id where e.id = q.log_id;
+  elsif q.source = 'manual' then
+    v_action := 'email.sent';
+    select coalesce(c.name, s.name, 'Other recipient') into v_subject from public.team_emails e
+      left join public.clients c on c.id = e.client_id left join public.suppliers s on s.id = e.supplier_id where e.id = q.log_id;
+  else
+    v_action := 'client.edited';
+    v_subject := case q.source
+      when 'client' then (select c.name from public.client_emails e join public.clients c on c.id = e.client_id where e.id = q.log_id)
+      when 'invoice' then (select coalesce(c.name, e.client_name) from public.invoice_emails e left join public.clients c on c.id = e.client_id where e.id = q.log_id)
+      else (select c.name from public.feedback_requests e join public.clients c on c.id = e.client_id where e.id = q.log_id) end;
+  end if;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(p_actor, 'system'), v_action, coalesce(v_subject, 'Email'),
+          coalesce(q.what, 'Email') || ' · email to ' || coalesce(nullif(q.to_name, ''), 'the recipient') || ' ' || p_word);
+end $$;
+revoke all on function public.mail_queue_note(public.mail_queue, text, text) from public, anon, authenticated;
+
+/* An email built and checked by its sender, as the caller, then queued here
+   by that function as the service role: due once the Undo window passes.
+   The email's row reads Queued until it goes. */
+create or replace function public.mail_queue_put(p jsonb)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_src  text := p->>'source';
+  v_log  uuid := nullif(p->>'log_id', '')::uuid;
+  v_by   uuid;
+  v_secs int := greatest(0, least(600, coalesce(public.app_setting('send_undo_seconds', (now() at time zone 'Asia/Kuala_Lumpur')::date)::int, 60)));
+  q      public.mail_queue;
+begin
+  if v_src is null or v_log is null or jsonb_typeof(p->'msg') <> 'object' or coalesce(p->>'idem', '') = '' then
+    return jsonb_build_object('error', 'bad-request');
+  end if;
+  v_by := case v_src
+    when 'supplier' then (select e.sent_by from public.supplier_emails e where e.id = v_log)
+    when 'client' then (select e.sent_by from public.client_emails e where e.id = v_log)
+    when 'manual' then (select e.sent_by from public.team_emails e where e.id = v_log)
+    when 'invoice' then (select e.sent_by from public.invoice_emails e where e.id = v_log)
+    when 'feedback' then (select e.sent_by from public.feedback_requests e where e.id = v_log)
+    else (select t.id from public.team_members t where t.auth_user_id = nullif(p->>'by', '')::uuid limit 1) end;
+  insert into public.mail_queue (source, log_id, close, msg, idem, to_name, what, send_at, queued_by)
+  values (v_src, v_log, coalesce(p->'close', '{}'::jsonb), p->'msg', p->>'idem', left(nullif(p->>'to_name', ''), 200),
+          left(nullif(p->>'what', ''), 200), now() + make_interval(secs => v_secs), v_by)
+  on conflict (source, log_id) do nothing
+  returning * into q;
+  if q.id is null then return jsonb_build_object('error', 'already'); end if;
+  perform public.mail_queue_mark(q, 'queued');
+  perform public.mail_queue_note(q, 'queued', (select t.name from public.team_members t where t.id = v_by));
+  return jsonb_build_object('ok', true, 'queue', q.id, 'source', v_src, 'id', v_log, 'seconds', v_secs, 'send_at', q.send_at);
+end $$;
+revoke all on function public.mail_queue_put(jsonb) from public, anon, authenticated;
+grant execute on function public.mail_queue_put(jsonb) to service_role;
+
+/* The drain's (the service role's): each due email claimed once, its row
+   read Sending. */
+create or replace function public.mail_queue_claim(p_n int default 5)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare q public.mail_queue; v jsonb := '[]'::jsonb;
+begin
+  for q in
+    select * from public.mail_queue x where x.status = 'queued' and x.send_at <= now()
+     order by x.send_at limit greatest(1, least(coalesce(p_n, 5), 20)) for update skip locked
+  loop
+    -- A decision's email whose decision was reopened meanwhile (Undo,
+    -- Reopen) is never sent: cancelled, as the decision is.
+    if q.source = 'system' and q.close->>'fn' = 'outcome' and not exists (
+         select 1 from public.hiring_candidates c where c.id = (q.close->>'ref')::uuid and c.removed_at is null
+            and c.outcome in ('pool', 'not') and c.outcome_mail = 'queued') then
+      update public.mail_queue x set status = 'cancelled', cancelled_at = now(), closed_at = now(), msg = '{}'::jsonb where x.id = q.id;
+      update public.system_emails x set status = 'cancelled' where x.id = q.log_id and x.status = 'queued';
+      continue;
+    end if;
+    update public.mail_queue x set status = 'sending', claimed_at = now() where x.id = q.id;
+    perform public.mail_queue_mark(q, 'sending');
+    v := v || jsonb_build_array(jsonb_build_object('id', q.id, 'msg', q.msg, 'idem', q.idem));
+  end loop;
+  return v;
+end $$;
+revoke all on function public.mail_queue_claim(int) from public, anon, authenticated;
+grant execute on function public.mail_queue_claim(int) to service_role;
+
+/* The drain's outcome: closed through the email's own sender's close, as
+   the colleague who queued it (their access asked again), so the email's
+   row, its record and the Activity record read as a send by hand always
+   has. What Resend was sent is emptied once it is closed. */
+create or replace function public.mail_queue_close(p_id uuid, p_status text, p_provider text, p_error text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  q   public.mail_queue;
+  m   public.team_members;
+  r   jsonb;
+  was text := current_setting('request.jwt.claims', true);
+  hdr text := current_setting('request.headers', true);
+begin
+  if coalesce(p_status, '') not in ('sent', 'failed', 'unknown') then return jsonb_build_object('error', 'bad-status'); end if;
+  select * into q from public.mail_queue x where x.id = p_id and x.status = 'sending' for update;
+  if q.id is null then return jsonb_build_object('error', 'not-claimed'); end if;
+  update public.mail_queue x set status = p_status, provider_id = nullif(p_provider, ''), error = left(nullif(p_error, ''), 480),
+    closed_at = now(), msg = '{}'::jsonb where x.id = q.id;
+  select * into m from public.team_members t where t.id = q.queued_by;
+  if q.source = 'invoice' then
+    r := public.invoice_email_done(q.log_id, p_status, p_provider, p_error);
+  else
+    -- Acting as the colleague who queued it: their own close, their access.
+    perform set_config('request.jwt.claims', jsonb_build_object('email', m.email, 'sub', m.auth_user_id, 'role', 'authenticated')::text, true);
+    perform set_config('request.headers', '{}', true);
+    r := case q.source
+      when 'supplier' then public.supplier_email_done(q.log_id, p_status, p_provider, p_error)
+      when 'client' then public.client_email_done(q.log_id, p_status, p_provider, p_error)
+      when 'manual' then public.email_new_done(q.log_id, p_status, p_provider, p_error)
+      when 'feedback' then public.feedback_mail_done(q.log_id, p_status, p_provider, p_error)
+      else null end;
+    if q.source = 'system' then
+      update public.system_emails x set status = p_status, provider_id = nullif(p_provider, ''), error = left(nullif(p_error, ''), 480),
+        sent_at = case when p_status = 'sent' then now() end
+       where x.id = q.log_id and x.status = 'sending';
+      r := case q.close->>'fn'
+        when 'interview' then public.hiring_mail_done((q.close->>'ref')::uuid, q.close->>'kind', p_status, p_error)
+        when 'doc' then public.hiring_doc_mail_done((q.close->>'ref')::uuid, p_status, p_error)
+        when 'confirmed' then public.hiring_confirmed_mail_done((q.close->>'ref')::uuid, p_status, p_error)
+        when 'outcome' then public.hiring_outcome_mail_done((q.close->>'ref')::uuid, p_status, p_error)
+        else jsonb_build_object('ok', true) end;
+    end if;
+    perform set_config('request.jwt.claims', coalesce(was, ''), true);
+    perform set_config('request.headers', coalesce(hdr, ''), true);
+  end if;
+  return jsonb_build_object('ok', true, 'closed', r);
+end $$;
+revoke all on function public.mail_queue_close(uuid, text, text, text) from public, anon, authenticated;
+grant execute on function public.mail_queue_close(uuid, text, text, text) to service_role;
+
+/* Cancel, for the whole window: by the colleague who sent it, or at
+   Messages Full Access. Refused once the drain has taken it (`sent`). */
+create or replace function public.mail_cancel(p_source text, p_id uuid)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare me public.team_members := public.ops_me(); q public.mail_queue;
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  select * into q from public.mail_queue x where x.source = p_source and x.log_id = p_id for update;
+  if q.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if q.queued_by is distinct from me.id and not public.allowed('whatsapp', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  if q.status = 'cancelled' then return jsonb_build_object('ok', true, 'same', true); end if;
+  if q.status <> 'queued' then return jsonb_build_object('error', 'sent'); end if;
+  update public.mail_queue x set status = 'cancelled', cancelled_by = me.id, cancelled_at = now(), closed_at = now(), msg = '{}'::jsonb
+   where x.id = q.id returning * into q;
+  perform public.mail_queue_mark(q, 'cancelled');
+  perform public.mail_queue_note(q, 'cancelled', me.name);
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.mail_cancel(text, uuid) from public, anon;
+grant execute on function public.mail_cancel(text, uuid) to authenticated;
+
+/* The drain: supplier-mail's, woken with the wake secret. */
+create or replace function public.mail_queue_kick()
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                  where n.nspname = 'net' and p.proname = 'http_post') then
+    return;
+  end if;
+  -- The project's address from Vault (`project_url`, as s3-sweep reads it).
+  execute 'select net.http_post(url := $1, body := $2, headers := $3)'
+    using (select v.decrypted_secret from vault.decrypted_secrets v where v.name = 'project_url') || '/functions/v1/supplier-mail', '{"action":"drain"}'::jsonb,
+          jsonb_build_object('Content-Type', 'application/json', 'x-adspace-wake',
+            coalesce((select s.value from public.app_secrets s where s.key = 'wake_secret'), ''));
+exception when others then
+  return;
+end $$;
+revoke all on function public.mail_queue_kick() from public, anon, authenticated;
+
+/* Every five minutes, as every drain's wake (the user, 2026-11-28: "keep
+   every 5 minutes"), the drain is woken only while an email is due: an
+   email goes one to six minutes after it was sent. */
+create or replace function public.mail_queue_due()
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if exists (select 1 from public.mail_queue q where q.status = 'queued' and q.send_at <= now()) then
+    perform public.mail_queue_kick();
+  end if;
+end $$;
+revoke all on function public.mail_queue_due() from public, anon, authenticated;
+
+do $$
+begin
+  if not exists (select 1 from pg_extension where extname = 'pg_cron') then
+    raise notice 'pg_cron is not enabled: a queued email waits for the next wake.';
+    return;
+  end if;
+  perform cron.unschedule(j.jobid) from cron.job j where j.jobname = 'mail-queue';
+  perform cron.schedule('mail-queue', '*/5 * * * *', 'select public.mail_queue_due()');
+end $$;
+
+create or replace function public.supplier_email_prepare(p_supplier uuid, p_purpose text, p_document uuid default null)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  me    public.team_members := public.ops_me();
+  s     public.suppliers;
+  d     public.documents;
+  t     public.supplier_email_templates;
+  v     jsonb;
+  hours numeric;
+  r     public.supplier_emails;
+begin
+  if me.id is null or not public.allowed('suppliers', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.send_ok('email') then return jsonb_build_object('error', 'send-off'); end if;
+  select * into s from public.suppliers x where x.id = p_supplier;
+  if s.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into t from public.supplier_email_templates x where x.purpose = p_purpose;
+  if t.purpose is null then return jsonb_build_object('error', 'bad-purpose'); end if;
+  if coalesce(s.email, '') = '' then return jsonb_build_object('error', 'no-email'); end if;
+  if p_purpose = 'approved' and s.status <> 'active' then return jsonb_build_object('error', 'not-active'); end if;
+  if p_purpose = 'document' then
+    select * into d from public.documents x where x.id = p_document and x.supplier_id = s.id;
+    if d.id is null or d.voided_at is not null then return jsonb_build_object('error', 'bad-document'); end if;
+  end if;
+  v := jsonb_build_object(
+    'supplier name', coalesce(s.name, s.code), 'supplier id', s.code,
+    'contact name', coalesce(s.contact_name, ''), 'designation', coalesce(s.designation, ''),
+    'payment term', coalesce(s.payment_term, ''),
+    'currency', case s.currency when 'SGD' then 'SGD' else 'MYR' end,
+    'document title', coalesce(d.kind, ''), 'document reference', coalesce(d.serial, ''),
+    'document date', case when d.issued_at is null then ''
+      else to_char(d.issued_at at time zone 'Asia/Kuala_Lumpur', 'FMDD FMMonth YYYY') end,
+    'sender name', coalesce(me.name, ''));
+  hours := coalesce(public.app_setting('wa_repeat_hours', (now() at time zone 'Asia/Kuala_Lumpur')::date), 24);
+  if hours > 0 then
+    select * into r from public.supplier_emails x
+     where x.supplier_id = s.id and x.purpose = p_purpose and x.document_id is not distinct from d.id
+       and x.status not in ('failed', 'cancelled') and x.created_at > now() - make_interval(secs => hours * 3600)
+     order by x.created_at desc limit 1;
+  end if;
+  return jsonb_build_object('ok', true,
+    'to', jsonb_build_object('name', coalesce(s.contact_name, coalesce(s.name, s.code)), 'email', s.email),
+    'cc', nullif(coalesce(s.finance_email, ''), s.email),
+    'values', v,
+    'subject', public.supplier_email_fill(t.subject, v),
+    'body', public.supplier_email_fill(t.body, v),
+    'document', case when d.id is null then null else jsonb_build_object('id', d.id, 'serial', d.serial, 'kind', d.kind) end,
+    'recent', case when r.id is null then null else jsonb_build_object('at', r.created_at, 'to', r.to_email,
+      'by', (select m.name from public.team_members m where m.id = r.sent_by)) end);
+end $$;
+revoke all on function public.supplier_email_prepare(uuid, text, uuid) from public, anon;
+grant execute on function public.supplier_email_prepare(uuid, text, uuid) to authenticated;
+
+create or replace function public.client_email_prepare(p_kind text, p_ref uuid, p_contact uuid default null)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  me     public.team_members := public.ops_me();
+  c      public.clients;
+  q      public.quotations;
+  o      public.client_documents;
+  d      public.documents;
+  k      public.client_contacts;
+  t      public.client_email_templates;
+  v_cid  uuid;
+  v_ref  text;
+  v_tit  text;
+  v_day  date;
+  v_val  date;
+  v      jsonb;
+  ppl    jsonb;
+  hours  numeric;
+  r      public.client_emails;
+  v_cc   text;
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  if not public.send_ok('email') then return jsonb_build_object('error', 'send-off'); end if;
+  if p_kind not in ('quotation', 'offer', 'letter') then return jsonb_build_object('error', 'bad-request'); end if;
+  if not public.client_email_may(p_kind, 'work') or not public.allowed('clients.contacts', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  if coalesce(public.app_setting('client_email_on', (now() at time zone 'Asia/Kuala_Lumpur')::date), 0) <> 1 then
+    return jsonb_build_object('error', 'email-off');
+  end if;
+  if p_kind = 'quotation' then
+    select * into q from public.quotations x where x.id = p_ref;
+    if q.id is null or q.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
+    if q.status = 'not_proceeding' then return jsonb_build_object('error', 'void'); end if;
+    if q.source = 'website' and q.released_at is null then return jsonb_build_object('error', 'unreleased'); end if;
+    if q.confirmed_at is null then return jsonb_build_object('error', 'not-confirmed'); end if;
+    if q.no_contact_at is not null then return jsonb_build_object('error', 'no-contact'); end if;
+    v_cid := q.client_id; v_ref := q.ref; v_tit := 'Quotation';
+    v_day := (q.issued_at at time zone 'Asia/Kuala_Lumpur')::date; v_val := q.valid_until;
+  elsif p_kind = 'offer' then
+    select * into o from public.client_documents x where x.id = p_ref;
+    if o.id is null or o.kind not in ('offer', 'intent', 'cover') then return jsonb_build_object('error', 'not-found'); end if;
+    if o.voided_at is not null or o.superseded_by is not null then return jsonb_build_object('error', 'void'); end if;
+    v_cid := o.client_id; v_ref := o.number; v_tit := 'Letter of Offer'; v_day := o.issued_at;
+  else
+    select * into d from public.documents x where x.id = p_ref and x.family = 'client';
+    if d.id is null or d.client_id is null then return jsonb_build_object('error', 'not-found'); end if;
+    if d.voided_at is not null then return jsonb_build_object('error', 'void'); end if;
+    if d.source <> 'portal' then return jsonb_build_object('error', 'no-file'); end if;
+    v_cid := d.client_id; v_ref := d.serial; v_tit := coalesce(nullif(d.kind, ''), 'Letter'); v_day := d.issued_at;
+  end if;
+  select * into c from public.clients x where x.id = v_cid;
+  if c.id is null or not public.client_seen(c.id, 'view') then return jsonb_build_object('error', 'not-found'); end if;
+  select * into t from public.client_email_templates x where x.kind = p_kind;
+  if t.kind is null then return jsonb_build_object('error', 'needs-update'); end if;
+
+  /* The client's contacts holding an email, the billing contact first, then
+     the primary, then by name. */
+  select coalesce(jsonb_agg(jsonb_build_object('id', x.id, 'name', public.contact_named(x.salutation, x.name),
+           'email', btrim(x.email), 'role', x.role, 'billing', coalesce(x.id = c.bill_contact_id, false), 'primary', x.is_primary)
+           order by (x.id = c.bill_contact_id) desc nulls last, x.is_primary desc, x.name), '[]'::jsonb)
+    into ppl
+    from public.client_contacts x
+   where x.client_id = c.id and x.archived_at is null and coalesce(btrim(x.email), '') ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$';
+  if jsonb_array_length(ppl) = 0 then return jsonb_build_object('error', 'no-email'); end if;
+  if p_contact is not null then
+    select * into k from public.client_contacts x
+     where x.id = p_contact and x.client_id = c.id and x.archived_at is null
+       and coalesce(btrim(x.email), '') ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$';
+    if k.id is null then return jsonb_build_object('error', 'bad-contact'); end if;
+  else
+    select * into k from public.client_contacts x where x.id = (ppl->0->>'id')::uuid;
+  end if;
+  -- The finance email and registered name are Billing's (audit 2026-11-04).
+  v_cc := case when public.allowed('clients.billing', 'view') then nullif(btrim(coalesce(c.finance_email, '')), '') end;
+  if v_cc is not null and (lower(v_cc) = lower(btrim(k.email)) or v_cc !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$') then v_cc := null; end if;
+
+  v := jsonb_build_object(
+    'contact name', public.contact_named(k.salutation, k.name),
+    'client name', c.name,
+    'company name', coalesce(case when public.allowed('clients.billing', 'view') then nullif(c.legal_name, '') end, c.name),
+    'document title', v_tit, 'document reference', v_ref,
+    'document date', case when v_day is null then '' else to_char(v_day, 'FMDD FMMonth YYYY') end,
+    'valid until', case when v_val is null then '' else to_char(v_val, 'FMDD FMMonth YYYY') end,
+    'sender name', coalesce(me.name, ''));
+  hours := coalesce(public.app_setting('wa_repeat_hours', (now() at time zone 'Asia/Kuala_Lumpur')::date), 24);
+  if hours > 0 then
+    select * into r from public.client_emails x
+     where x.kind = p_kind and x.ref_id = p_ref and x.status not in ('failed', 'cancelled')
+       and x.created_at > now() - make_interval(secs => hours * 3600)
+     order by x.created_at desc limit 1;
+  end if;
+  return jsonb_build_object('ok', true,
+    'client_id', c.id, 'client', c.name,
+    'contacts', ppl,
+    'to', jsonb_build_object('id', k.id, 'name', public.contact_named(k.salutation, k.name), 'email', btrim(k.email)),
+    'cc', v_cc,
+    'reply_to', nullif(btrim(coalesce(me.email, '')), ''),
+    'values', v,
+    'subject', public.supplier_email_fill(t.subject, v),
+    'body', public.supplier_email_fill(t.body, v),
+    'document', jsonb_build_object('id', p_ref, 'kind', p_kind, 'serial', v_ref, 'title', v_tit),
+    'recent', case when r.id is null then null else jsonb_build_object('at', r.created_at, 'to', r.to_email,
+      'by', (select m.name from public.team_members m where m.id = r.sent_by)) end);
+end $$;
+revoke all on function public.client_email_prepare(text, uuid, uuid) from public, anon;
+grant execute on function public.client_email_prepare(text, uuid, uuid) to authenticated;
+
+create or replace function public.invoice_mail_begin(p_purpose text, p_actor uuid, p_client uuid, p_contact bigint, p_name text,
+  p_email text, p_invoices jsonb, p_cc boolean, p_subject text, p_body text, p_again boolean, p_to text, p_ccs text[])
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me     public.team_members;
+  t      public.invoice_email_template;
+  v_tpl  public.invoice_send_template;
+  rcp    jsonb;
+  opts   jsonb;
+  pick   jsonb;
+  inv    jsonb;
+  hours  numeric;
+  r      public.invoice_emails;
+  v_n    int;
+  v_k    int;
+  v_m    int;
+  v_d    int;
+  v_to   text;
+  v_cc   text;
+  v_who  text;
+  v_nm   boolean;
+  v_co   text;
+  v_tot  text;
+  v_nos  text;
+  v_list text[];
+  v_vals jsonb;
+  v_s    text;
+  v_b    text;
+  v_id   uuid;
+begin
+  select * into me from public.team_members x where x.id = p_actor and x.active;
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  if not public.send_ok_of(me.id, 'email') then return jsonb_build_object('error', 'send-off'); end if;
+  if p_purpose is null or p_purpose not in ('reminder', 'invoice') then return jsonb_build_object('error', 'bad-request'); end if;
+  if p_contact is null or p_contact <= 0 then return jsonb_build_object('error', 'bad-request'); end if;
+  if jsonb_typeof(p_invoices) <> 'array' or jsonb_array_length(p_invoices) < 1 or jsonb_array_length(p_invoices) > 50 then
+    return jsonb_build_object('error', 'bad-invoices');
+  end if;
+  for inv in select value from jsonb_array_elements(p_invoices) loop
+    if btrim(coalesce(inv->>'number', '')) = '' or coalesce(inv->>'number', '') !~ '^[^[:cntrl:]]{1,60}$' or coalesce(inv->>'currency', '') !~ '^[A-Z]{3}$'
+       or (inv->>'amount') is null or (inv->>'amount')::numeric <= 0
+       or (coalesce(inv->>'link', '') <> '' and inv->>'link' !~ '^https://[a-z0-9-]+\.bukku\.my/[A-Za-z0-9/_-]+$') then
+      return jsonb_build_object('error', 'bad-invoices');
+    end if;
+  end loop;
+  perform pg_advisory_xact_lock(hashtextextended('invoice-mail:' || p_contact::text, 0));
+  select * into r from public.invoice_emails x
+   where x.bukku_contact = p_contact and x.status = 'sending' and x.created_at > now() - interval '10 minutes'
+   order by x.created_at desc limit 1;
+  if r.id is not null then return jsonb_build_object('error', 'sending'); end if;
+  hours := coalesce(public.app_setting('wa_repeat_hours', (now() at time zone 'Asia/Kuala_Lumpur')::date), 24);
+  if hours > 0 and not coalesce(p_again, false) then
+    select * into r from public.invoice_emails x
+     where x.bukku_contact = p_contact and x.purpose = p_purpose and x.status not in ('failed', 'cancelled') and x.created_at > now() - make_interval(secs => hours * 3600)
+     order by x.created_at desc limit 1;
+    if r.id is not null then
+      return jsonb_build_object('error', 'recent', 'recent', jsonb_build_object('at', r.created_at, 'to', r.to_email,
+        'by', (select m.name from public.team_members m where m.id = r.sent_by)));
+    end if;
+  end if;
+  rcp := case when p_client is null then null else public.invoice_recipient_for(p_client, p_contact) end;
+  /* The addresses chosen on the sheet: the client's own, nothing typed. */
+  if p_to is not null or p_ccs is not null then opts := public.invoice_recipient_options(p_client, p_contact); end if;
+  if p_to is not null then
+    select x into pick from jsonb_array_elements(opts) x where lower(x->>'email') = lower(btrim(p_to)) limit 1;
+    if pick is null then return jsonb_build_object('error', 'bad-recipient'); end if;
+    v_to := pick->>'email';
+    v_who := coalesce(pick->>'name', 'Sir or Madam');
+    v_nm := pick->>'name' is not null;
+  else
+    v_to := coalesce(rcp->>'email', nullif(btrim(coalesce(p_email, '')), ''));
+    v_who := coalesce(rcp->>'name', 'Sir or Madam');
+    v_nm := rcp->>'name' is not null;
+  end if;
+  if v_to is null or v_to !~ '^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$' then return jsonb_build_object('error', 'no-email'); end if;
+  if p_ccs is not null then
+    select count(*), count(o.e), count(distinct lower(o.e)), count(*) filter (where lower(o.e) = lower(v_to)),
+           string_agg(o.e, ', ' order by o.i)
+      into v_k, v_m, v_d, v_n, v_cc
+      from (select a.i, (select x->>'email' from jsonb_array_elements(opts) x where lower(x->>'email') = lower(btrim(a.v)) limit 1) as e
+              from unnest(p_ccs) with ordinality as a (v, i)
+             where nullif(btrim(coalesce(a.v, '')), '') is not null) o;
+    if v_k > 5 or v_m <> v_k or v_d <> v_m or v_n > 0 then return jsonb_build_object('error', 'bad-copy'); end if;
+  else
+    v_cc := case when coalesce(p_cc, false) and lower(coalesce(rcp->>'cc', '')) <> lower(v_to) then rcp->>'cc' end;
+  end if;
+  v_co := coalesce(rcp->>'company', nullif(btrim(coalesce(p_name, '')), ''), 'Client');
+  v_n := jsonb_array_length(p_invoices);
+  select string_agg(public.invoice_money(s.amt, s.cur), ' and ' order by s.cur) into v_tot
+    from (select x->>'currency' as cur, sum((x->>'amount')::numeric) as amt
+            from jsonb_array_elements(p_invoices) x group by x->>'currency') s;
+  select array_agg(x->>'number' order by o) into v_list from jsonb_array_elements(p_invoices) with ordinality as a (x, o);
+  v_nos := case when v_n = 1 then v_list[1]
+                else array_to_string(v_list[1:v_n - 1], ', ') || ' and ' || v_list[v_n] end;
+  v_vals := jsonb_build_object('contact name', v_who, 'client', v_co, 'invoice no', v_nos, 'count', v_n::text,
+    'total', v_tot, 'sign off', case when v_nm then 'Yours sincerely' else 'Yours faithfully' end);
+  if p_purpose = 'invoice' then
+    select * into v_tpl from public.invoice_send_template x where x.id = 1;
+    t.subject_one := v_tpl.subject_one; t.subject_many := v_tpl.subject_many; t.body := v_tpl.body;
+    t.legal := v_tpl.legal; t.disclaimer := v_tpl.disclaimer;
+  else
+    select * into t from public.invoice_email_template x where x.id = 1;
+  end if;
+  v_s := btrim(regexp_replace(public.supplier_email_fill(coalesce(nullif(btrim(coalesce(p_subject, '')), ''),
+           case when v_n = 1 then t.subject_one else t.subject_many end), v_vals), '\s+', ' ', 'g'));
+  v_b := btrim(replace(public.supplier_email_fill(coalesce(nullif(btrim(coalesce(p_body, '')), ''), t.body), v_vals), E'\r', ''));
+  if length(v_s) < 2 or length(v_s) > 200 then return jsonb_build_object('error', 'bad-subject'); end if;
+  if length(v_b) < 2 or length(v_b) > 5000 then return jsonb_build_object('error', 'bad-body'); end if;
+  if v_b !~* '\{\s*invoices\s*\}' then return jsonb_build_object('error', 'no-invoices'); end if;
+  insert into public.invoice_emails (client_id, bukku_contact, client_name, invoices, to_email, cc_email, subject, body, sent_by, purpose)
+  values (p_client, p_contact, v_co, p_invoices, v_to, nullif(v_cc, ''), v_s, v_b, me.id, p_purpose)
+  returning id into v_id;
+  return jsonb_build_object('ok', true, 'id', v_id, 'to', v_to, 'cc', nullif(v_cc, ''),
+    'cc_list', coalesce(to_jsonb(string_to_array(nullif(v_cc, ''), ', ')), '[]'::jsonb), 'subject', v_s, 'body', v_b,
+    'legal', t.legal, 'disclaimer', t.disclaimer);
+end $$;
+revoke all on function public.invoice_mail_begin(text, uuid, uuid, bigint, text, text, jsonb, boolean, text, text, boolean, text, text[]) from public, anon, authenticated;
+grant execute on function public.invoice_mail_begin(text, uuid, uuid, bigint, text, text, jsonb, boolean, text, text, boolean, text, text[]) to service_role;
+
+create or replace function public.mail_sweep()
+returns integer
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  n integer := 0;
+  k integer;
+begin
+  update public.invoice_emails x set status = 'unknown', error = coalesce(x.error, 'unknown: not closed')
+   where x.status = 'sending'
+     and coalesce((select q.claimed_at from public.mail_queue q where q.log_id = x.id), x.created_at) < now() - interval '10 minutes';
+  get diagnostics k = row_count; n := n + k;
+  update public.supplier_emails x set status = 'unknown', error = coalesce(x.error, 'unknown: not closed')
+   where x.status = 'sending'
+     and coalesce((select q.claimed_at from public.mail_queue q where q.log_id = x.id), x.created_at) < now() - interval '10 minutes';
+  get diagnostics k = row_count; n := n + k;
+  update public.client_emails x set status = 'unknown', error = coalesce(x.error, 'unknown: not closed')
+   where x.status = 'sending'
+     and coalesce((select q.claimed_at from public.mail_queue q where q.log_id = x.id), x.created_at) < now() - interval '10 minutes';
+  get diagnostics k = row_count; n := n + k;
+  update public.team_emails x set status = 'unknown', error = coalesce(x.error, 'unknown: not closed')
+   where x.status = 'sending'
+     and coalesce((select q.claimed_at from public.mail_queue q where q.log_id = x.id), x.created_at) < now() - interval '10 minutes';
+  get diagnostics k = row_count; n := n + k;
+  update public.creator_emails x set status = 'unknown', error = coalesce(x.error, 'unknown: not closed')
+   where x.status = 'sending' and x.claimed_at < now() - interval '10 minutes';
+  get diagnostics k = row_count; n := n + k;
+  -- A row left at Sending may stand in the sheet: never tried again by itself
+  -- (audit 2026-11-15), so the bank details are never added twice.
+  update public.creator_sheet_rows x set status = 'failed', tries = 5,
+         error = 'Not confirmed. Check the sheet before adding the row again.'
+   where x.status = 'sending' and x.claimed_at < now() - interval '10 minutes';
+  get diagnostics k = row_count; n := n + k;
+  -- An email the shared queue claimed and never closed: not confirmed,
+  -- never sent again by itself (UNDO SEND, 2026-11-28).
+  update public.mail_queue x set status = 'unknown', error = coalesce(x.error, 'unknown: not closed'), msg = '{}'::jsonb, closed_at = now()
+   where x.status = 'sending' and x.claimed_at < now() - interval '10 minutes';
+  get diagnostics k = row_count; n := n + k;
+  return n;
+end $$;
+revoke all on function public.mail_sweep() from public, anon, authenticated;
+
+/* Who sent each email, by id, so Cancel is drawn for its sender alone. */
+create or replace function public.mail_log(p_month date default null)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  me     public.team_members := public.ops_me();
+  v_from date := date_trunc('month', coalesce(p_month, (now() at time zone 'Asia/Kuala_Lumpur')::date))::date;
+  v_a    timestamptz;
+  v_b    timestamptz;
+  v_sup  boolean;
+  v_bill boolean;
+  v_quo  boolean;
+  v_all  boolean;
+  v_cr   boolean;
+  v_team boolean;
+  v_con  boolean;
+begin
+  if me.id is null or not public.allowed('whatsapp', 'view') then return jsonb_build_object('error', 'denied'); end if;
+  v_a := v_from::timestamp at time zone 'Asia/Kuala_Lumpur';
+  v_b := (v_from + interval '1 month')::timestamp at time zone 'Asia/Kuala_Lumpur';
+  v_sup := public.allowed('suppliers', 'view');
+  v_bill := public.allowed('clients.billing', 'view');
+  v_quo := public.allowed('clients.quotes', 'view');
+  v_all := public.client_scope_free('view');
+  v_cr := public.allowed('campaigns.creators', 'view');
+  v_team := public.allowed('team', 'view');
+  v_con := public.allowed('clients.contacts', 'view');
+  return jsonb_build_object(
+    'month', v_from,
+    'senders', (select jsonb_object_agg(m.key, m.name || ' <' || m.address || '>') from public.mail_senders m),
+    'items', coalesce((select jsonb_agg(to_jsonb(x) order by x.created_at desc) from (
+        select * from (
+          select 'supplier'::text as source, e.id, e.purpose as kind, e.to_email, e.cc_email, e.subject, e.body,
+                 t.name as sent_by, e.created_at, e.status, e.error, e.sent_at, e.delivered_at, e.opened_at, e.bounced_at,
+                 null::uuid as client_id, null::text as client, e.supplier_id, s.name as supplier, s.code as supplier_code,
+                 d.serial as reference, null::text as to_name, null::uuid as ref_id, null::uuid as again_of, e.sent_by as sent_by_id
+            from public.supplier_emails e
+            left join public.suppliers s on s.id = e.supplier_id
+            left join public.documents d on d.id = e.document_id
+            left join public.team_members t on t.id = e.sent_by
+           where v_sup and e.created_at >= v_a and e.created_at < v_b
+          union all
+          select 'client', e.id, e.kind, e.to_email, e.cc_email, e.subject, e.body,
+                 t.name, e.created_at, e.status, e.error, e.sent_at, e.delivered_at, e.opened_at, e.bounced_at,
+                 e.client_id, c.name, null, null, null,
+                 e.reference, k.name, null, null, e.sent_by
+            from public.client_emails e
+            left join public.clients c on c.id = e.client_id
+            left join public.client_contacts k on k.id = e.contact_id
+            left join public.team_members t on t.id = e.sent_by
+           where e.created_at >= v_a and e.created_at < v_b
+             and public.client_email_may(e.kind, 'view')
+             and (case when e.client_id is null then v_all else public.client_seen(e.client_id, 'view') end)
+          union all
+          select 'invoice', e.id, e.purpose, e.to_email, e.cc_email, e.subject, e.body,
+                 t.name, e.created_at, e.status, e.error, e.sent_at, e.delivered_at, e.opened_at, e.bounced_at,
+                 e.client_id, coalesce(c.name, e.client_name), null, null, null,
+                 (select string_agg(i->>'number', ', ' order by o) from jsonb_array_elements(e.invoices) with ordinality as a (i, o)),
+                 null, null, null, e.sent_by
+            from public.invoice_emails e
+            left join public.clients c on c.id = e.client_id
+            left join public.team_members t on t.id = e.sent_by
+           where v_bill and e.created_at >= v_a and e.created_at < v_b
+             and (case when e.client_id is null then v_all else public.client_seen(e.client_id, 'view') end)
+          union all
+          select 'manual', e.id, 'message', e.to_email, e.cc_email, e.subject, e.body,
+                 t.name, e.created_at, e.status, e.error, e.sent_at, e.delivered_at, e.opened_at, e.bounced_at,
+                 e.client_id, c.name, e.supplier_id, s.name, s.code,
+                 e.attachment, e.to_name, null, null, e.sent_by
+            from public.team_emails e
+            left join public.clients c on c.id = e.client_id
+            left join public.suppliers s on s.id = e.supplier_id
+            left join public.team_members t on t.id = e.sent_by
+           where e.created_at >= v_a and e.created_at < v_b
+             and (case when e.client_id is not null then public.allowed('clients.contacts', 'view') and public.client_seen(e.client_id, 'view')
+                       when e.supplier_id is not null then v_sup else true end)
+             and (not e.finance or v_bill)
+          union all
+          select 'creator', e.id, 'creator_' || e.purpose, e.to_email, null, e.subject, e.body,
+                 t.name, e.created_at, e.status, e.error, e.sent_at, e.delivered_at, e.opened_at, e.bounced_at,
+                 null, null, null, null, null,
+                 r.ref, k.name, null, e.again_of, e.sent_by
+            from public.creator_emails e
+            left join public.creators k on k.id = e.creator_id
+            left join public.creator_pay_requests r on r.id = e.request_id
+            left join public.team_members t on t.id = e.sent_by
+           where v_cr and e.created_at >= v_a and e.created_at < v_b
+          union all
+          select 'system', e.id, e.kind, e.to_email, null, e.subject, e.body,
+                 t.name, e.created_at, e.status, e.error, e.sent_at, e.delivered_at, e.opened_at, e.bounced_at,
+                 e.client_id, c.name, null, null, null,
+                 e.reference, e.to_name, e.ref_id, e.again_of, e.sent_by
+            from public.system_emails e
+            left join public.clients c on c.id = e.client_id
+            left join public.team_members t on t.id = e.sent_by
+           where e.created_at >= v_a and e.created_at < v_b
+             and (case when e.kind like 'hiring%' then public.hiring_role(e.candidate_id) is not null
+                       when e.kind = 'invite_team' then v_team
+                       when e.kind = 'invite_client' then v_con and e.client_id is not null and public.client_seen(e.client_id, 'view')
+                       else false end)
+          union all
+          select 'signing', g.id, 'signing', g.email, null, 'Your ' || public.agency('trading_name') || ' signing code for quotation ' || q.ref, null,
+                 null, g.created_at,
+                 case when g.used_at is not null then 'used' when g.expires_at < now() then 'expired' else 'requested' end,
+                 null, g.created_at, null, null, null,
+                 q.client_id, c.name, null, null, null,
+                 q.ref, nullif(btrim(coalesce(g.payload->'contact'->>'salutation', '') || ' ' || coalesce(g.payload->'contact'->>'name', '')), ''),
+                 null, null, null::uuid
+            from public.quote_sign_codes g
+            join public.quotations q on q.id = g.quotation_id
+            left join public.clients c on c.id = q.client_id
+           where v_quo and g.created_at >= v_a and g.created_at < v_b
+             and (case when q.client_id is null then v_all else public.client_seen(q.client_id, 'view') end)
+        ) u
+        order by u.created_at desc
+        limit 2000) x), '[]'::jsonb));
+end $$;
+revoke all on function public.mail_log(date) from public, anon;
+grant execute on function public.mail_log(date) to authenticated;
+
+create or replace function public.team_emails_of(p_client uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if (public.ops_me()).id is null or not public.allowed('clients.contacts', 'view') or not public.client_seen(p_client, 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  return jsonb_build_object('ok', true, 'rows', coalesce((
+    /* In the Email log's own shape, so its sheet opens one as it is. */
+    select jsonb_agg(jsonb_build_object('source', 'manual', 'id', e.id, 'kind', 'message', 'to_email', e.to_email,
+             'to_name', e.to_name, 'cc_email', e.cc_email, 'subject', e.subject, 'body', e.body, 'reference', e.attachment,
+             'status', e.status, 'error', e.error, 'created_at', e.created_at, 'sent_at', e.sent_at,
+             'delivered_at', e.delivered_at, 'opened_at', e.opened_at, 'bounced_at', e.bounced_at,
+             'sent_by', m.name, 'sent_by_id', e.sent_by, 'client_id', e.client_id) order by e.created_at desc)
+      from public.team_emails e
+      left join public.team_members m on m.id = e.sent_by
+     where e.client_id = p_client and (not e.finance or public.allowed('clients.billing', 'view'))), '[]'::jsonb));
+end $$;
+revoke all on function public.team_emails_of(uuid) from public, anon;
+grant execute on function public.team_emails_of(uuid) to authenticated;
+
+create or replace function public.supplier_emails_of(p_supplier uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if (public.ops_me()).id is null or not public.allowed('suppliers', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  return jsonb_build_object('ok', true, 'rows', coalesce((
+    select jsonb_agg(x.r order by x.at desc) from (
+      select jsonb_build_object('id', e.id, 'purpose', e.purpose, 'to', e.to_email, 'cc', e.cc_email,
+               'subject', e.subject, 'status', e.status, 'error', e.error, 'created_at', e.created_at,
+               'delivered_at', e.delivered_at, 'opened_at', e.opened_at, 'bounced_at', e.bounced_at,
+               'by', m.name, 'by_id', e.sent_by, 'source', 'supplier', 'document', d.serial) as r, e.created_at as at
+        from public.supplier_emails e
+        left join public.team_members m on m.id = e.sent_by
+        left join public.documents d on d.id = e.document_id
+       where e.supplier_id = p_supplier
+      union all
+      select jsonb_build_object('id', e.id, 'purpose', 'message', 'to', e.to_email, 'cc', e.cc_email,
+               'subject', e.subject, 'status', e.status, 'error', e.error, 'created_at', e.created_at,
+               'delivered_at', e.delivered_at, 'opened_at', e.opened_at, 'bounced_at', e.bounced_at,
+               'by', m.name, 'by_id', e.sent_by, 'source', 'manual', 'document', e.attachment), e.created_at
+        from public.team_emails e
+        left join public.team_members m on m.id = e.sent_by
+       where e.supplier_id = p_supplier) x), '[]'::jsonb));
+end $$;
+revoke all on function public.supplier_emails_of(uuid) from public, anon;
+grant execute on function public.supplier_emails_of(uuid) to authenticated;
+
+/* Every email in English (the user, 2026-11-28: "email we only do one, all in
+   international English. No Chinese email."): the two senders that chose
+   中文 by the contact's language send English; the 中文 rows stay stored. */
+create or replace function public.feedback_mail_begin(p_client uuid, p_kind text, p_again boolean default false)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me    public.team_members := public.ops_me();
+  r     jsonb;
+  v_cl  public.clients;
+  v_ct  public.client_contacts;
+  v_t   public.feedback_email_templates;
+  v_zh  boolean;
+  v_s   text;
+  v_b   text;
+  v_btn text;
+  v_k   text;
+  v_v   text;
+begin
+  if me.id is null or not public.allowed('clients', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.send_ok('email') then return jsonb_build_object('error', 'send-off'); end if;
+  if coalesce(public.app_setting('client_email_on', (now() at time zone 'Asia/Kuala_Lumpur')::date), 0) <> 1 then
+    return jsonb_build_object('error', 'email-off');
+  end if;
+  if p_kind in ('quick', 'review')
+     and (select count(*) from public.feedback_email_templates x where x.kind = p_kind) < 2 then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  r := public.feedback_request(p_client, p_kind, p_again);
+  if r ? 'error' then return r; end if;
+  select * into v_cl from public.clients c where c.id = p_client;
+  select * into v_ct from public.client_contacts k
+   where k.id = (select q.contact_id from public.feedback_requests q where q.id = (r->>'id')::uuid);
+  -- Every email in English, whatever the contact's language (the user, 2026-11-28).
+  v_zh := false;
+  select * into v_t from public.feedback_email_templates x
+   where x.kind = p_kind and x.lang = case when v_zh then 'zh' else 'en' end;
+  v_s := v_t.subject;
+  v_b := v_t.body;
+  v_btn := v_t.button;
+  foreach v_k in array array['contact name', 'client name', 'link'] loop
+    v_v := case v_k when 'contact name' then public.contact_named(v_ct.salutation, v_ct.name)
+      when 'client name' then v_cl.name
+      else 'https://' || public.agency('portal_domain') || '/feedback/?k=' || (r->>'key') end;
+    v_s := regexp_replace(v_s, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+    v_b := regexp_replace(v_b, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+    v_btn := regexp_replace(v_btn, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+  end loop;
+  update public.feedback_requests q set mail_status = 'sending' where q.id = (r->>'id')::uuid;
+  return r || jsonb_build_object('subject', left(v_s, 200), 'body', v_b, 'button', v_btn, 'lang', case when v_zh then 'zh' else 'en' end);
+end $$;
+revoke all on function public.feedback_mail_begin(uuid, text, boolean) from public, anon;
+grant execute on function public.feedback_mail_begin(uuid, text, boolean) to authenticated;
+
+create or replace function public.quote_details_mail_begin(p_id uuid)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me    public.team_members := public.ops_me();
+  q     public.quotations;
+  v_ds  text;
+  v_zh  boolean;
+  v_t   public.quote_email_templates;
+  v_s   text;
+  v_b   text;
+  v_btn text;
+  v_k   text;
+  v_v   text;
+  v_to  text;
+  v_ct  uuid;
+  v_id  uuid;
+  v_f   text[];
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.send_ok('email') then return jsonb_build_object('error', 'send-off'); end if;
+  if coalesce(public.app_setting('client_email_on', (now() at time zone 'Asia/Kuala_Lumpur')::date), 0) <> 1 then
+    return jsonb_build_object('error', 'email-off');
+  end if;
+  select * into q from public.quotations x where x.id = p_id;
+  if q.id is null or q.source <> 'website' or q.removed_at is not null
+     or not public.client_scope_ok('client', q.client_id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  if q.released_at is not null then return jsonb_build_object('error', 'sent'); end if;
+  v_ds := public.quote_details_state(q);
+  if v_ds not in ('asked', 'late') or q.status = 'not_proceeding' then return jsonb_build_object('error', 'closed'); end if;
+  if q.no_contact_at is not null then return jsonb_build_object('error', 'no-contact'); end if;
+  v_to := lower(btrim(coalesce(q.contact->>'email', '')));
+  if not (v_to ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$') then return jsonb_build_object('error', 'no-email'); end if;
+  -- Every email in English, whatever the prospect's language (the user, 2026-11-28).
+  v_zh := false;
+  select * into v_t from public.quote_email_templates x where x.kind = 'details' and x.lang = case when v_zh then 'zh' else 'en' end;
+  if v_t.kind is null then return jsonb_build_object('error', 'not-found'); end if;
+  v_f := array(select jsonb_array_elements_text(q.details_ask->'fields'));
+  v_s := v_t.subject; v_b := v_t.body; v_btn := v_t.button;
+  foreach v_k in array array['contact name', 'brand', 'reference', 'details', 'reply by', 'link'] loop
+    v_v := case v_k when 'contact name' then public.contact_named(q.contact->>'salutation', q.contact->>'name')
+      when 'brand' then coalesce(q.contact->>'brand', q.brand) when 'reference' then q.ref
+      when 'details' then public.quote_details_lines(v_f, q.details_ask->>'note', v_zh)
+      when 'reply by' then public.quote_day_word((q.details_due at time zone 'Asia/Kuala_Lumpur')::date, v_zh)
+      else 'https://' || public.agency('portal_domain') || '/quote/?q=' || q.access_key end;
+    v_s := regexp_replace(v_s, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+    v_b := regexp_replace(v_b, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+    v_btn := regexp_replace(v_btn, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+  end loop;
+  select k.id into v_ct from public.client_contacts k
+   where k.client_id = q.client_id and k.archived_at is null and lower(btrim(coalesce(k.email, ''))) = v_to
+   order by k.is_primary desc, k.created_at limit 1;
+  insert into public.client_emails (client_id, kind, ref_id, reference, contact_id, to_email, reply_to, subject, body, sent_by)
+  values (q.client_id, 'details', q.id, q.ref, v_ct, v_to, public.mail_sender('clients')->>'reply_to', left(v_s, 200), v_b, me.id)
+  returning id into v_id;
+  return jsonb_build_object('ok', true, 'id', v_id, 'to_email', v_to,
+    'to_name', public.contact_named(q.contact->>'salutation', q.contact->>'name'),
+    'subject', left(v_s, 200), 'body', v_b, 'button', v_btn, 'key', q.access_key);
+end $$;
+revoke all on function public.quote_details_mail_begin(uuid) from public, anon;
+grant execute on function public.quote_details_mail_begin(uuid) to authenticated;
+
+-- END OF UNDO SEND --------------------------------------------------------------
+
+select public.functions_tidy();

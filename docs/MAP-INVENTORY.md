@@ -342,6 +342,7 @@ Total flagged: **206** = 20 matched by name/email/code + 15 Bukku ids + 65 copie
 | agent_schedules.condition_ref | by condition | none | decl :113424 |
 | push_subscriptions.target | hash of audience+ref (push_target :17563) | computed | decl :17508 |
 | push_outbox.target | hash of audience+ref | computed | decl :17525 |
+| mail_queue.log_id | supplier_emails / client_emails / team_emails / invoice_emails / feedback_requests / system_emails by source | (source, log_id) unique | UNDO SEND (2026-11-28) |
 
 ### A.2.4 uuid with a single target but no FK
 
