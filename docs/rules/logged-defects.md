@@ -74,3 +74,9 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   repository's main (f69f372) does not yet, so a rebuild from today's
   stand-in would take that behaviour out of the demo. Not rebuilt here.
   Held until the stand-in and the engine agree.
+- 2026-11-28, `demo` (release 17's affected run; the release touches
+  neither `demo/` nor `tests/stub2.js`): "demo/engine.js is the stand-in of
+  today" fails on portal main 561ccbb with tests main 808b0be exactly as on
+  the branch; tests #354 changed the stand-in after the engine was last
+  built. Not rebuilt here (the entry of 2026-11-27 above holds why a blind
+  rebuild can drop behaviour).
