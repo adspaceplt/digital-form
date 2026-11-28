@@ -444,6 +444,11 @@
     /* A sign-in's code step, the console's and the client portal's alike
        (the cover family, 2026-11-22). */
     docNo: function (n, r) { n = String(n || ''); r = String(r || '').trim(); return r && r !== n ? n + ' / Reference: ' + r : n; },
+    /* Every history opens on its last months (ACTIVITY KEPT BY KIND,
+       2026-11-28): the press for older entries, and the line where the
+       months hold none (js/records.js). */
+    earlier: function (zh) { return zh ? '显示更早的记录' : 'Show earlier'; },
+    recentNone: function (n, zh) { n = Math.floor(Number(n)); return zh ? '最近' + n + '个月没有记录。' : 'Nothing recorded in the last ' + (n === 1 ? 'month.' : n + ' months.'); },
     checked: function (n, zh) { n = Math.floor(Number(n)); return zh ? '已核验' + n + '次' : n === 1 ? 'Checked once' : 'Checked ' + n + ' times'; },
     codeSent: 'If {email} is registered, a sign-in code and link have been sent to it.',
     dateFloor: 'Choose a date from 14 Aug 2023.',

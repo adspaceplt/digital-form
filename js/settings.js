@@ -384,6 +384,12 @@
            employee record is hidden again after this long. */
         biz && { id: 'reveal', name: 'Hidden personal details', kind: 'edit',
           meta: num('reveal_seconds') == null ? '' : 'Hidden again after ' + plural(num('reveal_seconds'), 'second', 'seconds') },
+        /* Records kept (ACTIVITY KEPT BY KIND, 2026-11-28): the Activity
+           record's routine and key entries, and the scheduled jobs' history. */
+        biz && { id: 'actkeep', name: 'Records kept', kind: 'edit',
+          meta: num('activity_routine_months') == null ? '' : parts(['Routine activity ' + plural(num('activity_routine_months'), 'month', 'months'),
+            'Key activity ' + plural(num('activity_keep_months'), 'month', 'months'),
+            'Job history ' + plural(num('jobs_keep_days'), 'day', 'days')]) },
         /* Delete requests (2026-11-17): a Delete pressed at Edit waits
            here for an admin (js/delreq.js). */
         W.ADspaceAdmin && W.ADspaceAdmin.isAdmin && W.ADspaceAdmin.isAdmin() && W.ADspaceDelReq &&

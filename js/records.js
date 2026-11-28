@@ -253,5 +253,70 @@
     return out.join('; ');
   }
 
-  window.ADspaceRecords = { paint: paint, fold: fold, day: day, time: time, changes: changes };
+  /* THE LAST MONTHS FIRST (ACTIVITY KEPT BY KIND, 2026-11-28). Every list
+     of `activity_log` rows opens on the months a routine entry is kept
+     (Settings, `activity_routine_months`, 3 before it is read), newest
+     first; Show earlier reads older entries a page at a time.
+       var pg = ADspaceRecords.pager(function () { return db.from(…).select(…).eq(…); }, 50);
+       pg.first() / pg.next()  → the read's answer; pg.more, pg.floor
+     `query` hands back a fresh builder each call, filtered but neither
+     ordered nor limited. `floor` is the oldest moment the list now holds
+     whole (null once every row is read). */
+  function months() {
+    var M = window.ADspaceMoney, n = M && M.setting ? Number(M.setting('activity_routine_months')) : NaN;
+    return n > 0 ? n : 3;
+  }
+  function since(n) {
+    var d = new Date();
+    d.setMonth(d.getMonth() - (n || months()));
+    return d.toISOString();
+  }
+  function pager(query, page) {
+    page = page || 50;
+    var oldest = null;
+    var self = { more: false, floor: since(), months: months() };
+    var newest = function (q) { return q.order('created_at', { ascending: false }); };
+    function took(rows) { if (rows.length) oldest = rows[rows.length - 1].created_at; }
+    self.first = function () {
+      self.months = months(); self.floor = since(self.months); oldest = null; self.more = false;
+      return newest(query().gte('created_at', self.floor)).limit(page).then(function (r) {
+        if (r.error) return r;
+        var rows = r.data || [];
+        took(rows);
+        if (rows.length >= page) { self.more = true; return r; }
+        /* A short window: one row older says whether Show earlier has
+           anything to read. */
+        return newest(query().lt('created_at', self.floor)).limit(1).then(function (o) {
+          self.more = !o.error && (o.data || []).length > 0;
+          return r;
+        });
+      });
+    };
+    self.next = function () {
+      return newest(query().lt('created_at', oldest || self.floor)).limit(page).then(function (r) {
+        if (r.error) return r;
+        var rows = r.data || [];
+        took(rows);
+        self.more = rows.length >= page;
+        self.floor = self.more ? oldest : null;
+        return r;
+      });
+    };
+    return self;
+  }
+  /* The press under a list that reads its earlier entries: disabled while
+     the read is out, gone with the list's next paint. */
+  function earlier(host, press) {
+    if (!host) return null;
+    var more = document.createElement('div');
+    more.className = 'act-more';
+    more.innerHTML = '<button class="btn btn-sm" type="button" data-a="earlier">' + esc(window.ADspaceWords.line.earlier()) + '</button>';
+    host.appendChild(more);
+    more.firstChild.addEventListener('click', function () { this.disabled = true; press(this); });
+    return more.firstChild;
+  }
+  function none(n) { return window.ADspaceWords.line.recentNone(n || months()); }
+
+  window.ADspaceRecords = { paint: paint, fold: fold, day: day, time: time, changes: changes,
+    pager: pager, earlier: earlier, none: none, months: months };
 })();
