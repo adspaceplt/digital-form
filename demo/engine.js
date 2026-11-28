@@ -7,23 +7,23 @@
     ai_drafts: 'id report_id team_member_id outcome created_at client_id kind period_start period_end purpose result basis version_no brand_id batch_id input_tokens output_tokens model script_id web_searches agent_steps',
     brand_analyses: 'id client_id version analysis sources basis hypothesis model press_id created_by created_at confirmed_by confirmed_at',
     client_brands: 'id client_id name active logo created_at updated_at',
-    meta_links: 'id client_id brand_id ad_accounts page instagram updated_at updated_by',
+    meta_links: 'id client_id brand_id ad_accounts page instagram updated_at updated_by updated_by_id',
     sm_report_audits: 'id report_id version_no read_at by_id by_name outcome print diffs note',
-    announcements: 'id audience tone body_en body_zh link starts_at ends_at ended_at created_by created_at updated_by updated_at',
-    app_flags: 'key on_now note starts_at ends_at set_by set_at kind note_zh whatsapp',
+    announcements: 'id audience tone body_en body_zh link starts_at ends_at ended_at created_by created_at updated_by updated_at created_by_id updated_by_id',
+    app_flags: 'key on_now note starts_at ends_at set_by set_at kind note_zh whatsapp set_by_id',
     app_settings: 'key from_date value set_by set_at',
     app_secrets: 'key value updated_at',
     batches: 'id client_id title note published created_at published_at period',
     campaign_confirmations: 'id campaign_id kind person source note created_at idem snapshot campaign_title client_id',
-    campaign_deliverables: 'id option_id url name kind bytes round uploaded_at removed_at hidden_at hidden_by',
-    campaign_options: 'id campaign_id creator_id rate platforms position is_replacement state drop_reason goodwill added_at visit_date visit_time visit_location visit_pic visit_pic_phone tracking_no draft_url revision_round planned_publish confirmed_at confirmed_by notes draft_caption submitted_at changes_by submission_due creator_rating qc_second_wanted completed_at released_round earlier_job posted_on pay_by',
-    campaigns: 'id client_id title title_zh invoice_no slots deadline owner owner_id push_format deliverable brief brief_zh state access_token passcode created_by created_at updated_at invoice_url invoice_uploaded_at purpose purpose_zh backups_open state_log selection_closed_at moved_token campaign_code bukku_invoice_id invoice_claimed_at invoice_claimed_by',
+    campaign_deliverables: 'id option_id url name kind bytes round uploaded_at removed_at hidden_at hidden_by hidden_by_id',
+    campaign_options: 'id campaign_id creator_id rate platforms position is_replacement state drop_reason goodwill added_at visit_date visit_time visit_location visit_pic visit_pic_phone tracking_no draft_url revision_round planned_publish confirmed_at confirmed_by notes draft_caption submitted_at changes_by submission_due creator_rating qc_second_wanted completed_at released_round earlier_job posted_on pay_by changes_by_id confirmed_by_id',
+    campaigns: 'id client_id title title_zh invoice_no slots deadline owner owner_id push_format deliverable brief brief_zh state access_token passcode created_by created_at updated_at invoice_url invoice_uploaded_at purpose purpose_zh backups_open state_log selection_closed_at moved_token campaign_code bukku_invoice_id invoice_claimed_at invoice_claimed_by created_by_id',
     client_contacts: 'id client_id salutation name role phone email whatsapp lang is_primary notes created_at archived_at portal_access portal_login_at',
-    client_document_deletions: 'id document_id number client_id actor reason service_ids deleted_at',
+    client_document_deletions: 'id document_id number client_id actor reason service_ids deleted_at actor_id',
     client_document_seq: 'client_id ym next_val',
     client_document_services: 'document_id service_id created_at',
-    client_documents: 'id client_id kind number issued_at market subtotal tax total bill_to lines issued_by created_at voided_at signed_at verified_at verified_by superseded_by client_code idem_key voided_by void_reason doc_code',
-    client_requests: 'id client_id contact_id contact_name kind service_id service_label note state fee reply decided_by withdrawn_at created_at updated_at idem recorded_by request_ref',
+    client_documents: 'id client_id kind number issued_at market subtotal tax total bill_to lines issued_by created_at voided_at signed_at verified_at verified_by superseded_by client_code idem_key voided_by void_reason doc_code issued_by_id verified_by_id voided_by_id',
+    client_requests: 'id client_id contact_id contact_name kind service_id service_label note state fee reply decided_by withdrawn_at created_at updated_at idem recorded_by request_ref decided_by_id recorded_by_id',
     client_services: 'id client_id service_slug label qty rate unit state note created_at archived_at tenure start_on detail term_adjust term_pct quotation_id tax_code tax_code_id',
     public_holidays: 'day name updated_at updated_by',
     departments: 'key name active in_prize criteria position updated_at updated_by ac_code',
@@ -32,28 +32,28 @@
     client_detail_forms: 'id client_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by',
     suppliers: 'id code name kind brn nric tin sst_no phone address contact_name designation email mobile payment_term currency payee_name bank_name bank_account finance_email swift bank_address status created_at created_by updated_at approved_at approved_by client_id',
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
-    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by made_by_id submitted_by_id contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines doc_code commence_on',
-    client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
+    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by made_by_id submitted_by_id contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines doc_code commence_on confirmed_by_id details_asked_by_id no_contact_by_id released_by_id removed_by_id returned_by_id reviewed_by_id sealed_by_id withdrawn_by_id',
+    client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id by_whom_id',
     clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry industry_id owner owner_id market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id commence_on portal_kept_at portal_kept_by stage_next stage_next_on stage_next_reason stage_next_note',
-    creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
+    creator_profile_changes: 'id creator_id source actor before after restored_from created_at actor_id',
     creator_profiles: 'id creator_id platform url handle created_at',
-    creators: 'id name followers cost_rate client_rate industries notes active created_by created_at updated_at access_code code_issued_at whatsapp creator_code inactive_reason',
+    creators: 'id name followers cost_rate client_rate industries notes active created_by created_at updated_at access_code code_issued_at whatsapp creator_code inactive_reason created_by_id',
     doc_types: 'id family code name title salutation closing body_en body_zh body_ms signed position active fields schedule',
-    document_deletions: 'id serial family kind actor reason deleted_at',
-    documents: 'id type_id family kind serial client_id member_id issued_at title salutation closing recipient body languages signatory signed source file_url note issued_by idem_key created_at voided_at voided_by void_reason replaces shared_at shared_by supplier_id doc_code',
+    document_deletions: 'id serial family kind actor reason deleted_at actor_id',
+    documents: 'id type_id family kind serial client_id member_id issued_at title salutation closing recipient body languages signatory signed source file_url note issued_by idem_key created_at voided_at voided_by void_reason replaces shared_at shared_by supplier_id doc_code issued_by_id shared_by_id voided_by_id',
     drive_assets: 'id client_id drive_id url mime_type width height bytes created_at poster_url',
-    handbook_docs: 'id title category summary link_url current_version archived_at created_at created_by updated_at required',
-    handbook_versions: 'id doc_id version_no file_path file_name file_size mime note created_at created_by',
-    link_qrs: 'code slug label active revoked_at created_by created_at',
-    links: 'slug target_url title active created_by created_at updated_at client_id campaign_id',
+    handbook_docs: 'id title category summary link_url current_version archived_at created_at created_by updated_at required created_by_id',
+    handbook_versions: 'id doc_id version_no file_path file_name file_size mime note created_at created_by created_by_id',
+    link_qrs: 'code slug label active revoked_at created_by created_at created_by_id',
+    links: 'slug target_url title active created_by created_at updated_at client_id campaign_id created_by_id',
     link_clicks: 'slug code day n',
     ops_due_requests: 'id task_id kind was_at wants_at reason note asked_by asked_at decider_id state decided_by decided_at decide_note',
     ops_engagement_checks: 'id engagement_id key state owner_id note updated_by updated_at',
     ops_engagement_events: 'id engagement_id event_type actor_id actor_email detail created_at',
     ops_engagements: 'id client_id period manager_id planned_count drive_url status meeting_at meeting_channel meeting_owner_id meeting_note meeting_na created_by created_at updated_at version meeting_minutes meeting_link meeting_event_id reports start_day outstation_told_at',
     ops_notifications: 'id team_member_id task_id kind title body read_at created_at dedupe_key report_id notice_id from_name hidden_at link script_id client_id supplier_id',
-    video_scripts: 'id client_id period seq code engagement_id series_id video_no kind title reference_url platform language shoot_on shoot_time venue duration_minutes cast_names context vo vo_vc vo_shot_at vo_shot_by remarks status shared_at round version idem_key created_by created_by_name created_at updated_at updated_by_name aspect length_seconds brief plan review review_version doc_code',
-    video_script_scenes: 'id script_id position visual line vc shot_at shot_by t_from t_to shot_size angle camera_move on_screen sound photo_url photo_by photo_at photo_thumb ai_url ai_at ai_thumb ai_frame',
+    video_scripts: 'id client_id period seq code engagement_id series_id video_no kind title reference_url platform language shoot_on shoot_time venue duration_minutes cast_names context vo vo_vc vo_shot_at vo_shot_by remarks status shared_at round version idem_key created_by created_by_name created_at updated_at updated_by_name aspect length_seconds brief plan review review_version doc_code updated_by_id vo_shot_by_id',
+    video_script_scenes: 'id script_id position visual line vc shot_at shot_by t_from t_to shot_size angle camera_move on_screen sound photo_url photo_by photo_at photo_thumb ai_url ai_at ai_thumb ai_frame photo_by_id shot_by_id',
     ops_recurring_made: 'rule_id source_task_id on_date made_at',
     ops_recurring_rules: 'id name client_id template_id owner_id frequency day_of_month publish_rule active last_generated_period created_at updated_at source_task_id interval_days ends_on max_count generated_count code_week created_by last_error last_error_at',
     ops_revisions: 'id task_id round_no requested_by_type reason_category summary requested_by assigned_to requested_at completed_at source_review_id idem_key',
@@ -69,7 +69,7 @@
     ops_work_sessions: 'id task_id team_member_id started_at ended_at minutes note source corrected_at corrected_by correction_reason created_at',
     ops_workflow_stages: 'id workflow_id key label position stage_group is_active_work is_waiting is_review is_terminal wip_guidance next_stage_keys retired',
     ops_workflows: 'id key name description active created_at updated_at',
-    option_posts: 'id option_id platform post_url published_at window_days impressions engagements views measured_at created_at measure_from measure_to entered_by entered_at',
+    option_posts: 'id option_id platform post_url published_at window_days impressions engagements views measured_at created_at measure_from measure_to entered_by entered_at entered_by_id',
     option_qc: 'id option_id team_member_id round checked_at voided_at',
     option_reviews: 'id option_id round decision note reviewer created_at source undone_at undone_by',
     perf_attempts: 'team_member_id failures locked_until',
@@ -95,21 +95,21 @@
     perf_rewards: 'kind period snapshot confirmed_by confirmed_at',
     perf_settings: 'key from_period value set_by set_at',
     perf_unlocks: 'token_hash team_member_id created_at expires_at',
-    post_versions: 'id post_id round platform format title caption caption_zh media replaced_at replaced_by',
+    post_versions: 'id post_id round platform format title caption caption_zh media replaced_at replaced_by replaced_by_id',
     posts: 'id batch_id platform format handle caption caption_zh title media position created_at review_reset_at review_reset_note round cover_for content_version',
     push_outbox: 'id created_at audience target message url tag claimed_at sent_at sent failed',
     push_subscriptions: 'id endpoint p256dh auth audience team_member_id campaign_id creator_id target lang created_at seen_at',
     reviews: 'id post_id decision note reviewer created_at round suggested_caption suggested_caption_zh source undone_at undone_by seen',
     s3_sweeps: 'id ran_at mode prefix listed listed_bytes young young_bytes kept kept_bytes would_delete would_delete_bytes deleted deleted_bytes failed note sample',
     services: 'slug category name rate unit position active note detail min_months spec sku',
-    rate_card_text: 'key label page position value updated_at updated_by',
+    rate_card_text: 'key label page position value updated_at updated_by updated_by_id',
     meeting_message_template: 'id body updated_at updated_by',
-    rate_card_versions: 'id version valid_until note snapshot published_at published_by',
+    rate_card_versions: 'id version valid_until note snapshot published_at published_by published_by_id',
     sm_report_ads: 'id report_id position name objective result_label audience starts_on ends_on spend results reach impressions ctr cpr cpr_basis age hook_rate hold_rate avg_play retention thumb_data remark created_at ad_ids ad_account platform ad_error purchase_value',
     sm_report_platforms: 'id report_id platform account_name handle group_key group_label position metrics followers_start followers_end growth_override growth_reason er_basis metric_notes summary worked improve actions created_at platform_name',
     sm_report_posts: 'id report_id platform_id posted_on title caption content_type url thumb_data views reach impressions interactions engagements likes comments shares saves notable observation position created_at',
-    sm_report_versions: 'id report_id version_no snapshot published_by published_at withdrawn_at withdrawn_by withdraw_reason file_key file_at file_by doc_code',
-    sm_reports: 'id client_id kind title period_start period_end headline intro insights rank_metric status version_no return_note submitted_by submitted_at confirmed_by confirmed_at created_by created_at updated_at first_month ads_totals lang reviewer_id late_reason gate_note brand_name label_client brand_id sent_on sent_by on_request next_batch next_batch_print',
+    sm_report_versions: 'id report_id version_no snapshot published_by published_at withdrawn_at withdrawn_by withdraw_reason file_key file_at file_by doc_code file_by_id published_by_id withdrawn_by_id',
+    sm_reports: 'id client_id kind title period_start period_end headline intro insights rank_metric status version_no return_note submitted_by submitted_at confirmed_by confirmed_at created_by created_at updated_at first_month ads_totals lang reviewer_id late_reason gate_note brand_name label_client brand_id sent_on sent_by on_request next_batch next_batch_print sent_by_id',
     team_members: 'id name email role active created_at can_clients can_review can_campaigns can_links can_activity can_billing can_remove updated_at is_admin can_doc_void access staff_code designation capacity_minutes_week wip_guidance department role_family access_until expired_at mobile card_email card_key card_on access_until_time card_slug card_mobile client_scope system removed_at erased_at last_seen_at ai_on email_on whatsapp_on sensitive_on',
     team_roles: 'slug name is_admin can_clients can_review can_campaigns can_links can_activity can_billing can_remove position created_at can_doc_void access client_scope updated_at ai_on email_on whatsapp_on sensitive_on reports_to'
   };
@@ -2304,12 +2304,22 @@
   var session = null, listener = null;
 
   var SESS = {}, sessSeq = 0;
+
+  function uidOf(email) {
+    var e = String(email || '').toLowerCase(), h = '';
+    for (var k = 0; h.length < 32; k++) {
+      var x = 5381 + k * 131;
+      for (var i = 0; i < e.length; i++) x = ((x * 33) ^ e.charCodeAt(i)) >>> 0;
+      h += ('00000000' + x.toString(16)).slice(-8);
+    }
+    return h.slice(0, 8) + '-' + h.slice(8, 12) + '-4' + h.slice(13, 16) + '-8' + h.slice(17, 20) + '-' + h.slice(20, 32);
+  }
   function mkSession(email, amr) {
     sessSeq += 1;
 
     var sid = window.__sessionMine || ('5e55' + ('0000' + sessSeq).slice(-4) + '-0000-4000-8000-' + ('000000000000' + Date.now()).slice(-12));
-    var claims = btoa(JSON.stringify({ sub: email, session_id: sid })).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
-    var s = { user: { email: email }, amr: amr || [], access_token: 'eyJhbGciOiJIUzI1NiJ9.' + claims + '.at-' + sessSeq, refresh_token: 'rt-' + sessSeq };
+    var claims = btoa(JSON.stringify({ sub: uidOf(email), session_id: sid })).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+    var s = { user: { id: uidOf(email), email: email }, amr: amr || [], access_token: 'eyJhbGciOiJIUzI1NiJ9.' + claims + '.at-' + sessSeq, refresh_token: 'rt-' + sessSeq };
     SESS[s.refresh_token] = s;
     return s;
   }
