@@ -28,6 +28,11 @@
 --     withdrawn); mail_sweep reads a queued email's time from its claim;
 --     mail_log, team_emails_of and supplier_emails_of answer the sender's
 --     id, so Cancel is drawn for the sender alone.
+--   * Every email in English (the user, 2026-11-28, through the coordinator:
+--     "email we only do one, all in international English. No Chinese
+--     email."): feedback_mail_begin and quote_details_mail_begin send the
+--     English template whatever the contact's language; the 中文 rows stay
+--     stored for the rollback, sent by nothing.
 -- EXCLUDED, still immediate: codes, sign-in links and invitations, what a
 --   client or visitor sends themselves, and what the portal sends by itself
 --   (reminders, expiry emails, creator emails, alerts).
@@ -42,8 +47,11 @@
 --   public.mail_queue_put(jsonb), public.mail_queue_claim(int),
 --   public.mail_queue_close(uuid, text, text, text),
 --   public.mail_cancel(text, uuid), public.mail_queue_kick(),
---   public.mail_queue_due(); the status checks may stay wider. Safe to run
---   twice.
+--   public.mail_queue_due(); the status checks may stay wider; the two
+--   English-only senders come back from their files before this one
+--   (feedback_mail_begin: 2026-11-25-retention-and-jobs-held.sql;
+--   quote_details_mail_begin: 2026-11-27-quote-details-asked.sql). Safe to
+--   run twice.
 
 -- A queued email and a cancelled one are states of the email's own row, so
 -- every list that reads the row (the Email log, a record's Emails, a
@@ -303,7 +311,7 @@ begin
   update public.mail_queue x set status = 'cancelled', cancelled_by = me.id, cancelled_at = now(), closed_at = now(), msg = '{}'::jsonb
    where x.id = q.id returning * into q;
   perform public.mail_queue_mark(q, 'cancelled');
-  perform public.mail_queue_note(q, 'cancelled before it was sent', me.name);
+  perform public.mail_queue_note(q, 'cancelled', me.name);
   return jsonb_build_object('ok', true);
 end $$;
 revoke all on function public.mail_cancel(text, uuid) from public, anon;
@@ -839,6 +847,122 @@ begin
 end $$;
 revoke all on function public.supplier_emails_of(uuid) from public, anon;
 grant execute on function public.supplier_emails_of(uuid) to authenticated;
+
+/* Every email in English (the user, 2026-11-28: "email we only do one, all in
+   international English. No Chinese email."): the two senders that chose
+   中文 by the contact's language send English; the 中文 rows stay stored. */
+create or replace function public.feedback_mail_begin(p_client uuid, p_kind text, p_again boolean default false)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me    public.team_members := public.ops_me();
+  r     jsonb;
+  v_cl  public.clients;
+  v_ct  public.client_contacts;
+  v_t   public.feedback_email_templates;
+  v_zh  boolean;
+  v_s   text;
+  v_b   text;
+  v_btn text;
+  v_k   text;
+  v_v   text;
+begin
+  if me.id is null or not public.allowed('clients', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.send_ok('email') then return jsonb_build_object('error', 'send-off'); end if;
+  if coalesce(public.app_setting('client_email_on', (now() at time zone 'Asia/Kuala_Lumpur')::date), 0) <> 1 then
+    return jsonb_build_object('error', 'email-off');
+  end if;
+  if p_kind in ('quick', 'review')
+     and (select count(*) from public.feedback_email_templates x where x.kind = p_kind) < 2 then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  r := public.feedback_request(p_client, p_kind, p_again);
+  if r ? 'error' then return r; end if;
+  select * into v_cl from public.clients c where c.id = p_client;
+  select * into v_ct from public.client_contacts k
+   where k.id = (select q.contact_id from public.feedback_requests q where q.id = (r->>'id')::uuid);
+  -- Every email in English, whatever the contact's language (the user, 2026-11-28).
+  v_zh := false;
+  select * into v_t from public.feedback_email_templates x
+   where x.kind = p_kind and x.lang = case when v_zh then 'zh' else 'en' end;
+  v_s := v_t.subject;
+  v_b := v_t.body;
+  v_btn := v_t.button;
+  foreach v_k in array array['contact name', 'client name', 'link'] loop
+    v_v := case v_k when 'contact name' then public.contact_named(v_ct.salutation, v_ct.name)
+      when 'client name' then v_cl.name
+      else 'https://digital.adspace.me/feedback/?k=' || (r->>'key') end;
+    v_s := regexp_replace(v_s, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+    v_b := regexp_replace(v_b, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+    v_btn := regexp_replace(v_btn, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+  end loop;
+  update public.feedback_requests q set mail_status = 'sending' where q.id = (r->>'id')::uuid;
+  return r || jsonb_build_object('subject', left(v_s, 200), 'body', v_b, 'button', v_btn, 'lang', case when v_zh then 'zh' else 'en' end);
+end $$;
+revoke all on function public.feedback_mail_begin(uuid, text, boolean) from public, anon;
+grant execute on function public.feedback_mail_begin(uuid, text, boolean) to authenticated;
+
+create or replace function public.quote_details_mail_begin(p_id uuid)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me    public.team_members := public.ops_me();
+  q     public.quotations;
+  v_ds  text;
+  v_zh  boolean;
+  v_t   public.quote_email_templates;
+  v_s   text;
+  v_b   text;
+  v_btn text;
+  v_k   text;
+  v_v   text;
+  v_to  text;
+  v_ct  uuid;
+  v_id  uuid;
+  v_f   text[];
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.send_ok('email') then return jsonb_build_object('error', 'send-off'); end if;
+  if coalesce(public.app_setting('client_email_on', (now() at time zone 'Asia/Kuala_Lumpur')::date), 0) <> 1 then
+    return jsonb_build_object('error', 'email-off');
+  end if;
+  select * into q from public.quotations x where x.id = p_id;
+  if q.id is null or q.source <> 'website' or q.removed_at is not null
+     or not public.client_scope_ok('client', q.client_id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  if q.released_at is not null then return jsonb_build_object('error', 'sent'); end if;
+  v_ds := public.quote_details_state(q);
+  if v_ds not in ('asked', 'late') or q.status = 'not_proceeding' then return jsonb_build_object('error', 'closed'); end if;
+  if q.no_contact_at is not null then return jsonb_build_object('error', 'no-contact'); end if;
+  v_to := lower(btrim(coalesce(q.contact->>'email', '')));
+  if not (v_to ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$') then return jsonb_build_object('error', 'no-email'); end if;
+  -- Every email in English, whatever the prospect's language (the user, 2026-11-28).
+  v_zh := false;
+  select * into v_t from public.quote_email_templates x where x.kind = 'details' and x.lang = case when v_zh then 'zh' else 'en' end;
+  if v_t.kind is null then return jsonb_build_object('error', 'not-found'); end if;
+  v_f := array(select jsonb_array_elements_text(q.details_ask->'fields'));
+  v_s := v_t.subject; v_b := v_t.body; v_btn := v_t.button;
+  foreach v_k in array array['contact name', 'brand', 'reference', 'details', 'reply by', 'link'] loop
+    v_v := case v_k when 'contact name' then public.contact_named(q.contact->>'salutation', q.contact->>'name')
+      when 'brand' then coalesce(q.contact->>'brand', q.brand) when 'reference' then q.ref
+      when 'details' then public.quote_details_lines(v_f, q.details_ask->>'note', v_zh)
+      when 'reply by' then public.quote_day_word((q.details_due at time zone 'Asia/Kuala_Lumpur')::date, v_zh)
+      else 'https://digital.adspace.me/quote/?q=' || q.access_key end;
+    v_s := regexp_replace(v_s, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+    v_b := regexp_replace(v_b, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+    v_btn := regexp_replace(v_btn, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
+  end loop;
+  select k.id into v_ct from public.client_contacts k
+   where k.client_id = q.client_id and k.archived_at is null and lower(btrim(coalesce(k.email, ''))) = v_to
+   order by k.is_primary desc, k.created_at limit 1;
+  insert into public.client_emails (client_id, kind, ref_id, reference, contact_id, to_email, reply_to, subject, body, sent_by)
+  values (q.client_id, 'details', q.id, q.ref, v_ct, v_to, public.mail_sender('clients')->>'reply_to', left(v_s, 200), v_b, me.id)
+  returning id into v_id;
+  return jsonb_build_object('ok', true, 'id', v_id, 'to_email', v_to,
+    'to_name', public.contact_named(q.contact->>'salutation', q.contact->>'name'),
+    'subject', left(v_s, 200), 'body', v_b, 'button', v_btn, 'key', q.access_key);
+end $$;
+revoke all on function public.quote_details_mail_begin(uuid) from public, anon;
+grant execute on function public.quote_details_mail_begin(uuid) to authenticated;
 
 -- END OF UNDO SEND --------------------------------------------------------------
 

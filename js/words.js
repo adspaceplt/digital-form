@@ -478,16 +478,16 @@
       secs = Math.max(0, Math.round(Number(secs) || 60));
       var m = secs % 60 === 0 ? secs / 60 : 0;
       if (zh) return '发给' + (name || '收件人') + '的邮件将在' + (m ? m + '分钟' : secs + '秒') + '后发出。';
-      return 'Email to ' + (name || 'the recipient') + ' sends in ' + (m ? (m === 1 ? '1 minute' : m + ' minutes') : secs + ' seconds') + '.';
+      return 'Email to ' + (name || 'the recipient') + ' will be sent in ' + (m ? (m === 1 ? '1 minute' : m + ' minutes') : secs + ' seconds') + '.';
     },
     mailsQueued: function (n, secs, zh) {
       secs = Math.max(0, Math.round(Number(secs) || 60));
       var m = secs % 60 === 0 ? secs / 60 : 0;
       if (zh) return n + '封邮件将在' + (m ? m + '分钟' : secs + '秒') + '后发出。';
-      return n + ' emails send in ' + (m ? (m === 1 ? '1 minute' : m + ' minutes') : secs + ' seconds') + '.';
+      return n + ' emails will be sent in ' + (m ? (m === 1 ? '1 minute' : m + ' minutes') : secs + ' seconds') + '.';
     },
     mailCancel: 'Cancel email',
-    mailCancelled: 'Email cancelled. It was not sent.',
+    mailCancelled: 'Email cancelled.',
     mailUndone: 'Undone. The email was not sent.',
     mailTooLate: 'Not cancelled. The email has already been sent.',
     whatsappSendOff: 'Sending WhatsApp is turned off for you. Please ask an admin.',

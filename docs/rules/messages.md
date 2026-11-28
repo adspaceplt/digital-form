@@ -145,14 +145,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   from `template_fields_all()` as chips inserting at the caret, a field it
   cannot fill marked as it is typed; no test email (Send test to me
   removed, the user, 2026-11-10; `2026-11-10-template-test-email-removed.sql`).
-- An email written in two languages is one templates row, never one a
-  language (the user, 2026-11-27: "use a switch in one item"): its line
-  names both (`English · 中文`, a language with no subject or message
-  `中文 not written`, that email going out in English), its editor opens
-  in English under a Language view strip (`#mt-lang`) that swaps subject,
-  message and button, keeping what was typed in each, and Save writes
-  each language changed through its own `p_lang` (`langRows` in
-  `js/mailtpl.js`; Feedback, Ask for details); `count` counts emails.
+- Every email the portal sends is in English alone, whatever the
+  recipient's or client's language (the user, 2026-11-28: "email we only
+  do one, all in international English. No Chinese email."): a feedback
+  request and Ask for details send their English template
+  (`feedback_mail_begin`, `quote_details_mail_begin`, `v_zh` false); the
+  中文 rows stay stored, sent by nothing and offered by no editor (Settings,
+  Messages draws English alone, `LANGS` in `js/mailtpl.js`). Client pages
+  and report PDFs stay bilingual.
 - Messages go through the WhatsApp Business Platform (Cloud API), each with a
   template Meta approved (the user, 2026-10-09: report to client, team
   reminders, creator updates, a feedback request sent by hand). Phase 1
@@ -392,8 +392,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   queued it; pg_cron `mail-queue` every minute wakes it only while one is
   due: the delay is the window to the window and a minute) sends it.
   The screen that sent it draws `ADspaceAdmin.mailUndo` under its line the
-  whole window (Email to {name} sends in 1 minute. · Undo; several at once
-  one bar); the Email log's sheet and a supplier's Emails offer Cancel email
+  whole window (Email to {name} will be sent in 1 minute. · Undo; several at
+  once one bar); the Email log's sheet and a supplier's Emails offer Cancel email
   to its sender or at Messages Full Access (`mail_cancel`, `sent` once the
   drain took it: Not cancelled. The email has already been sent.); the
   row, the Email log and the Activity record read Queued, Cancelled and

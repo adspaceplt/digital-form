@@ -586,7 +586,7 @@
         if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(go, false);
         var bad = left.filter(function (g) { return !(rv.done[g.contact] && rv.done[g.contact].ok); }).length;
         var qd = rv.queued || [];
-        $('odMsg').textContent = bad ? plural(left.length - bad, 'email', 'emails') + (qd.length ? ' queued. ' : ' sent. ') + bad + ' not sent. The reason is shown against each client.' : qd.length ? '' : 'Sent.';
+        $('odMsg').textContent = bad ? plural(left.length - bad, 'email', 'emails') + (qd.length ? ' will be sent. ' : ' sent. ') + bad + ' not sent. The reason is shown against each client.' : qd.length ? '' : 'Sent.';
         $('odMsg').className = 'msg ' + (bad ? 'warn' : 'ok');
         if (qd.length && window.ADspaceAdmin && window.ADspaceAdmin.mailUndo) {
           window.ADspaceAdmin.mailUndo(qd.map(function (x) { return x.q; }), qd[0].name, $('odMsg'), function () { if (rv.after) rv.after(); });

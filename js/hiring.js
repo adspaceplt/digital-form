@@ -655,7 +655,7 @@
             state.pane = 'scores';
             load().then(function () {
               msg('hirRecMsg', 'Decided.' +
-                (kept ? MEET_KEPT : '') + (wait && !handled ? ' The email was not queued. Use Email candidate to send it.' : ''),
+                (kept ? MEET_KEPT : '') + (wait && !handled ? ' The email was not sent. Use Email candidate to send it.' : ''),
                 kept || (wait && !handled) ? 'warn' : 'ok');
               if (bridge.undoHere) bridge.undoHere('Decided: ' + REC[o] + '.' + (queued ? ' ' + window.ADspaceWords.line.mailQueued(c.name, queued.seconds) : ''), function () {
                 if (queued) rpc('mail_cancel', { p_source: queued.source, p_id: queued.id });
@@ -1584,7 +1584,7 @@
             var queued = wait && qd && !qd.error ? qd.queued || null : null, handled = Boolean(wait && qd && !qd.error);
             load().then(function () {
               msg('hirRecMsg', 'Application closed.' +
-                (kept ? MEET_KEPT : '') + (wait && !handled ? ' The email was not queued. Use Email candidate to send it.' : ''),
+                (kept ? MEET_KEPT : '') + (wait && !handled ? ' The email was not sent. Use Email candidate to send it.' : ''),
                 kept || (wait && !handled) ? 'warn' : 'ok');
               if (bridge.undoHere) bridge.undoHere('Application closed.' + (queued ? ' ' + window.ADspaceWords.line.mailQueued(c.name, queued.seconds) : ''), function () {
                 if (queued) rpc('mail_cancel', { p_source: queued.source, p_id: queued.id });
