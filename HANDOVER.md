@@ -158,9 +158,9 @@ Taken in this order, one area a release. Release 0 (the guards, #1586; self-test
 | 2 | 2 | Owners by id: `campaigns.owner_id`, `clients.owner` name fallback removed, `activity_log.actor_id` / `subject_id` | Next |
 | 3 | 3 | Lookups by id: `industries`, `tax_codes`, `ops_workflow_stages` by uuid; `sm_reports.brand_id`; `campaign_options.earlier_job_id` | Next |
 | 4 | 4 | Foreign keys on the single-target uuid columns (`not valid`, then validated after a clean-up read); `on delete` stated | Next |
-| 5 | 6 | Agency profile: one table, one read (`agency()`, `_shared/agency.ts`, `ADspaceAgency`), seeded from today's stores; Settings › Business shows it | Own PR; independent of 1 to 4 |
+| 5 | 6 | Agency profile: one table, one read (`agency()`, `_shared/agency.ts`, `ADspaceAgency`), seeded from today's stores | Own PR; independent of 1 to 4. Live 28 Nov (#1599) |
 | HELD | 5 | The month as hub (`ops_engagements.service_line_id`; `engagement_id` on batches, campaigns, sm_reports) | **Only on the user's word**: overlaps the closed loop the user holds (STANDARD.md §24) |
-| 6 | 7 to 17 | Bypasses and fallbacks onto the profile (7), server side (8), static heads (9), brand files and fonts (10), template store (11, own PR, after 6), letters (12), quotation terms (13), HR documents (14), consent lines (15), guides and categories (16), AI prompts (17, after 11) | Mostly ride-along with each area's next train; 8, 9 and 11 after the profile |
+| 6 | 7 to 17 | Bypasses and fallbacks onto the profile (7), server side (8), static heads (9; with it the Settings › Company Agency group that edits the profile, the user 28 Nov: "wait", since the pages read `js/config.js` until then), brand files and fonts (10), template store (11, own PR, after 6), letters (12), quotation terms (13), HR documents (14), consent lines (15), guides and categories (16), AI prompts (17, after 11) | Mostly ride-along with each area's next train; 8, 9 and 11 after the profile |
 | Last | 18 | Country: time zone, currency, locale, tax labels, registration formats as profile settings | Only when a non-Malaysian agency signs |
 
 Flags:

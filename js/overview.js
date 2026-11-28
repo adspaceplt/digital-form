@@ -267,7 +267,7 @@
     },
     inReview: function () {
       return once('review', function () {
-        return db.from('sm_reports').select('id, kind, title, period_start, period_end, submitted_at, client_id, clients(name, owner)')
+        return db.from('sm_reports').select('id, kind, title, period_start, period_end, submitted_at, client_id, clients!sm_reports_client_id_fkey(name, owner)')
           .eq('status', 'review').order('submitted_at', { ascending: true }).then(rows).then(function (l) { return l || []; });
       });
     },
@@ -2183,7 +2183,7 @@
       var me = bridge.me && bridge.me(), SM = window.ADspaceSmReport;
       if (!me || !may('reports', 'view')) return Promise.resolve([]);
       return Promise.resolve().then(function () {
-        return db.from('sm_reports').select('id, kind, period_start, period_end, brand_name, client_id, clients(name)')
+        return db.from('sm_reports').select('id, kind, period_start, period_end, brand_name, client_id, clients!sm_reports_client_id_fkey(name)')
           .eq('status', 'published').is('sent_on', null).eq('submitted_by', me.id);
       }).then(rows).then(function (list) {
           return (list || []).map(function (r) {

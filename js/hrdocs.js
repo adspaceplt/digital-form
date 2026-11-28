@@ -258,7 +258,7 @@
         var sig = doc.signatory || {};
         need(LH * 5);
         text('Yours sincerely,', M, y, BODY); y -= LH;
-        text(ORG.name || 'ADSPACE PLT', M, y, BODY, med, pn.strong); y -= LH * 1.5;
+        text(ORG.name, M, y, BODY, med, pn.strong); y -= LH * 1.5;
         if (sig.name) { text(sig.name, M, y, BODY, bold); y -= LH; if (sig.designation) { text(sig.designation, M, y, BODY, font, mute); y -= LH; } }
         y -= LH;
 
@@ -306,7 +306,7 @@
     if (!S) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     var title = doc.kind === 'contract' ? 'Employment Contract' : 'Employment Offer';
     var info = { ref: doc.serial, docId: record.id, kind: doc.kind === 'contract' ? 'hr.contract' : 'hr.offer', verifyUrl: window.ADSPACE_CONFIG.verify.page + '?s=' + encodeURIComponent(doc.serial),
-      rows: S.rows(record), sub: title + ' ' + doc.serial + ', ' + (doc.kind === 'contract' ? 'signed' : 'accepted') + ' by ' + (doc.name || '') + ' and confirmed by ' + (ORG.name || 'ADSPACE PLT') + '.' };
+      rows: S.rows(record), sub: title + ' ' + doc.serial + ', ' + (doc.kind === 'contract' ? 'signed' : 'accepted') + ' by ' + (doc.name || '') + ' and confirmed by ' + ORG.name + '.' };
     var d;
     return draw(doc, pay, { seal: info }).then(function (x) {
       d = x;

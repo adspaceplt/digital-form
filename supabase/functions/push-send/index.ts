@@ -19,8 +19,8 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { send, vapidKeys } from './webpush.js';
+import { agencyProfile } from '../_shared/agency.ts';
 
-const SUBJECT = 'mailto:advertise@adspacestudios.com';
 const TTL = 86400;          // a day: a phone off for longer gets nothing stale
 const ROUNDS = 5;           // at most 5 × 50 messages a wake; the next wake takes the rest
 const BUDGET = 90000;       // no message is started after 90 seconds: one left claimed and unsent is sent once by a later wake
@@ -53,6 +53,11 @@ Deno.serve(async (req) => {
     keys = r.data;
   }
   const pair = { publicKey: keys.public as string, privateJwk: keys.private as string };
+  /* The agency's name titles a notice that carries none, and its general
+     mailbox is the sender's contact (VAPID subject): the profile's, read
+     once a wake (_shared/agency.ts). */
+  const ag = await agencyProfile();
+  const SUBJECT = 'mailto:' + (ag.email || '');
 
   let sent = 0, failed = 0, messages = 0;
   const began = Date.now();
@@ -74,7 +79,7 @@ Deno.serve(async (req) => {
         if (!s.endpoint.startsWith('https://') || !HOST_OK.test(host)) { bad++; dead.push(s.id); return; }
         const words = m.message?.[s.lang] || m.message?.en || {};
         try {
-          const r = await send(s, { title: words.title || 'ADspace', body: words.body || '', url: m.url, tag: m.tag },
+          const r = await send(s, { title: words.title || ag.trading_name || '', body: words.body || '', url: m.url, tag: m.tag },
             pair, SUBJECT, TTL);
           if (r.status >= 200 && r.status < 300) ok++;
           else {

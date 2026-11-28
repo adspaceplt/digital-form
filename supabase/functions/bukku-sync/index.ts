@@ -503,14 +503,23 @@ export function takeAfterSend(changed: string[], skip: unknown): string[] | null
    2026-10-29: "we dont need two sides update"). What Bukku holds of a
    contact, read as the portal's billing: the default billing address and
    person, the registered name in capitals. */
+/* Where Bukku keeps each detail. A detail whose key Bukku's answer does not
+   carry was not read, never read as cleared: Bukku renamed `email` to
+   `emails` on 2026-11-26, and a night read with the old name emptied every
+   finance email, then the next night wrote them back (2026-11-28). */
+const SOURCE: Record<string, string[]> = { legal_name: ['legal_name'], company_no: ['reg_no'], company_no_old: ['old_reg_no'],
+  tin: ['tax_id_no'], sst_no: ['sst_reg_no'], finance_email: ['emails', 'email'], billing_address: ['addresses'],
+  person: ['contact_persons'] };
 export function valuesOf(c: any) {
   const s = (v: unknown) => { const x = String(v ?? '').replace(/\s+/g, ' ').trim(); return x || null; };
   const ba = (c.addresses || []).find((a: any) => a.is_default_billing) || null;
   const bp = (c.contact_persons || []).find((x: any) => x.is_default_billing) || null;
   const name = s(c.legal_name), mail = s(mailOf(c));
-  return { legal_name: name ? name.toUpperCase() : null, company_no: s(c.reg_no), company_no_old: s(c.old_reg_no),
+  const out: Record<string, string | null> = { legal_name: name ? name.toUpperCase() : null, company_no: s(c.reg_no), company_no_old: s(c.old_reg_no),
     tin: s(c.tax_id_no), sst_no: s(c.sst_reg_no), finance_email: mail ? mail.toLowerCase() : null,
     billing_address: s(addressLine(ba)), person: s(bp ? [bp.first_name, bp.last_name].filter(Boolean).join(' ') : '') };
+  for (const f of Object.keys(SOURCE)) if (!SOURCE[f].some((k) => c && Object.prototype.hasOwnProperty.call(c, k))) delete out[f];
+  return out;
 }
 const BILL = ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no', 'person', 'finance_email', 'billing_address'];
 /* The fields a record compares (2026-11-22): a supplier names its own
@@ -523,7 +532,7 @@ export function fieldsOf(portal: any): string[] {
    never answered to the page nor taken. */
 export function onlyFields(vals: Record<string, any>, portal: any): Record<string, any> {
   const keep = fieldsOf(portal), out: Record<string, any> = {};
-  for (const f of keep) out[f] = vals[f] ?? null;
+  for (const f of keep) if (vals[f] !== undefined) out[f] = vals[f];
   return out;
 }
 /* The fields in which the portal and Bukku differ, each read as Bukku sets
@@ -535,7 +544,9 @@ export function differs(portal: any, bk: any, country: string): string[] {
   const out: string[] = [];
   const bare = (v: unknown) => { const w = nameWords(v); return w.slice(salLead(w)).join(' '); };
   for (const f of fieldsOf(portal)) {
-    const a = String(portal[f] ?? '').trim(), b = String(bk[f] ?? '').trim();
+    // Not read from Bukku (`valuesOf`): never a change.
+    if (bk[f] === undefined) continue;
+    const a = String(portal[f] ?? '').replace(/\s+/g, ' ').trim(), b = String(bk[f] ?? '').replace(/\s+/g, ' ').trim();
     let same: boolean;
     if (!a || !b) same = !a && !b;
     else if (f === 'billing_address') same = sameAddress(addressOf(a, country), addressOf(b, country));
