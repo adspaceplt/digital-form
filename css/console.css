@@ -9920,6 +9920,9 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .qb-sideline { display: grid; grid-template-columns: minmax(0, 1fr) var(--ctl-h-sm); grid-template-areas: "n a" "f a"; column-gap: 8px; align-items: center; font-size: 13px; padding: 6px 0; border-top: 1px solid var(--line-soft); }
 .qb-sideline > .qb-sidename { grid-area: n; }
 .qb-sideline > .qb-fig { grid-area: f; justify-self: start; color: var(--ink-soft); }
+/* MOCK-UP: a line over its months; the term discount under the last total. */
+.qb-fig > .qb-per { display: block; font-size: 12.5px; color: var(--ink-mute); }
+.qb-sidenote.qb-saved, .qb-note.qb-saved { color: var(--ink-soft); }
 .qb-sideline > .qb-sideact { grid-area: a; }
 .qb-sidename { overflow-wrap: anywhere; }
 .qb-sideact { position: relative; display: flex; justify-content: flex-end; }

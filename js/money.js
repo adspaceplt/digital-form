@@ -403,6 +403,27 @@
     return { months: Number(t.term) || 1, period: cents(Number(t.commitment) - once), total: t.once ? cents(Number(t.commitment)) : null };
   }
 
+  /* MOCK-UP (quote-totals-mock): a monthly line over its own months,
+     term percentage and SST in, worked as `quote_totals` works one line
+     (its span rounded, then SST on it); `save` is what the term discount
+     takes off that span incl. SST. A build would have the database answer
+     it on each line. */
+  function linePeriod(l, t) {
+    t = t || {};
+    if (!l || l.basis !== 'month' || l.in_plan) return null;
+    var v = cents(Number(l.qty || 0) * Number(l.rate || 0));
+    if (!v) return null;
+    var mo = Math.max(1, Math.floor(Number(l.months || t.term || 1)));
+    var p = l.pct != null && l.pct !== '' ? Number(l.pct) : Number(t.term_pct || 0);
+    var r = l.sst != null && l.sst !== '' ? Number(l.sst) : Number(t.sst_pct || 0);
+    var at = function (pp) { var se = cents(v * mo * (1 + pp / 100)); return cents(se + cents(se * r / 100)); };
+    var incl = at(p);
+    return { months: mo, incl: incl, save: p < 0 ? cents(at(0) - incl) : 0 };
+  }
+  function termSaved(lines, t) {
+    return cents((lines || []).reduce(function (a, l) { var x = linePeriod(l, t); return a + (x ? x.save : 0); }, 0));
+  }
+
   /* A quotation's lines as the client reads them (the user, 2026-11-06,
      option A: "include together as a plan instead breaking down as free"):
      a line the database marks `in_plan` (RM 0, Include in plan ticked)
@@ -535,6 +556,8 @@
     curOf: curOf,
     approx: approx,
     periodTotals: periodTotals,
+    linePeriod: linePeriod,
+    termSaved: termSaved,
     approxSgd: approxSgd,
     market: market,
     load: load,

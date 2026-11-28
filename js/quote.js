@@ -349,7 +349,7 @@
       aoTerm: '附加服务不包括在上述费用内。每项附加服务须于开始前以书面确认，并于确认后次月开具发票。', aoExtra: '追加内容', pack: { not: function (list) { return '本套餐不包括' + list.map(function (x) { return String(x || '').trim().replace(/[.;。；]+$/, ''); }).join('、') + '。'; } },
       monthlyNone: '每月', firstNone: '首月', oneOffNone: '一次性合计',
       monthly: '每月（含 SST）', firstExcl: '首月（未含 SST）', first: '首月（含 SST）', oneOff: '一次性（含 SST）',
-      ptMonths: '{n}个月总额（含 SST）', ptMonthsNone: '{n}个月总额', ptAll: '总额（含 SST）', ptAllNone: '总额', ptNote: '{n}个月月费加一次性费用，不含广告预算。',
+      ptMonths: '{n}个月总额（含 SST）', ptMonthsNone: '{n}个月总额', ptAll: '总额（含 SST）', ptAllNone: '总额', ptNote: '{n}个月月费加一次性费用，不含广告预算。', lpT: '{n}个月总额 {a}（含 SST）', lpTNone: '{n}个月总额 {a}', savedT: '已含长约折扣 {a}',
       newQuote: '申请新报价',
       chgT: '修改您的选择', chgReq: '提交修改请求', chgCancel: '取消', chgTotal: '修改后的报价',
       chgNone: '修改任何选项即可查看调整后的价格。', chgPendT: '已提交修改请求',
@@ -1103,6 +1103,20 @@
   }
   /* The tick kept with the quotation's own totals; one made before it reads
      its selection (the link's is the first quotation's). */
+  /* MOCK-UP: a monthly line over its own months, and the term discount
+     the last total holds, where the period's totals are ticked. */
+  function linePer(l, tt) {
+    var lp = periodOf(tt) && window.ADspaceMoney.linePeriod(l, tt);
+    if (!lp) return '';
+    var on = sstOn(tt), a = qc() + ' ' + n2(lp.incl);
+    return '<small class="qs-per">' + esc(lang === 'zh' ? f(t()[on ? 'lpT' : 'lpTNone'], { n: lp.months, a: a }) : window.ADspaceWords.line.linePeriod(a, lp.months, on)) + '</small>';
+  }
+  function savedHtml(tt) {
+    var v = periodOf(tt) ? window.ADspaceMoney.termSaved(curLines(), tt) : 0;
+    if (!v) return '';
+    var a = qc() + ' ' + n2(v);
+    return '<p class="qs-saved">' + esc(lang === 'zh' ? f(t().savedT, { a: a }) : window.ADspaceWords.line.termSaved(a)) + '</p>';
+  }
   function periodOf(tt) { return window.ADspaceMoney.periodTotals(tt, Q && tt === Q.totals && !Q.revised ? Q.selection : null); }
   /* English from ADspaceWords.line, one copy with the PDF; Chinese its own. */
   function ptWord(k, n, on) {
@@ -1142,7 +1156,7 @@
          prints them (2026-11-04). */
       var d = (l.detail || []).map(function (x) { return String(x == null ? '' : x).replace(/^\s*[-•·]\s*/, '').trim(); }).filter(Boolean);
       return head + '<div class="qs-row"><span class="qs-what">' + esc(l.label).replace(/\b(RM|S\$) (?=\d)/g, '$1\u00a0') + (Number(l.qty) > 1 ? '<span class="qs-calc">' + esc(l.qty + ' × ' + n2(l.rate)) + '</span>' : '') +
-        (d.length ? '<ul class="incl">' + d.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') + (l.basis === 'once' ? '<small>' + esc(t().onceTag) + '</small>' : '') + '</span>' +
+        (d.length ? '<ul class="incl">' + d.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') + (l.basis === 'once' ? '<small>' + esc(t().onceTag) + '</small>' : '') + linePer(l, tt) + '</span>' +
         '<span class="qs-num qs-q">' + esc(l.qty) + '</span><span class="qs-num qs-r">' + esc(n2(l.rate)) + '</span><span class="qs-num">' + esc(n2(l.amount)) + '</span></div>';
     }).join('') + adsOf(tt).map(function (r) {
       var once = r.freq === 'once';
@@ -1178,7 +1192,7 @@
         (q.revised ? '<span class="qs-meta">' + esc(f(t().revised, { d: day(q.issued_at), r: q.first_ref })) + '</span>' : '') + '</div>' +
       '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(t().line) + '</span><span class="qs-num qs-q">' + esc(t().qty) + '</span>' +
       '<span class="qs-num qs-r">' + esc(f(t().rate, { c: qc() })) + '</span><span class="qs-num">' + esc(f(t().sub, { c: qc() })) + '</span></div>' + lines + '</div>' +
-      (function (rows) { return totHtml(rows) + (rows.all ? totHtml([rows.all], 'qs-tot-all') : ''); })(totalsRows(tt)) +
+      (function (rows) { return totHtml(rows) + (rows.all ? totHtml([rows.all], 'qs-tot-all') : '') + savedHtml(tt); })(totalsRows(tt)) +
       /* Once sealed, the signed copy beside it is the one download. */
       (q.seal && q.seal.sealed ? '' : '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button></div>') +
       '<div class="qs-notes">' + notes.map(function (n, i) { return '<span>' + noteH(n) + '</span>' + (i === adAt ? adHowBtn() : ''); }).join('') + '</div>' +

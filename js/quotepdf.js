@@ -361,6 +361,9 @@
       if (quiet) { if (l.basis === 'month' && l.months && Number(l.months) !== Number(t.term)) under.push(l.months + (Number(l.months) === 1 ? ' month' : ' months')); }
       else if (l.basis === 'once') under.push('one-time');
       else if (l.basis === 'month') under.push(l.months && Number(l.months) !== Number(t.term) ? l.months + (Number(l.months) === 1 ? ' month' : ' months') : 'per month');
+      /* MOCK-UP: the line over its own months, under its amount. */
+      var lp = quiet && pt && window.ADspaceMoney.linePeriod(l, t);
+      if (lp) under.push(window.ADspaceWords.line.linePeriod(amt(lp.incl, q), lp.months, sstOn));
       var tag = taxed.tag(l);
       if (tag) under.push(tag);
       var h = 7 + Math.max(name.length * 13 + sub.length * 11, 13 + under.length * 11);
@@ -427,6 +430,9 @@
         agreed.push([mWord, amt(t.month.incl, q)], ['Minimum term', t.term + ' months']);
         /* What is signed names the whole period's figures too (2026-11-27). */
         if (pt) agreed.push([WD.periodTotal(pt.months, sstOn), amt(pt.period, q)]);
+        /* MOCK-UP: the term discount, under the last total. */
+        var saved = pt ? MONY.termSaved(q.lines, t) : 0;
+        if (saved && !(pt.total != null && onceL.length)) { y -= 13; right(WD.termSaved(amt(saved, q)), R, y + 3, SM, book, ink); }
         y -= 20;
       }
       if (t.once && onceL.length) {
@@ -446,6 +452,7 @@
         sums([[WD.periodAll(sstOn), amt(pt.total, q), 1]]);
         nearOf(WD.periodAll(sstOn), Number(pt.total), true);
         y -= 13; right(WD.periodNote(pt.months), R, y + 3, SM, book, mute);
+        if (saved) { y -= 13; right(WD.termSaved(amt(saved, q)), R, y + 3, SM, book, ink); }
         agreed.push([WD.periodAll(sstOn), amt(pt.total, q)]);
         y -= 20;
       }

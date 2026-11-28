@@ -439,6 +439,9 @@
        quotation link and Build quote alike. */
     periodTotal: function (n, incl) { return 'Total for ' + n + ' months' + (incl ? ' incl. SST' : ''); },
     periodAll: function (incl) { return incl ? 'Total incl. SST' : 'Total'; },
+    /* MOCK-UP: a monthly line over its months; the term discount the total holds. */
+    linePeriod: function (amt, n, incl) { return amt + ' for ' + n + (Number(n) === 1 ? ' month' : ' months') + (incl ? ' incl. SST' : ''); },
+    termSaved: function (amt) { return 'Includes term discount of ' + amt; },
     periodNote: function (n) { return n + ' months of the monthly fee, plus one-time fees. Advertising budget not included.'; },
     stageFrom: function (stage, day) { return stage + ' from ' + day; },
     /* A sign-in's code step, the console's and the client portal's alike

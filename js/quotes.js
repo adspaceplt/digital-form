@@ -2983,10 +2983,10 @@
      (ADspaceMoney.quoteRows, one copy, QT-4). */
   /* The totals as a list; the whole period's note a line under it. */
   function totDl(tot, cls, noteCls) {
-    var note = tot.filter(function (x) { return x[3] === 'periodNote'; })[0];
-    return '<dl class="' + cls + '">' + tot.filter(function (x) { return x !== note; }).map(function (x) {
+    var notes = tot.filter(function (x) { return x[3] === 'periodNote' || x[3] === 'saved'; });
+    return '<dl class="' + cls + '">' + tot.filter(function (x) { return notes.indexOf(x) < 0; }).map(function (x) {
       return '<div' + (x[2] ? ' class="is-total' + (x[3] === 'periodAll' ? ' is-all' : '') + '"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
-    }).join('') + '</dl>' + (note ? '<p class="' + noteCls + '">' + esc(note[0]) + '</p>' : '');
+    }).join('') + '</dl>' + notes.map(function (n) { return '<p class="' + noteCls + (n[3] === 'saved' ? ' qb-saved' : '') + '">' + esc(n[0]) + '</p>'; }).join('');
   }
   function totRows(d) {
     var t = d.totals || {}, rows = d.lines || [];
@@ -3005,6 +3005,9 @@
       if (pt && (x[0] === 'monthly' || x[0] === 'first')) out.push([L.periodTotal(pt.months, sstOn), CUR + ' ' + acct(pt.period), 0, 'period']);
     });
     if (pt && pt.total != null) out.push([L.periodAll(sstOn), CUR + ' ' + acct(pt.total), 1, 'periodAll'], [L.periodNote(pt.months), '', 0, 'periodNote']);
+    /* MOCK-UP: the term discount the last total holds. */
+    var saved = pt ? MON.termSaved(rows, t) : 0;
+    if (saved) out.push([L.termSaved(CUR + ' ' + acct(saved)), '', 0, 'saved']);
     return out;
   }
   function table(d) {
@@ -3315,6 +3318,11 @@
     if (!box) return;
     var t = (d && d.totals) || {};
     var lines = d ? MON.planFold(d.lines || [], t.currency) : [];
+    /* MOCK-UP: a monthly line over its own months, where the period is ticked. */
+    var perOf = function (l) {
+      var lp = MON.periodTotals(t, B && B.sel) && MON.linePeriod(l, t);
+      return lp ? '<small class="qb-per">' + esc(window.ADspaceWords.line.linePeriod(CUR + ' ' + acct(lp.incl), lp.months, MON.sstOf(d.lines, t.sst_pct).on)) + '</small>' : '';
+    };
     var board = B ? boardLines().map(function (l) { return l.key; }) : [];
     var row = function (l) {
       var ours = B && onBoard(l.brand) && (!B.sent || l.brand === boardAt());
@@ -3328,7 +3336,7 @@
       }
       return '<div class="qb-sideline" data-key="' + esc(l.key || '') + '"><span class="qb-sidename">' + esc(l.label) +
         (Number(l.qty) > 1 && l.kind !== 'package' && l.kind !== 'plan' ? ' × ' + esc(l.qty) : '') + '</span>' +
-        '<span class="qb-fig">' + esc(l.in_plan ? 'In plan' : CUR + ' ' + acct(l.amount)) + '</span>' +
+        '<span class="qb-fig">' + esc(l.in_plan ? 'In plan' : CUR + ' ' + acct(l.amount)) + perOf(l) + '</span>' +
         '<span class="team-act qb-sideact">' + (items.length ? '<button class="kmenu-btn" type="button" aria-label="' + esc('More actions, ' + l.label) + '" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' + items.map(function (x) {
             return '<button class="kmenu-item" data-g="' + x[1] + '" data-a="' + x[0] + '" type="button" role="menuitem">' + esc(x[2]) + '</button>';
