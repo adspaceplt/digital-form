@@ -199,7 +199,7 @@ One area per release. Sizes: **S** under half a day, **M** a day, **L** two or m
 | 14 | HR documents and contract clauses (`hrdocs.js`, `hiring.js`, `onboard.js`) | 3 | M | Built 2026-11-28 on its draft PR: 35 templates of kind `hr-document`, read by the day a document went out; `onboard.js` held none (DECISIONS, 2026-11-28) |
 | 15 | Consent and privacy lines (careers, supplier, details, personnel); Health agreement, feedback questions and checklist template get their editor | 3 | S | Ride-along per page |
 | 16 | First-visit guides (`admin.js` GUIDES), performance categories (`perf.js`), ad-report explainer (`smreport.js`) | 3 | S each | Ride-along |
-| 17 | AI prompts (8 functions) into the store, read by `_shared` | 3 | M | After 11 |
+| 17 | AI prompts (8 functions) into the store, read by `_shared` | 3 | M | Built 2026-11-28: 18 prompts as `ai-prompt` templates, seeded live from the private tests repository, read by `_shared/prompts.ts`; tool descriptions stay in code (DECISIONS, 2026-11-28) |
 | 18 | Country: time zone, currency, locale, tax labels and registration formats as profile settings; one BRN validator (one since 2026-11-28) | 2 | M | Last; only when a non-Malaysian install is sold. The BRN fix rides along with Clients |
 
 Releases 1, 5, 6 and 11 carry migrations and are major releases on their own PR (CLAUDE.md §3). Everything else is a train item.

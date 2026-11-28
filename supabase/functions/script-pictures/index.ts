@@ -43,6 +43,7 @@
 import Anthropic from 'npm:@anthropic-ai/sdk@1.10.0';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
+import { prompts, promptRefusal } from '../_shared/prompts.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 const text = (v: unknown, n: number) => String(v ?? '').replace(/\r/g, '').trim().slice(0, n);
@@ -53,21 +54,7 @@ const TONES = ['ink', 'light', 'fill', 'paper'];
 const PATH = /^[MmLlHhVvCcSsQqTtAaZz0-9 .,eE+-]{2,4000}$/;
 const BUDGET_MS = 130000;
 
-const SYSTEM = `You draw storyboard frames for short social media videos made in Malaysia and Singapore, the way a storyboard artist sketches them: clean black line drawings on white paper.
-You draw with shapes alone. Each shape is one SVG path: its "d" holds path commands (M, L, H, V, C, S, Q, T, A, Z, upper or lower case) and numbers only, and its tone is one of:
-- ink: the main lines, people, furniture, objects (a 1.6 unit stroke, no fill);
-- light: secondary lines, background detail, light rays, horizon, hatching (a thin grey stroke);
-- fill: a soft grey shape for shadow, a screen, food or cloth (filled, no stroke);
-- paper: a white shape with an ink edge, for something that sits in front of what is behind it.
-Rules:
-- The frame is the viewBox given; keep everything inside it, with a margin.
-- Draw people as simple figures: a circle head, a body shape, simple arms and legs, no faces, no fingers, never a real or famous person. Draw what the scene says they do.
-- Compose for the shot: a wide shows the whole place and small figures; a medium shows people from the waist; a close-up fills the frame with the subject; an over-the-shoulder puts a back in the foreground. Use the angle (low, high, eye level, overhead) for where the horizon and floor sit.
-- Show the setting with a few telling objects (a window, a bed, a counter, a car), never a cluttered room.
-- No words, letters, numbers, logos or signs anywhere.
-- 20 to 80 shapes; keep the lines simple and the same style for every frame.
-- Draw paper shapes before the ink lines that sit on them, background before foreground.
-- Choose the camera's move from the list; where the scene names one, use the nearest. Where the scene names no shot size or angle, choose what suits it and say so.`;
+const SYSTEM = 'ai.script-pictures.system';
 
 function held(work: Promise<unknown>, origin: string | null) {
   const enc = new TextEncoder();
@@ -109,6 +96,10 @@ Deno.serve(async (req) => {
     { global: { headers: { Authorization: auth } } });
   const may = await db.rpc('allowed', { p_section: 'scripts', p_level: 'work' });
   if (may.error || may.data !== true) return json({ error: 'denied' }, 200, origin);
+  /* Its prompts from the template store, before a press is counted. */
+  let P: Record<string, string>;
+  try { P = await prompts(db, [SYSTEM]); }
+  catch (e) { const no = promptRefusal(e); if (no) return json(no, 200, origin); throw e; }
 
   const vs = await db.from('video_scripts').select('id, client_id, aspect, plan').eq('id', scriptId).maybeSingle();
   if (vs.error || !vs.data) return json({ error: 'not-found' }, 200, origin);
@@ -192,7 +183,7 @@ Deno.serve(async (req) => {
       try {
         const res = await client.messages.create({
           model, max_tokens: 12000,
-          system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
+          system: [{ type: 'text', text: P[SYSTEM], cache_control: { type: 'ephemeral' } }],
           output_config: { effort: 'low', format: { type: 'json_schema', schema: format } },
           messages: [{ role: 'user', content: promptOf(sc) }]
         } as Anthropic.MessageCreateParamsNonStreaming, { timeout: Math.max(10000, left - 5000) });
