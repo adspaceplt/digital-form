@@ -2797,7 +2797,8 @@
     if (!block || !box) return;
     var R = window.ADspaceRecords;
     if (!(state.log || []).length && !state.logDays) { block.hidden = true; box.innerHTML = ''; lastRule(); return; }
-    R.paint(box, (state.log || []).map(recordOf), state.logDays ? { limit: 3, empty: R.none(state.logDays) } : { limit: 3 });
+    if (!(state.log || []).length) box.innerHTML = ovNone(R.none(state.logDays));
+    else R.paint(box, state.log.map(recordOf), { limit: 3 });
     block.hidden = false;
     lastRule();
   }
