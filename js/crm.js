@@ -1095,7 +1095,7 @@
        one who keys it in holds it, and a lead nobody holds is taken with
        Take lead. */
     if (self && self.client_scope === 'own' && !self.is_admin) {
-      if (!c) $('crmOwnerPick').value = self.name || '';
+      if (!c) $('crmOwnerPick').value = self.id || '';
       $('crmOwnerPick').disabled = true;
     }
     /* Sales by: whoever keys a lead in brought it, and only Clients Full

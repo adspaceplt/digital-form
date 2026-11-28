@@ -878,7 +878,7 @@
     }
   });
 
-  (DB.clients || []).concat(DB.campaigns || []).forEach(function (c) { if (!c.owner_id) c.owner_id = ownerIdOf(c.owner); });
+  stampHandOwners();
 
   (DB.team_members || []).concat(DB.team_roles || []).forEach(function (x) { if (!x.updated_at) x.updated_at = '2026-10-01T00:00:00.000Z'; });
 
@@ -1311,15 +1311,13 @@
   }
   function ownerStamp(nw, old) { return ownerFix(Object.assign({}, nw), old).owner_id || null; }
 
-  var OWNER_SEEN = typeof WeakMap === 'function' ? new WeakMap() : null;
   function stampHandOwners() {
-    if (!OWNER_SEEN) return;
     ['clients', 'campaigns'].forEach(function (tb) {
       (DB[tb] || []).forEach(function (r) {
-        var seen = OWNER_SEEN.get(r);
-        if (seen === undefined) { if (r.owner_id === undefined) ownerFix(r, null); }
-        else if ((r.owner || null) !== seen.owner && (r.owner_id || null) === seen.owner_id) ownerFix(r, { owner: seen.owner, owner_id: seen.owner_id });
-        OWNER_SEEN.set(r, { owner: r.owner || null, owner_id: r.owner_id || null });
+        var nm = String(r.owner || '').trim().toLowerCase();
+        if (!nm) { if (r.owner_id === undefined) r.owner_id = null; return; }
+        if (r.owner_id && String(memberName(r.owner_id) || '').trim().toLowerCase() === nm) return;
+        r.owner_id = ownerIdOf(r.owner);
       });
     });
   }
