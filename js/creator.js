@@ -40,7 +40,7 @@
   /* The agency is named from the config (the demo's sample agency), never
      typed into a line (2026-11-17). */
   function agency(o) {
-    var n = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.agencyName) || 'ADspace';
+    var n = window.ADSPACE_CONFIG.agencyName;
     if (n === 'ADspace') return o;
     var walk = function (v) {
       if (typeof v === 'string') return v.replace(/\bADspace\b/g, n);

@@ -52,6 +52,7 @@ Moved from `CLAUDE.md` §2, Writes, refusals, reversibility, on 2026-11-23: the 
   valid`, validated where no row points at nothing (2026-11-28, release 4;
   `idguard` counts the columns without one). A polymorphic id, a uuid array
   and an id a recorded decision keeps past its parent hold none.
+- A value that names the agency (its names, registration, address, domains, files) is read by `agency(key)` (`agency_profile`; the General mailbox as `email`), never typed in a function or its seed (`docs/rules/mechanisms.md`; release 6, 2026-11-28).
 - A value that depends on a change is stamped by a trigger, never by a page. A
   trigger never forces a column back to its old value.
 - Two releases restating one function merge in turn: the later one's
@@ -78,9 +79,15 @@ Moved from `CLAUDE.md` §2, Writes, refusals, reversibility, on 2026-11-23: the 
   2026-10-19, a moved date's notice).
 - PostgREST cannot choose between overloads a call fits, so a changed signature
   drops the old one first.
-- An embed across two foreign keys names the key
-  (`team_members!ops_task_assignees_team_member_id_fkey(name)`). A refused read
-  of who owns what fails the list; it never draws an unowned row.
+- An embed between two tables joined by more than one foreign key, either
+  way, names the key (`clients!sm_reports_client_id_fkey(name)`): a key
+  added later makes every bare embed PGRST201 and fails the whole read
+  (2026-11-28: release 4's `sm_reports_label_client_fkey` took down the
+  Dashboard and Reports). `tests/embedguard.js` reads every select in `js/`
+  and `supabase/functions/` against the schema's keys; a migration adding a
+  second key to a pair names the key in every embed first, and is applied
+  after those pages deploy. A refused read of who owns what fails the list;
+  it never draws an unowned row.
 - A check a later band widens (`wa_templates_purpose_check`) is added `not
   valid` in every earlier band, so the schema runs again over rows the later
   band allows (2026-11-11: `representative` made the re-run fail three times).

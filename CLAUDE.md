@@ -251,6 +251,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### One copy of each mechanism
 Each mechanism's rules are in its `docs/rules/` file, printed on the first
 edit of its script; no page keeps a copy of its own.
+- `window.ADspaceAgency` (`js/config.js`) is the page's one copy of every agency value, `agency()` the database's, `_shared/agency.ts` the functions': `docs/rules/mechanisms.md`.
 - `js/api.js` is the only Supabase client (with `phoneWord`, how every phone number reads, and `openStored`, how a stored file opens): `docs/rules/mechanisms.md`.
 - `js/money.js` is the only money formatter and the only place a price is adjusted: `docs/rules/mechanisms.md`.
 - `js/menu.js` is the only copy of where a ⋯ or a popover card opens and of what a ⋯ holds: `docs/rules/sheets.md`.
