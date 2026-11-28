@@ -1351,6 +1351,17 @@
     nw[k] = hit ? hit.id : null; if (hit && table === 'clients') nw[t] = hit[col];
     return nw;
   }
+
+  function stampHandLookups() {
+    (DB.clients || []).forEach(function (c) {
+      var h = (DB.industries || []).filter(function (x) { return x.id === c.industry_id; })[0];
+      if (!h || String(h.name).toLowerCase() !== String(c.industry || '').trim().toLowerCase()) { c.industry_id = null; lookupFix('clients', c, null); }
+    });
+    (DB.client_services || []).forEach(function (c) {
+      var h = (DB.tax_codes || []).filter(function (x) { return x.id === c.tax_code_id; })[0];
+      if (!h || h.code !== c.tax_code) { c.tax_code_id = null; lookupFix('client_services', c, null); }
+    });
+  }
   function withOwner(table, r, pending) {
     var nx = Object.assign({}, r, pending);
     if ((table === 'clients' || table === 'campaigns') && ('owner' in pending || 'owner_id' in pending)) ownerFix(nx, r);
@@ -1485,6 +1496,7 @@
 
   function builder(table) {
     if (table === 'clients' || table === 'campaigns') stampHandOwners();
+    if (table === 'clients' || table === 'client_services') stampHandLookups();
 
     if (table === 'batches') DB.batches.forEach(function (x) {
       if (!('period' in x)) x.period = x.created_at ? new Date(new Date(x.created_at).getTime() + 8 * 3600e3).toISOString().slice(0, 7) : null;
@@ -11403,6 +11415,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     }
 
     if (name === 'tax_codes_list' || name === 'tax_codes_save' || name === 'tax_codes_delete') {
+      stampHandLookups();
       var tr0 = window.__refuseRpc && window.__refuseRpc[name];
       if (tr0) return Promise.resolve({ data: null, error: { message: tr0 } });
       DB.tax_codes = DB.tax_codes || [];
@@ -11512,6 +11525,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var ir = window.__refuseRpc && window.__refuseRpc[name];
       if (ir) return Promise.resolve({ data: null, error: { message: ir } });
       var ia = args || {}, iMe = opsMe(), iOut;
+      stampHandLookups();
       DB.industries = DB.industries || [];
       var iSorted = function () { return DB.industries.slice().sort(function (a, b) { return ((a.name === 'Other') - (b.name === 'Other')) || a.name.toLowerCase().localeCompare(b.name.toLowerCase()); }); };
       var iUse = function (id) { return (DB.clients || []).filter(function (c) { return c.industry_id === id; }).length; };
@@ -11546,8 +11560,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         }
       } else {
         var iOne = iOf(ia.p_id), iU = iOne ? iUse(iOne.id) : 0;
-        if (!iOne) iOut = { error: 'not-found' };
-        else if (!opsGranted('team.settings', 'manage')) iOut = { error: 'denied' };
+        if (!opsGranted('team.settings', 'manage')) iOut = { error: 'denied' };
+        else if (!iOne) iOut = { error: 'not-found' };
         else if (iOne.name === 'Other') iOut = { error: 'fixed' };
         else if (iU) iOut = { error: 'in-use', clients: iU };
         else { DB.industries = DB.industries.filter(function (x) { return x !== iOne; }); logAct('team.changed', 'Industries', 'Deleted: ' + iOne.name); iOut = { ok: true }; }
