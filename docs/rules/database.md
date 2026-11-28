@@ -40,6 +40,12 @@ Moved from `CLAUDE.md` §2, Writes, refusals, reversibility, on 2026-11-23: the 
   snapshot, the id stamped before insert or update from the caller's own,
   backfilled only where one colleague holds the name (2026-11-28,
   `colleagueidsql`).
+- A uuid column naming one record holds a foreign key stating its `on delete`:
+  cascade only where the row cannot stand without its parent, set null where
+  the history must survive, restrict where the delete is refused; added `not
+  valid`, validated where no row points at nothing (2026-11-28, release 4;
+  `idguard` counts the columns without one). A polymorphic id, a uuid array
+  and an id a recorded decision keeps past its parent hold none.
 - A value that depends on a change is stamped by a trigger, never by a page. A
   trigger never forces a column back to its old value.
 - Two releases restating one function merge in turn: the later one's

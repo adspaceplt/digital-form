@@ -70,7 +70,8 @@ Found by a test in code a release did not touch: `docs/rules/logged-defects.md` 
   Performance and the Dashboard, Short Links → client record
   (`docs/MAP.md` §B).
 - The restructure (`docs/MAP.md` §G, approved 2026-11-27): release 0, the
-  three guards, is built; releases 1 to 18 are open, in the map's order.
+  three guards, and release 4, foreign keys on single-target ids, are
+  built; the rest are open, in the map's order.
 - Open at the handover of 2026-11-25 (the user moves to another account;
   a session opening here picks these up, oldest first, before new work):
   1. Tone sweep 9's findings (#1434 to #1461, every word on the 51
