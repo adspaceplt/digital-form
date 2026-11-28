@@ -12,6 +12,7 @@
     announcements: 'id audience tone body_en body_zh link starts_at ends_at ended_at created_by created_at updated_by updated_at created_by_id updated_by_id',
     app_flags: 'key on_now note starts_at ends_at set_by set_at kind note_zh whatsapp set_by_id',
     app_settings: 'key from_date value set_by set_at',
+    templates: 'id key kind language version subject body placeholders status effective_from sample created_by_id created_at updated_at published_by_id published_at',
     app_secrets: 'key value updated_at',
     batches: 'id client_id title note published created_at published_at period',
     campaign_confirmations: 'id campaign_id kind person source note created_at idem snapshot campaign_title client_id',
@@ -114,6 +115,9 @@
     team_roles: 'slug name is_admin can_clients can_review can_campaigns can_links can_activity can_billing can_remove position created_at can_doc_void access client_scope updated_at ai_on email_on whatsapp_on sensitive_on reports_to'
   };
   var LIVE_FNS = {
+    template_render: 'p_key p_lang p_record p_values p_at p_strict', templates_list: 'p_key',
+    template_draft_save: 'p_id p_key p_kind p_lang p_subject p_body p_expected', template_publish: 'p_id p_from',
+    template_draft_delete: 'p_id',
     activity_section: 'p_action',
     ai_check_claim: 'p_report',
     client_open_tasks: 'p_client',
@@ -1473,7 +1477,8 @@
     ops_task_templates: { r: 'ops:view' },
     ops_template_variants: { r: 'ops:view' },
     video_scripts: { r: 'scripts:view' },
-    video_script_scenes: { r: 'scripts:view' }
+    video_script_scenes: { r: 'scripts:view' },
+    templates: { r: '+team.settings:work' }
   };
   window.__policy = POLICY;
   function policyOk(table, cmd) {
@@ -16730,6 +16735,136 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
     }
 
+    if (name === 'template_render' || name === 'templates_list' || name === 'template_draft_save' ||
+        name === 'template_publish' || name === 'template_draft_delete') {
+      var tsNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
+      var tsOk = function (d) { persist(); return Promise.resolve({ data: JSON.parse(JSON.stringify(Object.assign({ ok: true }, d || {}))), error: null }); };
+      if (window.__refuseRpc && window.__refuseRpc[name]) return tsNo(window.__refuseRpc[name]);
+      if (!DB.templates) DB.templates = [
+        { id: nid('tp'), key: 'sample.greeting', kind: 'client', language: 'en', version: 1, subject: 'Sample for {client name}',
+          body: 'Dear {contact name},\n\nThis is a sample template for {client name}.\n\n{sender name}', status: 'live', effective_from: '2026-01-01', sample: true },
+        { id: nid('tp'), key: 'sample.greeting', kind: 'client', language: 'zh', version: 1, subject: '{client name}示例',
+          body: '{contact name}您好：\n\n这是{client name}的示例模板。\n\n{sender name}', status: 'live', effective_from: '2026-01-01', sample: true }];
+      var tsMe = opsMe(), tsToday = appToday();
+      var tsNorm = function (x) { return String(x == null ? '' : x).toLowerCase().replace(/\s+/g, ' ').trim(); };
+      var tsEsc = function (x) { return String(x == null ? '' : x).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+      var tsNames = function (x) { var o = []; String(x || '').replace(/\{([^{}]*)\}/g, function (m, k) { k = tsNorm(k); if (o.indexOf(k) < 0) o.push(k); return m; }); return o; };
+      var tsLang = function (l) { return l === 'zh' ? '中文' : 'English'; };
+      var tsInForce = function (key, lang, at) {
+        return DB.templates.filter(function (x) { return x.key === key && x.language === lang && x.status === 'live' && x.effective_from <= at; })
+          .sort(function (a, b) { return a.effective_from < b.effective_from ? 1 : a.effective_from > b.effective_from ? -1 : b.version - a.version; })[0] || null;
+      };
+      var tsFill = function (text, vals) {
+        var t2 = '', h = '', miss = [], last = 0, re = /\{([^{}]*)\}/g, m, src = String(text || '');
+        while ((m = re.exec(src))) {
+          var lit = src.slice(last, m.index), nm = tsNorm(m[1]), v = vals[nm] == null ? '' : String(vals[nm]);
+          t2 += lit; h += tsEsc(lit);
+          if (v.trim()) { t2 += v; h += tsEsc(v); } else { t2 += '{' + nm + '}'; h += tsEsc('{' + nm + '}'); if (miss.indexOf(nm) < 0) miss.push(nm); }
+          last = re.lastIndex;
+        }
+        t2 += src.slice(last); h += tsEsc(src.slice(last));
+        return { text: t2, html: h, missing: miss };
+      };
+      var tsLog = function (x, what) { DB.activity_log.unshift({ id: nid('al'), actor: tsMe.name, action: 'team.changed', subject: 'Templates',
+        detail: x.key + ' (' + tsLang(x.language) + ') · Version ' + x.version + ' ' + what, created_at: new Date().toISOString() }); };
+      if (!tsMe) return tsNo('denied');
+      if (name === 'template_render') {
+        if (args.p_lang !== 'en' && args.p_lang !== 'zh') return tsNo('bad-lang');
+        var pv = args.p_values;
+        if (pv != null && (typeof pv !== 'object' || Array.isArray(pv))) return tsNo('bad-values');
+        var at = args.p_at || tsToday, tp = tsInForce(args.p_key, args.p_lang, at), fb = false;
+        if (!tp && args.p_lang !== 'en') { tp = tsInForce(args.p_key, 'en', at); fb = !!tp; }
+        if (!tp) return tsNo('not-found');
+        var list = TPL_FIELDS[tp.kind] || [], vals = {};
+        if (list.indexOf('sender name') >= 0) vals['sender name'] = tsMe.name;
+        if (args.p_record) {
+          if (tp.kind === 'client') {
+            if (!opsAllowed('clients', 'view')) return tsNo('denied');
+            var tc = (DB.clients || []).filter(function (x) { return x.id === args.p_record; })[0];
+            if (!tc) return tsNo('not-found');
+            vals['client name'] = tc.name;
+            vals['company name'] = (opsAllowed('clients.billing', 'view') && String(tc.legal_name || '').trim()) || tc.name;
+            if (opsAllowed('clients.contacts', 'view')) {
+              var tk = (DB.client_contacts || []).filter(function (x) { return x.client_id === tc.id && x.is_primary && !x.archived_at; })[0];
+              if (tk) vals['contact name'] = tk.name;
+            }
+          } else if (tp.kind === 'supplier') {
+            if (!opsAllowed('suppliers', 'view')) return tsNo('denied');
+            var tsu = (DB.suppliers || []).filter(function (x) { return x.id === args.p_record; })[0];
+            if (!tsu) return tsNo('not-found');
+            ['supplier name:name', 'supplier id:code', 'contact name:contact_name', 'payment term:payment_term', 'currency:currency'].forEach(function (pr) {
+              var kv = pr.split(':'); if (tsu[kv[1]] != null && String(tsu[kv[1]]).trim() !== '') vals[kv[0]] = tsu[kv[1]];
+            });
+          } else return tsNo('no-record');
+        }
+        var pk = Object.keys(pv || {});
+        for (var pi = 0; pi < pk.length; pi++) {
+          var pn = tsNorm(pk[pi]);
+          if (list.indexOf(pn) < 0) return tsNo('unknown-field', { field: '{' + pk[pi] + '}', fields: list.slice() });
+          if (!(pn in vals) && (typeof pv[pk[pi]] === 'string' || typeof pv[pk[pi]] === 'number')) vals[pn] = String(pv[pk[pi]]);
+        }
+        var fs2 = tsFill(tp.subject, vals), fb2 = tsFill(tp.body, vals), miss2 = fs2.missing.slice();
+        fb2.missing.forEach(function (x) { if (miss2.indexOf(x) < 0) miss2.push(x); });
+        if (args.p_strict && miss2.length) return tsNo('missing-field', { fields: miss2 });
+        return tsOk({ id: tp.id, key: tp.key, lang: tp.language, fallback: fb, version: tp.version, effective_from: tp.effective_from, sample: !!tp.sample,
+          subject: fs2.text, subject_html: fs2.html, text: fb2.text, html: fb2.html, missing: miss2 });
+      }
+      if (name === 'templates_list') {
+        if (!opsGranted('team.settings', 'work')) return tsNo('denied');
+        var whoName = function (id) { var m2 = (DB.team_members || []).filter(function (x) { return x.id === id; })[0]; return m2 ? m2.name : null; };
+        var rows = DB.templates.filter(function (x) { return !args.p_key || x.key === args.p_key; }).slice().sort(function (a, b) {
+          return a.key < b.key ? -1 : a.key > b.key ? 1 : a.language !== b.language ? (a.language === 'en' ? -1 : 1) : b.version - a.version;
+        }).map(function (x) {
+          var f = tsInForce(x.key, x.language, tsToday);
+          return { id: x.id, key: x.key, kind: x.kind, lang: x.language, version: x.version, status: x.status, effective_from: x.effective_from || null,
+            sample: !!x.sample, in_force: !!f && f.id === x.id, subject: x.subject, body: x.body, placeholders: tsNames(x.subject + ' ' + x.body),
+            created_by_id: x.created_by_id || null, created_by: whoName(x.created_by_id), created_at: x.created_at || null, updated_at: x.updated_at || null,
+            published_by_id: x.published_by_id || null, published_by: whoName(x.published_by_id), published_at: x.published_at || null };
+        });
+        return tsOk({ fields: JSON.parse(JSON.stringify(TPL_FIELDS)), rows: rows });
+      }
+      if (!opsGranted('team.settings', 'manage')) return tsNo('denied');
+      var tsRow = args.p_id ? DB.templates.filter(function (x) { return x.id === args.p_id; })[0] : null;
+      if (name === 'template_draft_save') {
+        var sS = String(args.p_subject || '').replace(/\s+/g, ' ').trim(), sB = String(args.p_body || '').replace(/\r/g, '').trim();
+        if (sS.length > 200) return tsNo('bad-subject');
+        if (sB.length < 2 || sB.length > 20000) return tsNo('bad-body');
+        if (!args.p_id) {
+          var sK = String(args.p_key || '').trim().toLowerCase();
+          if (!/^[a-z][a-z0-9]*([._-][a-z0-9]+)*$/.test(sK) || sK.length > 80) return tsNo('bad-key');
+          if (!TPL_FIELDS[args.p_kind]) return tsNo('bad-kind');
+          if (args.p_lang !== 'en' && args.p_lang !== 'zh') return tsNo('bad-lang');
+          var sBad = tplCheck(sS + '\n' + sB, args.p_kind); if (sBad) return tplNo(sBad);
+          var sK0 = DB.templates.filter(function (x) { return x.key === sK; })[0];
+          if (sK0 && sK0.kind !== args.p_kind) return tsNo('kind-differs', { kind: sK0.kind });
+          var sV = DB.templates.filter(function (x) { return x.key === sK && x.language === args.p_lang; }).reduce(function (m3, x) { return Math.max(m3, x.version); }, 0) + 1;
+          var sNew = { id: nid('tp'), key: sK, kind: args.p_kind, language: args.p_lang, version: sV, subject: sS, body: sB, status: 'draft', effective_from: null,
+            sample: false, created_by_id: tsMe.id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+          DB.templates.push(sNew); tsLog(sNew, 'drafted');
+          return tsOk({ id: sNew.id, version: sV });
+        }
+        if (!tsRow) return tsNo('not-found');
+        if (tsRow.status === 'live') return tsNo('live');
+        if (args.p_expected && tsRow.updated_at !== args.p_expected) return tsNo('stale', { row: { id: tsRow.id, subject: tsRow.subject, body: tsRow.body, updated_at: tsRow.updated_at } });
+        var sBad2 = tplCheck(sS + '\n' + sB, tsRow.kind); if (sBad2) return tplNo(sBad2);
+        if (tsRow.subject !== sS || tsRow.body !== sB) { tsRow.subject = sS; tsRow.body = sB; tsRow.updated_at = new Date().toISOString(); tsLog(tsRow, 'changed'); }
+        return tsOk({ id: tsRow.id, version: tsRow.version });
+      }
+      if (!tsRow) return tsNo('not-found');
+      if (tsRow.status === 'live') return tsNo('live');
+      if (name === 'template_draft_delete') {
+        DB.templates = DB.templates.filter(function (x) { return x.id !== tsRow.id; }); tsLog(tsRow, 'deleted');
+        return tsOk({ id: tsRow.id });
+      }
+      if (!args.p_from) return tsNo('bad-date');
+      if (args.p_from < tsToday) return tsNo('past');
+      var tsCur = DB.templates.filter(function (x) { return x.key === tsRow.key && x.language === tsRow.language && x.status === 'live'; })
+        .reduce(function (m4, x) { return !m4 || x.effective_from > m4 ? x.effective_from : m4; }, null);
+      if (tsCur && args.p_from < tsCur) return tsNo('before-current', { from: tsCur });
+      tsRow.status = 'live'; tsRow.effective_from = args.p_from; tsRow.published_by_id = tsMe.id; tsRow.published_at = new Date().toISOString();
+      tsLog(tsRow, 'live from ' + (window.ADspaceClock ? ADspaceClock.date(args.p_from) : args.p_from));
+      return tsOk({ id: tsRow.id, version: tsRow.version, effective_from: args.p_from });
+    }
     if (name === 'template_fields_all') return Promise.resolve({ data: opsMe() ? JSON.parse(JSON.stringify(TPL_FIELDS)) : null, error: null });
     if (name === 'hiring_mail_gate') return Promise.resolve({ data: opsMe() ? hiringGate(args.p_kinds) : { error: 'denied' }, error: null });
     if (name === 'hiring_email_templates_get' || name === 'hiring_email_templates_save') {
