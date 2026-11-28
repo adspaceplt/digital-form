@@ -8,7 +8,7 @@
 -- id beside the name it shows (DESIGN.md §7, layer 1).
 -- WHAT IT CHANGES
 --   * 57 columns, each `{column}_id` (`updated_by_name` → `updated_by_id`)
---     beside its name on 31 tables: uuid, references team_members, on
+--     beside its name on 35 tables: uuid, references team_members, on
 --     delete set null. Read where the table is read (quotations by its
 --     column grants).
 --   * `whom_ids()` (trigger `whom_ids`, before insert or update, its pairs
@@ -21,7 +21,7 @@
 --   * Backfill: each name held by exactly one colleague, or an address.
 -- ORDER: this file, then the pages (which read the ids and show the
 -- current name). An open tab served before reads the name as it did.
--- ROLLBACK: drop trigger whom_ids on each of the 31 tables; drop function
+-- ROLLBACK: drop trigger whom_ids on each of the 35 tables; drop function
 -- public.whom_ids(); drop function public.colleague_id_of(text). The
 -- columns stay. Safe to run twice.
 
