@@ -1355,7 +1355,7 @@
        signed under, kept once for its sealed copy (2026-11-24); a refusal
        here never holds the submit. */
     var cfg = window.ADSPACE_CONFIG || {};
-    ctx.db.rpc('quotation_words_keep', { p_id: q.id, p_agency: cfg.agencyName || 'ADspace', p_terms_url: cfg.serviceTermsUrl || null })
+    ctx.db.rpc('quotation_words_keep', { p_id: q.id, p_agency: cfg.agencyName, p_terms_url: cfg.serviceTermsUrl || null })
       .then(function () { return null; }).catch(function () { return null; }).then(function () {
         var args = { p_id: q.id, p_reviewer: sel.value, p_company: fix };
         if (rec) args.p_record = rec;

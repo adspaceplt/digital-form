@@ -1124,7 +1124,7 @@
   function docConfirm(d, b) {
     var c = state.rec;
     window.ADspaceConfirm.ask({ title: 'Confirm ' + DOC_WORD[d.kind] + '?', go: 'Confirm', wait: true,
-      body: 'Confirming countersigns it for ' + (window.ADSPACE_ORG && window.ADSPACE_ORG.name || 'ADSPACE PLT') + '. The confirmed copy is then sealed and cannot be changed.',
+      body: 'Confirming countersigns it for ' + window.ADSPACE_ORG.name + '. The confirmed copy is then sealed and cannot be changed.',
       fields: [{ name: 'stamp', label: 'Stamp certificate number', value: '', required: false, note: 'Optional' }]
         .concat(mailFields('confirmed', true)) },
     function (v) {
