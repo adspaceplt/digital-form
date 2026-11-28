@@ -8,6 +8,12 @@ Moved from `CLAUDE.md` §2, Writes, refusals, reversibility, on 2026-11-23: the 
   (2026-11-06: `quotations.sent_out_at` without its grant refused the
   whole Quotations list; `tests/sql.js` reads the list's columns against
   the schema's grants).
+- A function finds its caller by `auth.uid()` against the row's
+  `auth_user_id`, never `auth.jwt() ->> 'email'` (read as words only: the
+  actor filed, whether anyone is signed in); one that sets
+  `request.jwt.claims` to act as a colleague sets `sub` too
+  (`tests/identitysql.js` fails a last definition finding its caller by
+  the address).
 - A security definer function replaced keeps every refusal of the one
   before it (2026-10-17: `delete_client` lost its own and refused no one).
 - A guard trigger holds an insert as it holds an update, a page's insert

@@ -1613,7 +1613,8 @@
     // A second Enter while the first is saving is the same press (audit 2026-11-04, 6).
     if (btn && btn.disabled) return;
     if (btn) btn.disabled = true;
-    db.rpc('industry_save', { p_was: was || null, p_name: name, p_name_zh: (zh.value || '').trim() || null }).then(function (r) {
+    var held = was ? indOne(was) : null;
+    db.rpc('industry_save', { p_id: (held && held.id) || null, p_name: name, p_name_zh: (zh.value || '').trim() || null }).then(function (r) {
       var said = indSaid(r);
       if (said) { indMsg(said); if (btn) btn.disabled = false; nm.focus(); return; }
       var moved = r.data && r.data.clients;
@@ -1623,7 +1624,7 @@
   function indDelete(i) {
     window.ADspaceConfirm.ask({ title: 'Delete', body: i.name + ' will be deleted from the list. This cannot be undone.', go: 'Delete', tone: 'danger', wait: true },
       function () {
-        return db.rpc('industry_delete', { p_name: i.name }).then(function (r) {
+        return db.rpc('industry_delete', { p_id: i.id }).then(function (r) {
           if (r) r.deleting = true;
           var said = indSaid(r);
           if (said) return said;

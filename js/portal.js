@@ -629,7 +629,7 @@
     db.auth.getSession().then(function (r) { gate(r.data.session); });
     db.auth.onAuthStateChange(function (_e, s) {
       // A token refresh is not a change of person; a reload would wipe what is on screen.
-      if (s && session && s.user && session.user && s.user.email === session.user.email) { session = s; return; }
+      if (s && session && s.user && session.user && s.user.id === session.user.id) { session = s; return; }
       gate(s);
     });
   }

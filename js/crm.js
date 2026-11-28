@@ -226,14 +226,19 @@
     }
     return industries.asked;
   }
-  /* The picker holds the list, and the one this client holds where the
-     list no longer does, so a save never clears it. */
-  function fillIndustry(keep) {
-    var on = (industries.rows || []).map(function (i) { return i.name; });
-    if (keep && on.indexOf(keep) < 0) on.push(keep);
+  /* The list, and the one this client holds where the list no longer
+     does, so a save never clears it; chosen by id. */
+  function fillIndustry(keep, keepName) {
+    var on = (industries.rows || []).map(function (i) { return [i.id, i.name]; });
+    if (keep && !on.some(function (i) { return i[0] === keep; })) on.push([keep, keepName || keep]);
     $('crmIndustry').innerHTML = '<option value="">Not set</option>' +
-      on.map(function (i) { return '<option value="' + esc(i) + '">' + esc(i) + '</option>'; }).join('');
+      on.map(function (i) { return '<option value="' + esc(i[0]) + '">' + esc(i[1]) + '</option>'; }).join('');
     $('crmIndustry').value = keep || '';
+  }
+  function industryName(id, held) {
+    if (!id) return '';
+    var i = (industries.rows || []).filter(function (x) { return x.id === id; })[0];
+    return i ? i.name : (held || '');
   }
   /* A list that could not be read is said under the field, with Try again,
      never left as a picker of Not set alone (review 3). */
@@ -433,10 +438,8 @@
      keyed by hand is a name spelled two ways by Friday. A value already on a
      record that is no longer on the team is kept as its own option, so opening
      an old record and saving it cannot quietly unassign the person who owns
-     it. Used for the client's and the campaign's Person in charge alike.
-     The option is the colleague's id, the name only what it reads
-     (restructure release 2, 2026-11-28): a renamed colleague keeps their
-     clients, and two of one name are never one. */
+     it. Used for the client's and the campaign's Person in charge alike;
+     the option is the colleague's id. */
   function peopleSelect(el, team, current, currentName) {
     if (!el) return;
     var keep = current != null ? current : el.value;
@@ -991,7 +994,7 @@
   // ---- Create and edit ----------------------------------------------------
   /* The head of the record: who they are and where they came from. */
   var FORM = [
-    ['crmName', 'name'], ['crmIndustry', 'industry'], ['crmOwnerPick', 'owner_id'],
+    ['crmName', 'name'], ['crmIndustry', 'industry_id'], ['crmOwnerPick', 'owner_id'],
     ['crmSource', 'source'], ['crmCommence', 'commence'], ['crmClientCode', 'client_code']
   ];
   /* The database's own words on the two rules it holds about a Client ID. */
@@ -1063,7 +1066,7 @@
     state.editing = c || null;
     $('crmFormTitle').textContent = c ? 'Edit client' : 'Add lead';  // the bar's words (2026-11-03)
     $('crmSave').textContent = c ? 'Save' : 'Add lead';
-    fillIndustry(c && c.industry);
+    fillIndustry(c && c.industry_id, c && c.industry);
     FORM.forEach(function (f) { $(f[0]).value = c ? (c[f[1]] || '') : ''; });
     industryFailed(false);
     if (!industries.rows) {
@@ -1074,7 +1077,7 @@
           if (!industries.rows) { industryFailed(true); return; }
           industryFailed(false);
           var now = $('crmIndustry').value;
-          fillIndustry(now || (c && c.industry));
+          fillIndustry(now || (c && c.industry_id), c && c.industry);
         });
       };
       askInd();
@@ -1210,7 +1213,7 @@
           return;
         }
         var moved = changed(state.editing, patch, [
-          ['name', 'Brand name'], ['client_code', 'Client ID'], ['industry', 'Industry'], ['market', 'Market'],
+          ['name', 'Brand name'], ['client_code', 'Client ID'], ['industry_id', 'Industry', function (v) { return industryName(v, state.editing && state.editing.industry); }], ['market', 'Market'],
           ['owner_id', 'Person in charge', function (v) { return ownerName(v, state.editing && state.editing.owner); }], ['sales_by', 'Sales by', salesByName], ['source', 'Source'], ['commence', 'Urgency to commence', commenceWord],
           ['deal_note', 'Enquiry']]);
         if (moved) log('client.edited', { name: name, id: id }, moved);
@@ -7155,17 +7158,17 @@
      stays shown on the line that holds it. */
   function fillTax(l) {
     var sel = $('svTax'), c = state.client || {};
-    var mine = l && l.tax_code ? l.tax_code : '';
+    var mine = l && l.tax_code ? l.tax_code : '', mineId = (l && l.tax_code_id) || '';
     var paint = function (list) {
       /* The client's SST as Bukku names it, never twice (2026-11-12). */
       var own = c.sst_applies === false ? null : MON.sstCode(list, MON.setting('sst_pct'));
       var shown = list.filter(function (t) { return (t.active || t.code === mine) && (!own || t.code !== own.code || t.code === mine); });
-      if (mine && !shown.some(function (t) { return t.code === mine; })) shown.push({ code: mine, rate: '', name: '' });
+      if (mine && !shown.some(function (t) { return t.code === mine; })) shown.push({ id: mineId, code: mine, rate: '', name: '' });
       sel.innerHTML = '<option value="">' + esc(c.sst_applies === false ? 'Client default · ' + MON.SST_NONE : 'Client default · ' + (own ? own.code + ' · ' + MON.setting('sst_pct') + '%' : MON.taxLabel())) + '</option>' +
         shown.map(function (t) {
-          return '<option value="' + esc(t.code) + '">' + esc(t.rate === '' ? t.code : MON.taxCodeWord(t)) + (t.active === false ? ' (no longer offered)' : '') + '</option>';
+          return '<option value="' + esc(t.id || '') + '">' + esc(t.rate === '' ? t.code : MON.taxCodeWord(t)) + (t.active === false ? ' (no longer offered)' : '') + '</option>';
         }).join('');
-      sel.value = mine;
+      sel.value = mineId;
     };
     paint([]);
     MON.taxCodes().then(function (list) { if (editingService === (l || null)) paint(list); });
@@ -7206,7 +7209,7 @@
          out is the one the person saw. */
       term_pct: !$('svAdjRow').hidden ? svPctValue() : null,
       /* The line's tax code, none for the client's SST (2026-10-22). */
-      tax_code: $('svTax').value || null
+      tax_code_id: $('svTax').value || null
     };
     if (!(editingService && editingService.state === 'confirmed')) row.state = $('svState').value;
     if (editingService) { saveService(editingService, row); return; }
