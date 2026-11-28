@@ -39,7 +39,6 @@ const json = (body: unknown, status: number, origin: string | null) =>
 
 /* An email compared as itself, never as a pattern: `_` and `%` in an
    address are letters here, not wildcards (audit P2, 2026-10-10). */
-const exactEmail = (s: string) => String(s).replace(/[\\%_]/g, (c) => '\\' + c);
 
 // Twelve hours: a working day, so a review left open does not lose its media.
 const HOURS = 12;
@@ -193,12 +192,11 @@ Deno.serve(async (req) => {
     if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
     const supa = createClient(url, anon, { global: { headers: { Authorization: auth } } });
     const { data: { user }, error: authErr } = await supa.auth.getUser();
-    if (authErr || !user?.email) return json({ error: 'not_signed_in' }, 401, origin);
-    // A removed colleague may share the address with one added again: the
-    // active row answers (Team audit, item 10).
+    if (authErr || !user?.id) return json({ error: 'not_signed_in' }, 401, origin);
+    // The colleague is the row this login is linked to (ACCESS BY ACCOUNT
+    // ID, 2026-11-28), never a row an address names.
     const { data: member } = await admin.from('team_members')
-      .select('active').ilike('email', exactEmail(user.email))
-      .order('active', { ascending: false }).limit(1).maybeSingle();
+      .select('active').eq('auth_user_id', user.id).maybeSingle();
     if (!member || !member.active) {
       /* A client's contact signed in to the client portal (2026-10-08): their
          logos and reports sit under content/ too. Live portal access only,
