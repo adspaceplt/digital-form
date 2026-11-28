@@ -147,6 +147,25 @@ Also done:
 - hi.adspace.me now carries `svc-terms`, `fb-ad-terms`, `verify` and `outstation`;
 - go.adspace.me is being phased out, and its DNS stays until the user removes it.
 
+## Restructure queue (`docs/MAP.md` §G; approved by the user 28 Nov)
+
+Taken in this order, one area a release. Release 0 (the guards, #1586; self-test `guardself`) is done. Releases 1, 5, 6 and 11 carry migrations and go alone on their own PR; the rest ride the area's train.
+
+| Order | MAP # | Release | How it ships |
+|---|---|---|---|
+| 1 | 1 | Identity by auth user id: `team_members.auth_id`, `client_contacts.auth_id`, `allowed()` and `portal_clients` by uid; email kept for invitation only | Alone, own PR, security path; walked in both orders (sign-in, change of email) |
+| 2 | 2 | Owners by id: `campaigns.owner_id`, `clients.owner` name fallback removed, `activity_log.actor_id` / `subject_id` | Next |
+| 3 | 3 | Lookups by id: `industries`, `tax_codes`, `ops_workflow_stages` by uuid; `sm_reports.brand_id`; `campaign_options.earlier_job_id` | Next |
+| 4 | 4 | Foreign keys on the single-target uuid columns (`not valid`, then validated after a clean-up read); `on delete` stated | Next |
+| 5 | 6 | Agency profile: one table, one read (`agency()`, `_shared/agency.ts`, `ADspaceAgency`), seeded from today's stores; Settings › Business shows it | Own PR; independent of 1 to 4 |
+| HELD | 5 | The month as hub (`ops_engagements.service_line_id`; `engagement_id` on batches, campaigns, sm_reports) | **Only on the user's word**: overlaps the closed loop the user holds (STANDARD.md §24) |
+| 6 | 7 to 17 | Bypasses and fallbacks onto the profile (7), server side (8), static heads (9), brand files and fonts (10), template store (11, own PR, after 6), letters (12), quotation terms (13), HR documents (14), consent lines (15), guides and categories (16), AI prompts (17, after 11) | Mostly ride-along with each area's next train; 8, 9 and 11 after the profile |
+| Last | 18 | Country: time zone, currency, locale, tax labels, registration formats as profile settings | Only when a non-Malaysian agency signs |
+
+Flags:
+- Font licence: the heading and letterhead faces are commercial; their licence does not pass to another agency (release 10: a free default face per install).
+- Four BRN validators disagree (schema check, `js/quote.js`, `js/supplierform.js`, looser `js/details.js`): one validator, riding along with Clients ahead of release 18.
+
 ## Waiting on the user
 
 - The quote page's reviewed words (#1567): reply go, or name a line to keep. https://claude.ai/artifact/MLcHq1QChJMyQpv5ARebZ3
@@ -156,7 +175,7 @@ Done by the user on 26 Nov: the expectations in #1476, #1482, #1489 and #1493 ap
 Done by the user on 27 Nov: the expectations listed on 26 Nov approved; O merged (#1523); meetings glyph = two people at a table (#1524); content meetings in Calls and visits (#1525); intake decisions all settled.
 
 1. go.adspace.me's DNS stays for now; its removal is a future update.
-2. White-label: ON HOLD by the user (27 Nov). Audit https://claude.ai/artifact/Mgqdt58TYua1wdMetrxDQR; start only on the user's word, step 1 (agency profile, additive) first, after items 11 and 12 merge.
+2. White-label: approved by the user 28 Nov as the restructure queue above (audit https://claude.ai/artifact/Mgqdt58TYua1wdMetrxDQR).
 3. Approved by the user 27 Nov: #1528 expectations; #1531 and #1532 "go". Waiting: Z's screenshots (#1529) for "go".
 4. Logged, not yet queued: uxaudit cannot reach Settings › Public holidays; csStrip missing from STRIP_NAMES; crm and settings timing flakes (from #1531); My Work "Open Months" capital M.
 5. Next after Z: the full gate on main (`bash tests/snap.sh all`), then J's 17 review findings, automatic ?v= stamps, the tone sweep since 863dddc, linked sections.
