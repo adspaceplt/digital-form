@@ -19,14 +19,15 @@
  * console and the client page agree on both halves of a state.
  */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var W = {};
 
   W.en = {
     // Covers: what a page says when it has nothing to show.
     notFound: 'Link not recognised',
-    notFoundText: 'Please contact your ADspace account manager.',
-    contactAdspace: 'Please contact ADspace.',
-    failTextAdspace: 'Please refresh the page, or contact ADspace.',
+    notFoundText: 'Please contact your ' + AGENCY.trading_name + ' account manager.',
+    contactAdspace: 'Please contact ' + AGENCY.trading_name + '.',
+    failTextAdspace: 'Please refresh the page, or contact ' + AGENCY.trading_name + '.',
     passTitle: 'Access code',
     passText: 'Enter the access code provided.',
     passWrong: 'Incorrect access code. Please try again.',
@@ -39,13 +40,13 @@
     waitHours: '{n}\u00a0hours',
     waitHour: '1\u00a0hour',
     noAccess: 'Access denied',
-    noAccessText: 'Please contact your ADspace account manager.',
+    noAccessText: 'Please contact your ' + AGENCY.trading_name + ' account manager.',
     failTitle: 'Unable to load',
-    failText: 'Please refresh the page, or contact your ADspace account manager.',
+    failText: 'Please refresh the page, or contact your ' + AGENCY.trading_name + ' account manager.',
     // A client's act the database did not take, said without its words.
-    notSent: 'Not sent. Please try again, or contact your ADspace account manager.',
+    notSent: 'Not sent. Please try again, or contact your ' + AGENCY.trading_name + ' account manager.',
     /* A supplier holds no account manager (2026-10-27, SPF-6). */
-    notSentAdspace: 'Not sent. Please try again, or contact ADspace.',
+    notSentAdspace: 'Not sent. Please try again, or contact ' + AGENCY.trading_name + '.',
     notSaved: 'Not saved. Please try again.',
     /* A details form's lines, the client's and the supplier's alike
        (2026-11-20, the client pages' tone sweep). */
@@ -59,7 +60,7 @@
     stepOf: 'Step {n} of {m}', stepStart: 'Start', stepBack: 'Back', stepNext: 'Continue', stepExpect: 'What to expect',
     yourDetails: 'Your details', stepEdit: 'Edit', stepReview: 'Review and submit',
     /* The received page's track (js/icons.js received, 2026-11-25). */
-    rcvNow: 'In progress', rcvByAdspace: 'Review by ADspace', rcvByManager: 'Review by your account manager',
+    rcvNow: 'In progress', rcvByAdspace: 'Review by ' + AGENCY.trading_name, rcvByManager: 'Review by your account manager',
     accountManager: 'Your account manager', representative: 'Your representative', detailsSent: 'Details submitted',
     // A wait past the expected, and a read the connection lost (2026-11-10).
     stillLoading: 'Still loading…',
@@ -85,10 +86,10 @@
     pausedTitle: 'Temporarily unavailable',
     pausedText: 'Please check again later.',
     pausedChat: 'Chat on WhatsApp',
-    // Chat on WhatsApp where a page offers ADspace's chat (2026-11-22, /careers/).
+    // Chat on WhatsApp where a page offers the agency's chat (2026-11-22, /careers/).
     chatWhatsApp: 'Chat on WhatsApp',
     closed: 'Selection closed',
-    closedText: 'Please contact your ADspace account manager for any changes.',
+    closedText: 'Please contact your ' + AGENCY.trading_name + ' account manager for any changes.',
     nothing: 'No content pending review',
     nothingText: 'The next content set will appear here when it is ready for review.',
     noScripts: 'No video scripts',
@@ -171,9 +172,9 @@
 
   W.zh = {
     notFound: '链接无效',
-    notFoundText: '请联系您的 ADspace 客户经理。',
-    contactAdspace: '请联系 ADspace。',
-    failTextAdspace: '请刷新页面，或联系 ADspace。',
+    notFoundText: '请联系您的 ' + AGENCY.trading_name + ' 客户经理。',
+    contactAdspace: '请联系 ' + AGENCY.trading_name + '。',
+    failTextAdspace: '请刷新页面，或联系 ' + AGENCY.trading_name + '。',
     passTitle: '访问码',
     passText: '请输入访问码。',
     passWrong: '访问码不正确，请重新输入。',
@@ -185,17 +186,17 @@
     waitHours: '{n}小时',
     waitHour: '1小时',
     noAccess: '无访问权限',
-    noAccessText: '请联系您的 ADspace 客户经理。',
+    noAccessText: '请联系您的 ' + AGENCY.trading_name + ' 客户经理。',
     failTitle: '无法加载',
-    failText: '请刷新页面，或联系您的 ADspace 客户经理。',
-    notSent: '未能提交，请重试或联系您的 ADspace 客户经理。',
-    notSentAdspace: '未能提交，请重试或联系 ADspace。',
+    failText: '请刷新页面，或联系您的 ' + AGENCY.trading_name + ' 客户经理。',
+    notSent: '未能提交，请重试或联系您的 ' + AGENCY.trading_name + ' 客户经理。',
+    notSentAdspace: '未能提交，请重试或联系 ' + AGENCY.trading_name + '。',
     notSaved: '未能保存，请重试。',
     linkExpired: '链接已过期', formEnds: '此表格开放至{d}。', formReceived: '资料已收到',
     formSubmitted: '此表格已提交。', tickToContinue: '请勾选后继续。',
     stepOf: '第{n}步，共{m}步', stepStart: '开始', stepBack: '返回', stepNext: '继续', stepExpect: '流程说明',
     yourDetails: '您的资料', stepEdit: '编辑', stepReview: '检查并提交',
-    rcvNow: '进行中', rcvByAdspace: 'ADspace 审核', rcvByManager: '客户经理审核', accountManager: '您的客户经理', representative: '您的专属顾问', detailsSent: '资料已提交',
+    rcvNow: '进行中', rcvByAdspace: AGENCY.trading_name + ' 审核', rcvByManager: '客户经理审核', accountManager: '您的客户经理', representative: '您的专属顾问', detailsSent: '资料已提交',
     badMobile: '请输入马来西亚或新加坡的手机号码，例如 012-345 6789。',
     brnBad: '请输入12位商业注册号码（BRN）。',
     uenBad: '请输入12位商业注册号码（BRN）或9或10位唯一实体编号（UEN）。',
@@ -221,7 +222,7 @@
     chatWhatsApp: 'WhatsApp 咨询',
     pausedChat: 'WhatsApp 咨询',
     closed: '选择已结束',
-    closedText: '如需调整，请联系您的 ADspace 客户经理。',
+    closedText: '如需调整，请联系您的 ' + AGENCY.trading_name + ' 客户经理。',
     nothing: '暂无待审阅内容',
     nothingText: '下一批内容准备好后会显示在这里。',
     noScripts: '暂无视频脚本',
@@ -550,7 +551,7 @@
     addrGoneWhen: 'Deleted after 12 months',
     bodyGone: 'The message was deleted after 12 months.',
     /* A document's own date (2026-11-12): backdated where chosen, never
-       before ADSPACE PLT's registration or after today. */
+       before the agency's registration or after today. */
     docDate: 'Choose a date from 14 Aug 2023 to today.',
     /* A document's own terms (2026-11-12): a quotation's and a letter's. */
     terms: 'Enter up to ten terms, each of up to 400 characters.',

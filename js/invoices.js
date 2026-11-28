@@ -20,6 +20,7 @@
  */
 (function () {
   'use strict';
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   function db() { return API && API.client; }
   function $(id) { return document.getElementById(id); }
@@ -461,7 +462,7 @@
       }).join('') +
       '<div class="r tot"><span>Total due</span><span></span><span class="n">' + esc(totals(g.lines).join(' · ')) + '</span>' + (g.lines.length > 1 ? '<span></span>' : '') + '</div></div>' +
       (g.lines.length === 1 && g.lines[0].link ? '<span class="inv-mail-btn">View PDF</span>' : '');
-    var mail = '<div class="inv-mail"><div class="inv-mail-card"><div class="inv-mail-mark">ADspace</div>' +
+    var mail = '<div class="inv-mail"><div class="inv-mail-card"><div class="inv-mail-mark">' + AGENCY.trading_name + '</div>' +
       '<h4>' + esc(String(f.subject).split(/\s+·\s+/)[0]) + '</h4>' +
       paras.map(function (p) { return /^\{\s*invoices\s*\}$/i.test(p) ? table : '<p>' + esc(p).replace(/\n/g, '<br>') + '</p>'; }).join('') +
       '<p class="inv-mail-fine">' + esc((rv.tpl && rv.tpl.legal) || '') + '</p>' +

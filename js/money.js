@@ -7,7 +7,7 @@
  * Billing sets S$ (`bill_sgd`, 2026-10-22), and `curOf(client)` is the one
  * reading of it.
  *
- * Tax is a separate question with a separate answer. ADspace is a Malaysian
+ * Tax is a separate question with a separate answer. The agency is a Malaysian
  * entity, so the tax is Malaysian service tax at 8% whoever is being billed:
  * a Singapore client is invoiced in S$ and still carries SST. Currency follows
  * the client; the tax follows us. The only per-client switch is whether it

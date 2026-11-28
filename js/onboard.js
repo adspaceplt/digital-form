@@ -20,6 +20,7 @@
  */
 (function () {
   'use strict';
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   var db = API && API.client;
   if (!API || !API.configured || !db) return;
@@ -111,7 +112,7 @@
     box.innerHTML = '<div class="wk">' +
       (total > 1 ? '<div class="hbo-progress"><span class="hbo-count">Step ' + step + ' of ' + total + '</span>' +
         '<span class="hbo-track" aria-hidden="true"><span style="width:' + Math.round(step / total * 100) + '%"></span></span></div>' : '') +
-      '<h2 class="hbo-title wk-title">' + esc(first ? 'Welcome to ADspace, ' + first : 'Welcome to ADspace') + '</h2>' +
+      '<h2 class="hbo-title wk-title">' + esc(first ? 'Welcome to ' + AGENCY.trading_name + ', ' + first : 'Welcome to ' + AGENCY.trading_name) + '</h2>' +
       '<section class="panel wk-card"><h3 class="wk-h">Your employment details</h3><dl class="ovfacts wk-facts">' + mine + '</dl></section>' +
       withHours(k.sections, k.first_day ? String(k.first_day).slice(0, 10) : null).map(function (s) {
         return '<section class="panel wk-card"><h3 class="wk-h">' + esc(s.title) + '</h3>' + sectionHtml(s.body) + '</section>';

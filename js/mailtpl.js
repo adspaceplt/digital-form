@@ -20,6 +20,7 @@
  * marked as it is typed, in the field and in the preview beside it. */
 (function () {
   'use strict';
+  var AGENCY = window.ADspaceAgency || {};
   function cli() { return window.ADspaceAPI && window.ADspaceAPI.client; }
   function $(id) { return document.getElementById(id); }
   var esc = function (s) { return window.ADspaceWords.esc(s); };
@@ -49,8 +50,8 @@
     doc: 'Employment document', doc_again: 'Employment document sent again', confirmed: 'Document confirmed', expired: 'Document expired' };
   /* The two Supabase sends: their words are set in Supabase's dashboard
      (docs/SIGN-IN-EMAILS.md), so they are listed and never edited here. */
-  var SUPABASE = [['Sign-in code', 'Your ADspace sign-in code'],
-    ['Invitation', 'Welcome to your ADspace Client Portal · Your access to the ADspace Digital Portal']];
+  var SUPABASE = [['Sign-in code', 'Your ' + AGENCY.trading_name + ' sign-in code'],
+    ['Invitation', 'Welcome to your ' + AGENCY.trading_name + ' Client Portal · Your access to the ' + AGENCY.trading_name + ' Digital Portal']];
   var CM_WORD = { received: 'Details received', review: 'Details to review', approved: 'Details approved', changed: 'Details changed',
     request: 'Payment request', posted: 'Post recorded', paid: 'Payment sent' };
 

@@ -19,6 +19,7 @@
  * the database builds unless one is typed over it.
  */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   var db  = API && API.client;
   var LET = window.ADspaceLetters;
@@ -116,8 +117,8 @@
   function memberOf(id) { return state.members.filter(function (m) { return m.id === id; })[0]; }
   function supplierOf(id) { return state.suppliers.filter(function (x) { return x.id === id; })[0]; }
   /* A row names the brand the team knows the client by and the entity the
-     letter was addressed to, because the two differ (ADspace and ADSPACE
-     PLT) and a register read by one alone is a register somebody has to
+     letter was addressed to, because the two differ (a trading name and a legal
+     name) and a register read by one alone is a register somebody has to
      open to search (the user, 2026-09-26). An HR letter has no brand: its
      second column is the colleague as the Team directory names them, and
      the recipient is the name the letter was addressed to. */
@@ -231,7 +232,7 @@
     });
   }
 
-  /* A monthly performance record, once downloaded, is a document ADspace has
+  /* A monthly performance record, once downloaded, is a document the agency has
      issued, so it is listed under HR Letters with its reference, colleague
      and month and nothing of its content (the user, 2026-09-26). It is read
      only where both HR Letters and Performance are held, and made and opened
@@ -248,7 +249,7 @@
     }).catch(function () { then([]); });
   }
 
-  /* An Employment Offer or Contract ADspace confirmed (HR-SPEC decision 4):
+  /* An Employment Offer or Contract the agency confirmed (HR-SPEC decision 4):
      listed under HR Letters with its reference, the person and the day it
      was confirmed, and its sealed copy to download; never a term or a
      figure. A refused read lists none. */
@@ -385,7 +386,7 @@
       db.functions.invoke('sign-download', { body: { quotation: q.id } }).then(function (r) {
         var b = r && r.data;
         if (r.error || !b || typeof b.size !== 'number' || !b.size) throw new Error('unread');
-        window.ADspaceDocs.save(new Blob([b], { type: 'application/pdf' }), 'ADspace Quotation ' + String(q.ref).replace(/\//g, '-') + '.pdf', tab);
+        window.ADspaceDocs.save(new Blob([b], { type: 'application/pdf' }), AGENCY.trading_name + ' Quotation ' + String(q.ref).replace(/\//g, '-') + '.pdf', tab);
       }).catch(function () {
         if (tab) try { tab.close(); } catch (x) {}
         say(SIGNED_FAIL, 'err');

@@ -1,4 +1,4 @@
-/* ADspace Digital Portal — reloading the installed console.
+/* The portal — reloading the installed console.
 
    The console installs as an app (admin/manifest.webmanifest), and an app
    opened from the home screen has no address bar and no reload button, so

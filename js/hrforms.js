@@ -142,11 +142,11 @@
           y -= 8;
         });
         /* The NRIC copies, each on the form's last pages, as the paper keeps
-           them: FOR ADSPACE USE ONLY. */
+           them: FOR {agency} USE ONLY. */
         pics.images.forEach(function (im) {
           var maxW = R - M, maxH = 300, sc = Math.min(maxW / im.img.width, maxH / im.img.height, 1);
           need(im.img.height * sc + 40);
-          text(im.label, M, y, 10, med); text('FOR ADSPACE USE ONLY', R - pn.width('FOR ADSPACE USE ONLY', 8, font), y, 8, font, mute); y -= 10;
+          text(im.label, M, y, 10, med); var own = 'FOR ' + window.ADspaceAgency.trading_name.toUpperCase() + ' USE ONLY'; text(own, R - pn.width(own, 8, font), y, 8, font, mute); y -= 10;
           pn.page.drawImage(im.img, { x: M, y: y - im.img.height * sc, width: im.img.width * sc, height: im.img.height * sc });
           y -= im.img.height * sc + 20;
         });

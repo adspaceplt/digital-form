@@ -1,8 +1,8 @@
 /*
- * ADspace portal chrome.
+ * The portal chrome.
  *
  * The top bar and the footer were written out by hand in every page, so the
- * ADspace mark, the divider, the kicker and the fallback behaviour when the
+ * Mark, the divider, the kicker and the fallback behaviour when the
  * logo fails to load existed in three copies that had already drifted apart.
  * This is the single copy. A new page includes this script and says what
  * section it is; everything else comes from here.
@@ -31,6 +31,7 @@
  *   langToggle, qrBtn, chromeActions, topbar
  */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   /* The one set's glyph where the page holds it (js/icons.js); the front
      door and the 404 hold none, and draw their words alone. */
   function icGlyph(n, c, a) { return window.ADspaceIcons ? (window.ADspaceIcons).glyph(n, c, a) : ''; }
@@ -67,7 +68,7 @@
      deliberately NOT one of them: it has to be in the markup or the page
      flashes unstyled. */
   function head() {
-    /* The ADspace wordmark on white, from the site itself (2026-09-28: the
+    /* The agency's wordmark on white, from the site itself (2026-09-28: the
        wordmark, never the monogram, and no page's icon hangs on the CDN). */
     [['icon', cfg.brandIcon || '/img/favicon-192.png'], ['apple-touch-icon', cfg.brandIcon || '/img/apple-touch-icon.png']].forEach(function (pair) {
       if (document.querySelector('link[rel="' + pair[0] + '"]')) return;
@@ -80,7 +81,7 @@
     if (!document.querySelector('meta[property="og:site_name"]')) {
       var m = document.createElement('meta');
       m.setAttribute('property', 'og:site_name');
-      m.content = 'ADspace';
+      m.content = AGENCY.trading_name;
       document.head.appendChild(m);
     }
   }
@@ -97,8 +98,8 @@
   function headerHtml() {
     return '<header class="topbar" id="topbar"><div class="topbar-inner">' +
       '<div class="brand">' +
-        '<img id="agencyLogo" class="brand-logo" src="" alt="ADspace">' +
-        '<span class="brand-wordmark" id="agencyWordmark" hidden>ADspace</span>' +
+        '<img id="agencyLogo" class="brand-logo" src="" alt="' + AGENCY.trading_name + '">' +
+        '<span class="brand-wordmark" id="agencyWordmark" hidden>' + AGENCY.trading_name + '</span>' +
         '<span class="brand-divider"></span>' +
         '<span class="brand-meta">' +
           '<span class="brand-kicker" id="kicker">' + esc(kicker) + '</span>' +
@@ -119,8 +120,8 @@
     var year = window.ADspaceClock ? ADspaceClock.today().slice(0, 4) : new Date().getFullYear();
     return '<footer class="portalfoot"><div class="portalfoot-in">' +
       '<span class="portalfoot-copy">\u00a9 ' + year +
-        ' ADSPACE PLT. All Rights Reserved.</span>' +
-      '<a class="portalfoot-link" href="https://adspacestudios.com/legal/policies" ' +
+        ' ' + AGENCY.legal_name + '. All Rights Reserved.</span>' +
+      '<a class="portalfoot-link" href="https://' + AGENCY.website + '/legal/policies" ' +
         'target="_blank" rel="noopener">Terms of Service</a>' +
     '</div></footer>';
   }

@@ -11,6 +11,7 @@
  * (`hiring_events`), drawn on its Activity pane.
  */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   var db = API && API.client;
   var UI = window.ADspaceState;
@@ -496,8 +497,8 @@
       ['about', 'Personal and family background'], ['academics', 'Academics and languages'], ['experience', 'Experience'],
       ['hobbies', 'Hobbies'], ['strengths', 'Strengths and weaknesses'],
       ['future', 'Where do you see yourself in the next 5 to 10 years?'], ['ambition', 'What is your ambition?'],
-      ['company', 'What kind of company are you looking for?'], ['found', 'How did you find out about ADspace?'],
-      ['why_us', 'Why have you applied to ADspace?'], ['why_hire', 'Why should ADspace hire you?'],
+      ['company', 'What kind of company are you looking for?'], ['found', 'How did you find out about ' + AGENCY.trading_name + '?'],
+      ['why_us', 'Why have you applied to ' + AGENCY.trading_name + '?'], ['why_hire', 'Why should ' + AGENCY.trading_name + ' hire you?'],
       ['others', 'Others'], ['general', 'General remarks']];
   }
   var iv = { dirty: false, saving: null, wired: false };
@@ -636,7 +637,7 @@
   function decide(o) {
     var c = state.rec, mails = o !== 'proceed';
     var body = { proceed: c.name + ' moves to Offer. The offer will be prepared in the next step.',
-      pool: c.name + ' will be asked on their page to agree to ADspace keeping their application. If they do not agree, their details will be deleted.',
+      pool: c.name + ' will be asked on their page to agree to ' + AGENCY.trading_name + ' keeping their application. If they do not agree, their details will be deleted.',
       not: c.name + '\'s application will be closed. Their details will be deleted after the period set in Settings (Closed candidates kept).' }[o];
     var f = [{ name: 'note', label: 'Note', rows: 2, required: false, placeholder: 'Optional', note: 'Seen by the team only.' }];
     if (mails) f = f.concat(mailFields(o, true));
@@ -839,7 +840,7 @@
       .map(function (m) { return [m.id, F && F.named ? F.named(m.staff_code, m.name) : m.name]; });
     var invite = may('team.invite', 'work');
     var fields = [
-      { name: 'email', label: 'Company email', type: 'email', placeholder: 'email@adspacestudios.com' },
+      { name: 'email', label: 'Company email', type: 'email', placeholder: 'email@' + AGENCY.website },
       { name: 'staff', label: 'Employee ID', placeholder: 'AD001', half: true },
       { name: 'role', label: 'User group', choices: [['', 'Choose a group']].concat(roles), value: '' },
       { name: 'dept', label: 'Department', choices: [['', 'Choose a department']].concat(depts), value: '', half: true },
@@ -1082,7 +1083,7 @@
   function docSend(d, b) {
     var c = state.rec;
     window.ADspaceConfirm.ask({ title: 'Send ' + DOC_WORD[d.kind] + '?', go: 'Send', wait: true,
-      body: 'ADspace will email ' + c.name + ' at ' + c.email + '. Their page asks for a code before it shows the document. The email does not include the salary.',
+      body: AGENCY.trading_name + ' will email ' + c.name + ' at ' + c.email + '. Their page asks for a code before it shows the document. The email does not include the salary.',
       fields: mailFields(d.returned_note ? 'doc_again' : 'doc', false, 'the ' + DOC_WORD[d.kind]) },
     function () {
       return rpc('hiring_doc_send', { p_doc: d.id }).then(function (r) {

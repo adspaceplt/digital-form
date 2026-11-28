@@ -5,6 +5,7 @@
  * nobody holds, or a colleague stood down, is the portal's own cover.
  */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var W = (window.ADspaceWords && window.ADspaceWords.en) || {};
   var API = window.ADspaceAPI;
   var db = API && API.client;
@@ -45,9 +46,9 @@
     var d = r.data;
     if (r.error || !d) { cover(W.failTitle, W.failText); return; }
     if (d.error) { gone(); return; }
-    /* {name} • eNamecard by ADspace (the user, 2026-10-03), in the tab and
+    /* {name} • eNamecard by the agency (the user, 2026-10-03), in the tab and
        for any reader that takes the title after the page has run. */
-    document.title = d.name + ' • eNamecard by ADspace';
+    document.title = d.name + ' • eNamecard by ' + AGENCY.trading_name;
     var og = document.querySelector('meta[property="og:title"]');
     if (og) og.setAttribute('content', document.title);
     window.ADspaceCard.mount(document.getElementById('ncHost'), d, key);

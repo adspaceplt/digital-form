@@ -13,6 +13,7 @@
  * or declined; a contract is signed (name, NRIC or passport number, a
  * signature drawn in a 300 by 100 box). */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI, db = API && API.client;
   var $ = function (id) { return document.getElementById(id); };
   var esc = window.ADspaceWords.esc;
@@ -21,11 +22,11 @@
   var root = function () { return $('crRoot'); };
   function day(iso) { return window.ADspaceClock.date(iso, { long: true }); }
   /* The careers mailbox, the database's (`careers_read` answers it on every
-     answer; 2026-11-20): every line asking the candidate to contact ADspace
+     answer; 2026-11-20): every line asking the candidate to contact the agency
      names it. */
   var CONTACT = '';
   function reach(line) {
-    return CONTACT ? String(line || '').replace(/contact ADspace\.$/, 'contact ADspace at ' + CONTACT + '.') : line;
+    return CONTACT ? String(line || '').replace(new RegExp('contact ' + AGENCY.trading_name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.$'), 'contact ' + AGENCY.trading_name + ' at ' + CONTACT + '.') : line;
   }
   function cover(title, text) {
     text = reach(text);
@@ -34,7 +35,7 @@
   /* Where the application stands, in the candidate's words. The steps
      after Received arrive with the later releases. */
   var NEXT = {
-    received: 'ADspace will contact you by email when there is a next step. The next step will also be shown on this page.'
+    received: AGENCY.trading_name + ' will contact you by email when there is a next step. The next step will also be shown on this page.'
   };
   var STATUS = { received: 'Application received', invited: 'Invited to an interview', interview: 'Interview confirmed', held: 'Interview completed',
     cancelled: 'Interview cancelled', pending: 'Interview time pending confirmation', missed: 'Interview missed',
@@ -74,18 +75,18 @@
       ? 'Google Meet' + (confirmed && i.link
         ? '<span class="cr-meet">' + meetWord(i.link) + '</span>'
         : confirmed ? '' : '<span class="cr-where-note">The meeting link will be shared once the time is confirmed.</span>')
-      : 'ADspace office<span class="cr-addr">' + addrLines() + '</span>' +
+      : AGENCY.trading_name + ' office<span class="cr-addr">' + addrLines() + '</span>' +
         (ORG.map ? '<a class="btn btn-sm cr-map" href="' + esc(ORG.map) + '" target="_blank" rel="noopener">' +
           (I ? I.svg('pin') : '') + 'Get directions' + (I ? I.svg('out') : '') + '</a>' : '');
     return '<div><dt>Location</dt><dd class="cr-where">' + where + '</dd></div>' +
       '<div><dt>Duration</dt><dd>' + esc(i.minutes) + ' minutes</dd></div>';
   }
   /* The way to change an interview's time, before its confirmation and after
-     it until it is held (2026-11-22, the user): ADspace's WhatsApp chat, never
+     it until it is held (2026-11-22, the user): the agency's WhatsApp chat, never
      its number. */
   function change() {
-    var I = window.ADspaceIcons, chat = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.quoteWhatsApp) || 'https://wa.me/adspace';
-    return '<div class="cr-change"><p class="cr-next">To change the time, please contact ADspace on WhatsApp.</p>' +
+    var I = window.ADspaceIcons, chat = window.ADSPACE_CONFIG.quoteWhatsApp;
+    return '<div class="cr-change"><p class="cr-next">To change the time, please contact ' + AGENCY.trading_name + ' on WhatsApp.</p>' +
       '<a class="btn btn-sm cr-chat" id="crChat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + (I ? I.svg('whatsapp') : '') +
       esc(W.chatWhatsApp || 'Chat on WhatsApp') + '</a></div>';
   }
@@ -109,30 +110,30 @@
     /* A time chosen, not yet confirmed (2026-11-22, the user: "Before
        confirmation … a candidate won't actually see any like Google Meet
        details or office details"): the time and its length alone, never where
-       (`careers_read` withholds it), the time said to wait on ADspace, and
-       the way to change it, ADspace's WhatsApp chat, never its number. */
+       (`careers_read` withholds it), the time said to wait on the agency, and
+       the way to change it, the agency's WhatsApp chat, never its number. */
     if (i.state === 'picked') {
       return '<section class="qs-sec cr-iv" id="crIv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Time chosen</dt><dd>' + esc(when(i.at)) + '</dd></div>' +
         '<div><dt>Duration</dt><dd>' + esc(i.minutes) + ' minutes</dd></div></dl>' +
-        '<p class="cr-next" id="crPending">ADspace will confirm this interview time. ' + (i.mode === 'online'
+        '<p class="cr-next" id="crPending">' + AGENCY.trading_name + ' will confirm this interview time. ' + (i.mode === 'online'
           ? 'You will receive an email with the Google Meet link once it is confirmed.'
           : 'You will receive an email once it is confirmed. Please do not visit the office until then.') + '</p>' + change() + '</section>';
     }
     /* An invitation not answered by its reply-by date (2026-11-19, the user:
        "Expire, tell the team"): choosing closes, the team is told. */
     if (i.state === 'expired') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">The period for choosing an interview time has ended. ' +
-      'ADspace will contact you by email if another time can be arranged.</p></section>';
+      AGENCY.trading_name + ' will contact you by email if another time can be arranged.</p></section>';
     /* Cancelled (2026-11-20): no time and no way to join, only what follows. */
-    if (i.state === 'cancelled') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will contact you to arrange another time.</p></section>';
-    if (i.state === 'none') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will send you other times by email.</p></section>';
-    /* Interview held (2026-11-20): when it was, and by when ADspace will
+    if (i.state === 'cancelled') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">' + AGENCY.trading_name + ' will contact you to arrange another time.</p></section>';
+    if (i.state === 'none') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">' + AGENCY.trading_name + ' will send you other times by email.</p></section>';
+    /* Interview held (2026-11-20): when it was, and by when the agency will
        inform the candidate of the outcome, in place of the way to join. */
     if (i.state === 'confirmed' && i.held) {
       return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Date and time</dt><dd>' + esc(when(i.at, true)) + '</dd></div></dl>' +
-        (i.decide_by ? '<p class="cr-next">ADspace will inform you of the outcome by ' + esc(when(i.decide_by)) + ' (Malaysia time).</p>' : '') +
+        (i.decide_by ? '<p class="cr-next">' + AGENCY.trading_name + ' will inform you of the outcome by ' + esc(when(i.decide_by)) + ' (Malaysia time).</p>' : '') +
         /* Past the date with no decision, the careers mailbox to write to (the
            user, 2026-11-20); the address is the database's, never typed. */
-        (i.contact ? '<p class="cr-next">If you have not heard from ADspace by then, please email ' + esc(i.contact) + '.</p>' : '') + '</section>';
+        (i.contact ? '<p class="cr-next">If you have not heard from ' + AGENCY.trading_name + ' by then, please email ' + esc(i.contact) + '.</p>' : '') + '</section>';
     }
     if (i.state === 'confirmed') {
       var join = i.mode === 'online' && i.link && window.ADspaceWords.absUrl(i.link)
@@ -147,13 +148,13 @@
     return '';
   }
   /* Interview missed (2026-11-26): its date, then what follows: the new
-     times (drawn after it), the closing line, or that ADspace will contact
+     times (drawn after it), the closing line, or that the agency will contact
      the candidate. */
   function missed(d) {
     var m = d.missed;
     if (!m) return '';
-    var next = m.closed ? 'As you did not attend, your application has been closed. ADspace wishes you every success in your search.'
-      : d.interview ? '' : 'ADspace will contact you to arrange another time.';
+    var next = m.closed ? 'As you did not attend, your application has been closed. ' + AGENCY.trading_name + ' wishes you every success in your search.'
+      : d.interview ? '' : AGENCY.trading_name + ' will contact you to arrange another time.';
     return '<section class="qs-sec cr-iv" id="crMissed"><h2 class="qs-sec-h">Interview missed</h2><dl class="ovfacts cr-facts"><div><dt>Date and time</dt><dd>' +
       esc(when(m.at, true)) + '</dd></div></dl>' + (next ? '<p class="cr-next">' + esc(next) + '</p>' : '') + '</section>';
   }
@@ -162,19 +163,19 @@
   function decision(d) {
     var head = '';
     /* Proceed promises no offer (2026-11-20): the next step alone. */
-    if (d.stage === 'offer') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will contact you about the next step.</p></section>';
+    if (d.stage === 'offer') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">' + AGENCY.trading_name + ' will contact you about the next step.</p></section>';
     /* The talent pool declined: the details are not kept, the application never
        said to be refused (2026-11-20). */
-    if (d.stage === 'closed' && d.pool_declined) return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will not keep your details on file.</p></section>';
+    if (d.stage === 'closed' && d.pool_declined) return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">' + AGENCY.trading_name + ' will not keep your details on file.</p></section>';
     if (d.stage === 'closed' && d.missed && d.missed.closed) return '';
     if (d.stage === 'closed') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">' +
-      'ADspace will not be proceeding with your application at this time. ADspace wishes you every success in your search.</p></section>';
+      AGENCY.trading_name + ' will not be proceeding with your application at this time. ' + AGENCY.trading_name + ' wishes you every success in your search.</p></section>';
     var p = d.pool;
     if (d.stage !== 'pool' || !p) return '';
-    if (p.consent === 'yes') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will keep your application until ' +
+    if (p.consent === 'yes') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">' + AGENCY.trading_name + ' will keep your application until ' +
       esc(window.ADspaceClock.date(p.until, { long: true })) + ' and may contact you about future positions. Your details will then be deleted.</p></section>';
     return '<section class="qs-sec cr-iv" id="crPool"><h2 class="qs-sec-h">Keep your application on file?</h2>' +
-      '<p class="cr-next">There is no suitable opening for you at this time. ADspace would like to keep your application for ' + esc(p.months) +
+      '<p class="cr-next">There is no suitable opening for you at this time. ' + AGENCY.trading_name + ' would like to keep your application for ' + esc(p.months) +
       ' months and may contact you about future positions. If you do not agree, your details will be deleted.</p>' +
       '<p class="msg" id="crMsg"></p>' +
       '<div class="qs-foot"><button class="btn" type="button" data-pool="no">Do not keep</button>' +
@@ -200,7 +201,7 @@
   var DOCSTATE = {
     sent: function (k) { return k === 'contract' ? ['Awaiting your signature', 'is-warn'] : ['Awaiting your reply', 'is-warn']; },
     expired: function () { return ['Expired', 'is-off']; },
-    signed: function (k) { return [k === 'contract' ? 'Signed, awaiting ADspace confirmation' : 'Accepted, awaiting ADspace confirmation', 'is-warn']; },
+    signed: function (k) { return [k === 'contract' ? 'Signed, awaiting ' + AGENCY.trading_name + ' confirmation' : 'Accepted, awaiting ' + AGENCY.trading_name + ' confirmation', 'is-warn']; },
     confirmed: function () { return ['Confirmed', 'is-ok']; },
     declined: function () { return ['Declined', 'is-off']; }
   };
@@ -214,9 +215,9 @@
     'code-needed': 'Please open the document again with a new code.',
     'bad-name': 'Enter your full name.', 'bad-agree': 'Please tick the confirmation.',
     'bad-id': 'Enter your NRIC or Passport Number (for example 900101-01-1234).',
-    'bad-signature': 'Please sign in the box.', expired: 'The time to reply has passed. Please contact ADspace.',
+    'bad-signature': 'Please sign in the box.', expired: 'The time to reply has passed. Please contact ' + AGENCY.trading_name + '.',
     answered: 'You have already replied to this document. Refresh the page to see it.', 'too-long': 'Shorten the reason to 500 characters.',
-    'mail-not-set-up': 'The code could not be sent. Please contact ADspace.', 'not-sent': 'The code could not be sent. Please try again.'
+    'mail-not-set-up': 'The code could not be sent. Please contact ' + AGENCY.trading_name + '.', 'not-sent': 'The code could not be sent. Please try again.'
   };
   var VIEW = 'adspace-careers-view:';
   function viewOf(id) { try { return sessionStorage.getItem(VIEW + id) || ''; } catch (e) { return ''; } }
@@ -249,7 +250,7 @@
       padWire();
     } else {
       box.innerHTML = '<p class="cr-next">' + (openDoc.codeSent ? 'A code has been sent to your email address. It expires in 15 minutes.'
-          : 'For your privacy, ADspace will email a six-digit code to your email address before showing the document.') + '</p>' +
+          : 'For your privacy, ' + AGENCY.trading_name + ' will email a six-digit code to your email address before showing the document.') + '</p>' +
         (openDoc.codeSent ? '<form class="cr-codeform" id="crCodeForm" novalidate><div class="qs-form"><div class="field"><label class="field-label" for="crCode">Code</label><input class="input cr-code" id="crCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*"></div></div>' +
           '<p class="msg" id="crDocMsg"></p>' +
           '<div class="qs-foot"><button class="btn" type="button" data-docx="code">Send a new code</button><button class="btn btn-primary" type="submit" data-docx="open">Open</button></div></form>'
@@ -275,8 +276,8 @@
       '<div><dt>Basic salary</dt><dd>' + esc(money(p.basic)) + ' per month' + (months && p.probation ? '<br>' + esc(money(p.probation)) + ' per month during probation' : '') + '</dd></div>' +
       '</dl>';
     var dl = '<div class="qs-foot cr-doc-dl"><button class="btn" type="button" data-docx="pdf">' + (window.ADspaceIcons ? window.ADspaceIcons.svg('file') : '') + 'Download</button></div>';
-    if (d.returned_note) facts = '<p class="msg warn">ADspace has returned this document with the following note: ' + esc(d.returned_note) + '</p>' + facts;
-    if (d.state !== 'sent') return facts + dl + (d.state === 'signed' ? '<p class="cr-next">ADspace will confirm the document and inform you by email.</p>' : '');
+    if (d.returned_note) facts = '<p class="msg warn">' + AGENCY.trading_name + ' has returned this document with the following note: ' + esc(d.returned_note) + '</p>' + facts;
+    if (d.state !== 'sent') return facts + dl + (d.state === 'signed' ? '<p class="cr-next">' + AGENCY.trading_name + ' will confirm the document and inform you by email.</p>' : '');
     var tick = function (id, text) {
       return '<label class="qs-consent cr-agree"><input type="checkbox" id="' + id + '">' + MARK + '<span class="qs-text">' + esc(text) + '</span></label>';
     };
@@ -360,7 +361,7 @@
         if (r.error) throw r.error;
         if (x.error) { docSay(DOCSAID[x.error] || W.notSentAdspace); return; }
         keepView(id, x.view); openDoc.data = x; openDoc.step = 'caution'; docBody();
-      }).catch(function () { btn.disabled = false; docSay('The document could not be opened. Please try again, or contact ADspace.'); });
+      }).catch(function () { btn.disabled = false; docSay('The document could not be opened. Please try again, or contact ' + AGENCY.trading_name + '.'); });
       return;
     }
     if (a === 'pdf') {
@@ -419,7 +420,7 @@
     var l = d.docs || [];
     if (!l.length) return '';
     if (l.some(function (x) { return x.state === 'sent'; })) return 'Awaiting your reply';
-    if (l.some(function (x) { return x.state === 'signed'; })) return 'Awaiting ADspace confirmation';
+    if (l.some(function (x) { return x.state === 'signed'; })) return 'Awaiting ' + AGENCY.trading_name + ' confirmation';
     var of = function (k) { return l.filter(function (x) { return x.kind === k; }).pop(); }, c = of('contract'), o = of('offer'), last = c || o;
     if (c && c.state === 'confirmed') return 'Contract confirmed';
     if (last.state === 'confirmed') return 'Offer accepted';
@@ -428,12 +429,12 @@
   }
   /* An application only received (the board ReceivedCareers, 2026-11-25;
      js/icons.js received): where it stands, what was sent and how to reach
-     ADspace. */
+     the agency. */
   function paintReceived(d) {
-    var I = window.ADspaceIcons, chat = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.quoteWhatsApp) || 'https://wa.me/adspace';
+    var I = window.ADspaceIcons, chat = window.ADSPACE_CONFIG.quoteWhatsApp;
     var mail = CONTACT && window.ADspaceWords.emailOk(CONTACT) ? '<a class="plink" href="mailto:' + esc(CONTACT) + '">' + I.svg('mail') + esc(CONTACT) + '</a>' : '';
     root().innerHTML = I.received({
-      title: STATUS.received, line: 'Dear ' + d.name + ', thank you for your interest in joining ADspace.', note: NEXT.received,
+      title: STATUS.received, line: 'Dear ' + d.name + ', thank you for your interest in joining ' + AGENCY.trading_name + '.', note: NEXT.received,
       /* The application's reference (ONE REQUEST REFERENCE, 2026-11-26). */
       reqRef: d.request_ref || '',
       steps: [
@@ -444,7 +445,7 @@
       ],
       cards: [
         I.summary('Your application', [{ rows: [['Position', d.position], ['Received on', day(d.received_at)]] }]),
-        I.card('Contact ADspace', '<div class="rcv-acts">' + mail +
+        I.card('Contact ' + AGENCY.trading_name, '<div class="rcv-acts">' + mail +
           '<a class="btn btn-sm cr-chat" id="crChat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + I.svg('whatsapp') +
           esc(W.chatWhatsApp || 'Chat on WhatsApp') + '</a></div>')
       ]
@@ -454,7 +455,7 @@
     var i = d.interview, dec = decision(d);
     root().innerHTML = '<div class="qs-step cr-page" data-shown>' +
       '<div class="qs-top"><h1 class="qs-title">Your application</h1>' +
-      '<p class="qs-lead">Dear ' + esc(d.name) + ', thank you for your interest in joining ADspace.</p></div>' +
+      '<p class="qs-lead">Dear ' + esc(d.name) + ', thank you for your interest in joining ' + AGENCY.trading_name + '.</p></div>' +
       '<dl class="ovfacts cr-facts"><div><dt>Position</dt><dd>' + esc(d.position) + '</dd></div>' +
       '<div><dt>Received on</dt><dd>' + esc(day(d.received_at)) + '</dd></div>' +
       (d.request_ref ? '<div><dt>Reference</dt><dd>' + esc(d.request_ref) + '</dd></div>' : '') +

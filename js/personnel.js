@@ -22,6 +22,7 @@
  */
 (function () {
   'use strict';
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   var db = API && API.client;
   if (!API || !API.configured || !db) return;
@@ -570,7 +571,7 @@
     }).join('') + (form.own ? '<section class="fsec"><h4 class="fsec-h">Declaration</h4>' +
       '<p class="prs-declare">I hereby certify that all information contained in this form is true, correct and complete to the best of my knowledge. ' +
       'I understand that any misrepresentation or omission of facts may be grounds for dismissal.</p>' +
-      '<p class="prs-declare">I consent to the collection and processing of my personal data by ADSPACE PLT for the purposes of my employment, and I authorise the verification of any of the information above.</p>' +
+      '<p class="prs-declare">I consent to the collection and processing of my personal data by ' + AGENCY.legal_name + ' for the purposes of my employment, and I authorise the verification of any of the information above.</p>' +
       '<div class="row"><label class="tickline"><input type="checkbox" id="prsConsent" data-nodraft> I agree to the declaration and consent above.</label></div>' +
       '<div class="row"><div class="field"><label class="field-label" for="prsSign">Full name as signature</label>' +
       '<input class="input" id="prsSign" aria-required="true" maxlength="100" autocomplete="name" data-nodraft></div></div></section>' : '');

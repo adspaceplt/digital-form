@@ -1,4 +1,4 @@
-/* ADspace swipe — a sideways swipe moves to the next or the previous tab.
+/* Swipe — a sideways swipe moves to the next or the previous tab.
  *
  * Asked for by the user on 2026-09-27 for the phone and the installed app:
  * every tab strip (a record's panes, My Work's views, Campaigns and the

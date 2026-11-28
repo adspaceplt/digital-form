@@ -8,6 +8,7 @@
  * sends the answers once (`client_details_submit`); they wait on the client's
  * Billing for the team to take into the record. English and 中文. */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI, db = API && API.client;
   var $ = function (id) { return document.getElementById(id); };
   var esc = window.ADspaceWords.esc;
@@ -22,15 +23,15 @@
       brnPh: '12 digits', old: 'Old Registration No.', tin: 'Tax Identification Number (TIN)',
       sst: 'SST Registration No.', address: 'Billing address', finance: 'Finance email',
       contact: 'Billing contact', sal: 'Salutation', name: 'Name', phone: 'Mobile number', email: 'Email',
-      optional: 'Optional', consent: 'I confirm that these details are correct and consent to ADspace keeping them for business purposes.',
+      optional: 'Optional', consent: 'I confirm that these details are correct and consent to ' + AGENCY.trading_name + ' keeping them for business purposes.',
       submit: 'Submit',
       req: { legal_name: 'Enter the Registered Company Name.', billing_address: 'Enter the billing address.', contact_name: 'Enter the billing contact\'s name.',
         contact_phone: 'Enter the mobile number.', contact_email: 'Enter the email address.' },
       badEmail: 'Enter a valid email address.', 
       badAddr: 'Enter the full billing address.', badCode: 'Enter {a} to {b} letters or digits, as registered.',
-      doneP: 'Thank you. ADspace will review your details.',
+      doneP: 'Thank you. ' + AGENCY.trading_name + ' will review your details.',
       /* The form in steps (2026-11-25, the approved canvas). */
-      introP: 'Provide your company\'s billing details to ADspace.', billing: 'Billing',
+      introP: 'Provide your company\'s billing details to ' + AGENCY.trading_name + '.', billing: 'Billing',
       companyLine: 'Registered Company Name, Business Registration No., Old Registration No., Tax Identification Number (TIN) and SST Registration No.',
       billingLine: 'Billing address and finance email.', contactLine: 'Salutation, name, mobile number and email.',
       reviewLine: 'Confirm that the details are correct, then submit.',
@@ -42,14 +43,14 @@
       brnPh: '12位数字', old: '旧注册号码', tin: '税务识别号（TIN）',
       sst: 'SST 注册号码', address: '账单地址', finance: '财务邮箱',
       contact: '账单联系人', sal: '称谓', name: '姓名', phone: '手机号码', email: '邮箱',
-      optional: '选填', consent: '我确认以上资料无误，并同意 ADspace 保存这些资料作业务用途。',
+      optional: '选填', consent: '我确认以上资料无误，并同意 ' + AGENCY.trading_name + ' 保存这些资料作业务用途。',
       submit: '提交',
       req: { legal_name: '请填写公司注册名称。', billing_address: '请填写账单地址。',
         contact_name: '请填写账单联系人姓名。', contact_phone: '请填写手机号码。', contact_email: '请填写邮箱地址。' },
       badEmail: '请输入有效的邮箱地址。', 
       badAddr: '请填写完整的账单地址。', badCode: '请按注册资料填写{a}至{b}位字母或数字。',
-      doneP: '谢谢。ADspace 将审阅这些资料。',
-      introP: '请向 ADspace 提供贵公司的账单资料。', billing: '账单',
+      doneP: '谢谢。' + AGENCY.trading_name + ' 将审阅这些资料。',
+      introP: '请向 ' + AGENCY.trading_name + ' 提供贵公司的账单资料。', billing: '账单',
       companyLine: '公司注册名称、商业注册号码、旧注册号码、税务识别号（TIN）及 SST 注册号码。',
       billingLine: '账单地址及财务邮箱。', contactLine: '称谓、姓名、手机号码及邮箱。',
       reviewLine: '确认资料无误后提交。',
@@ -130,7 +131,7 @@
           SALUTATIONS.map(function (x) { return '<option value="' + esc(x) + '"' + (typed.contact_salutation === x ? ' selected' : '') + '>' + esc(salWord(x)) + '</option>'; }).join('') + '</select>') +
         field('dfName', w.name, true, input('dfName', 'contact_name', true, 'maxlength="80" autocomplete="name" placeholder="John Doe"')) +
         field('dfPhone', w.phone, true, input('dfPhone', 'contact_phone', true, 'type="tel" inputmode="tel" autocomplete="tel" placeholder="012-345 6789"')) +
-        field('dfEmail', w.email, true, input('dfEmail', 'contact_email', true, 'type="email" maxlength="160" autocomplete="email" placeholder="email@adspace.me"')) +
+        field('dfEmail', w.email, true, input('dfEmail', 'contact_email', true, 'type="email" maxlength="160" autocomplete="email" placeholder="email@' + window.ADSPACE_CONFIG.examples.domain + '"')) +
       '</section>';
     /* The answers read back, an empty one left out, then the consent. */
     return yours({ label: w.stepEdit, attrs: 'id="dfEdit"' }) +

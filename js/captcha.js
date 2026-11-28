@@ -1,4 +1,4 @@
-/* ADspace Digital Portal — a captcha on every emailed sign-in.
+/* The portal — a captcha on every emailed sign-in.
 
    Supabase Auth checks a Cloudflare Turnstile token on the calls that send a
    sign-in email once "Enable CAPTCHA protection" is switched on in the

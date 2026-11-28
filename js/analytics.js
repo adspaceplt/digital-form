@@ -31,6 +31,7 @@
  * (`analytics_reads`); every number it quotes is checked against them.
  */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   var db = API && API.client;
   var UI = window.ADspaceState;
@@ -1053,7 +1054,7 @@
     AI.declare('analysis', 'Download', function () {
       var tab = docs.tabFor ? docs.tabFor() : null;
       drawPdf(v).then(function (blob) {
-        return docs.save(blob, 'ADspace Analytics Analysis v' + v.version + '.pdf', tab);
+        return docs.save(blob, AGENCY.trading_name + ' Analytics Analysis v' + v.version + '.pdf', tab);
       }).catch(function (e) { docs.shut(tab); msg((e && e.message) || 'The PDF could not be generated.'); });
     });
   }
@@ -1063,7 +1064,7 @@
       var pdf;
       return PDF.PDFDocument.create().then(function (doc) {
         pdf = doc;
-        docs.meta(pdf, 'ADspace Analytics Analysis v' + v.version, 'Analytics Analysis');
+        docs.meta(pdf, AGENCY.trading_name + ' Analytics Analysis v' + v.version, 'Analytics Analysis');
         return docs.embedFonts(pdf, PDF, { cjk: false });
       }).then(function (fonts) {
         /* The internal template (ALP, ADspaceDocs.TEMPLATE): its head and

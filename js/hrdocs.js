@@ -19,6 +19,7 @@
  */
 (function () {
   'use strict';
+  var AGENCY = window.ADspaceAgency || {};
   var DOCS = function () { return window.ADspaceDocs; };
   var ORG = window.ADSPACE_ORG || {};
   /* The template's body: 11pt on single lines (12.5pt), a blank line
@@ -99,8 +100,8 @@
     para('You will not receive overtime payments in respect of any such working time unless provided for in law or you are eligible for overtime pay under the Company’s policies or guidelines.');
     para('The Company additionally reserves its right to change or substitute your scheduled work hours or workdays/off days to meet business needs. The Company reserves the right to exclude office holiday(s) to staff depending on their workload / work schedule and/or programs.');
     head('PLACE OF EMPLOYMENT');
-    para(t.place ? 'Your place of employment will be at ' + t.place + ' but this location may change from time to time.' : 'Your place of employment will be at the ADspace registered office but this location may change from time to time.');
-    para('During the term of your employment, the Management reserves the right to transfer you to other location/position within the ADspace group of companies, departments, and associated companies.');
+    para(t.place ? 'Your place of employment will be at ' + t.place + ' but this location may change from time to time.' : 'Your place of employment will be at the ' + AGENCY.trading_name + ' registered office but this location may change from time to time.');
+    para('During the term of your employment, the Management reserves the right to transfer you to other location/position within the ' + AGENCY.trading_name + ' group of companies, departments, and associated companies.');
     if (months) {
       head('PROBATIONARY PERIOD');
       if (type === 'intern') para('(For “Internship” position, this is equivalent to your Internship Programme)');
@@ -221,7 +222,7 @@
         y -= LH;
 
         if (!contract) {
-          para('ADspace is pleased to offer you employment, subject to the terms and conditions of the employment contract.');
+          para(AGENCY.trading_name + ' is pleased to offer you employment, subject to the terms and conditions of the employment contract.');
           var months = Number(t.probation_months) || 0;
           var facts = [['Employment', (TYPE[t.type] || TYPE.permanent)[0]], ['Position', t.position || ''], ['Job scope', t.scope || '']];
           if (months) facts.push(['Probation', months + ' month' + (months === 1 ? '' : 's') + ' (' + monthOf(t.start, 0) + ' to ' + monthOf(t.start, months - 1) + ')']);
@@ -243,7 +244,7 @@
           para('Thank you.');
         } else {
           var cl = clauses(doc, pay);
-          para('With reference to your recent application and interviews, ADspace is pleased to offer you employment as ' + cl.position +
+          para('With reference to your recent application and interviews, ' + AGENCY.trading_name + ' is pleased to offer you employment as ' + cl.position +
             ' on the following terms and conditions:');
           cl.list.forEach(function (c) {
             y -= 4; need(LH * 3);
@@ -268,7 +269,7 @@
           if (!s) return [];
           if (s.via === 'online') return ['Signed electronically on ' + D.letterDate(rec.at) + ', ' + window.ADspaceClock.clock(rec.at) + ' (GMT+8), confirmed by a code sent to ' + (rec.email || '') + '.',
             'IP address ' + (rec.ip || 'not recorded') + (rec.country ? ' (' + rec.country + ')' : '') + (rec.fingerprint ? ' · Document fingerprint ' + rec.fingerprint : '') + '.'];
-          return ['Signed ' + (s.via === 'scan' ? 'and returned as a scan' : 'on paper') + (s.on ? ' on ' + D.letterDate(s.on) : '') + '; the signed copy is kept by ADspace.'];
+          return ['Signed ' + (s.via === 'scan' ? 'and returned as a scan' : 'on paper') + (s.on ? ' on ' + D.letterDate(s.on) : '') + '; the signed copy is kept by ' + AGENCY.trading_name + '.'];
         };
         need(LH * 10);
         pn.rule(y + 6); y -= 10;

@@ -19,6 +19,7 @@
  * this page.
  */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   /* FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07): offered once in
      this browser, the moment the page shows what it is for. */
@@ -41,7 +42,7 @@
      typed into a line (2026-11-17). */
   function agency(o) {
     var n = window.ADSPACE_CONFIG.agencyName;
-    if (n === 'ADspace') return o;
+    if (n === AGENCY.trading_name) return o;
     var walk = function (v) {
       if (typeof v === 'string') return v.replace(/\bADspace\b/g, n);
       if (v && typeof v === 'object' && !Array.isArray(v)) { Object.keys(v).forEach(function (k) { v[k] = walk(v[k]); }); return v; }
@@ -57,7 +58,7 @@
       codeText: 'Enter the access code provided.',
       codeWrong: 'Incorrect access code. Please try again.',
       standDown: 'No bookings',
-      standDownText: 'Please contact your ADspace account manager.',
+      standDownText: 'Please contact your ' + AGENCY.trading_name + ' account manager.',
       lang: '中文',
       work: 'Your bookings', openCode: 'Open', tabsLabel: 'Sections',
       /* The queue names the one that needs them, so nothing on it has to be
@@ -87,7 +88,7 @@
       sizeMany: '{n} files are larger than {mb} MB. Please upload smaller files.',
       failOne: '{file} could not be uploaded. Please try again.',
       failMany: '{n} files could not be uploaded. Please try again.',
-      uploadMany: 'This booking has reached today\'s upload limit. Please try again tomorrow, or contact ADspace.',
+      uploadMany: 'This booking has reached today\'s upload limit. Please try again tomorrow, or contact ' + AGENCY.trading_name + '.',
 
       since: 'Creator since {d}',
       bookingsN: function (n) { return n + (n === 1 ? ' booking' : ' bookings'); },
@@ -95,7 +96,7 @@
       linksNone: 'No profile links.',
       save: 'Save', cancel: 'Cancel', close: 'Close', saved: 'Saved.', noChange: 'No change.',
       linkBad: '{url} is not a profile link. Please enter the link to your profile.',
-      linkTaken: 'This profile is registered to another creator. Please contact your ADspace account manager.',
+      linkTaken: 'This profile is registered to another creator. Please contact your ' + AGENCY.trading_name + ' account manager.',
       linkNone: 'Keep at least one profile link.',
       linkFail: 'Not saved. Please try again.',
       payHead: 'Payment details',
@@ -106,7 +107,7 @@
       paysNote: 'Payments in MYR are made within {myr} working days of the post date, and payments in other currencies within {other} working days.',
       payGo: 'Submit details', payChange: 'Change details',
       payEinvHead: 'e-Invoice',
-      payEinv: 'Every payment ADspace makes to you requires an e-Invoice to be submitted to the Inland Revenue Board of Malaysia (LHDN). The e-Invoice is issued with the details you provide here, so please ensure your name, identification number, Tax Identification Number (TIN) and billing address are accurate and match your official records.',
+      payEinv: 'Every payment ' + AGENCY.trading_name + ' makes to you requires an e-Invoice to be submitted to the Inland Revenue Board of Malaysia (LHDN). The e-Invoice is issued with the details you provide here, so please ensure your name, identification number, Tax Identification Number (TIN) and billing address are accurate and match your official records.',
       payAddrNeeded: 'Billing address needed', payAddrGo: 'Add billing address', payAddrSent: 'Billing address saved.',
       payNone: 'Please submit your payment details before your first payment.',
       payPending: 'Under review', payApproved: 'Approved', payDeclined: 'Declined', payChangePending: 'Change under review',
@@ -124,8 +125,8 @@
       payPayee: 'Account holder name', payPayeeSame: 'Same as the name above', payWhatsapp: 'WhatsApp number',
       payKeep: 'Leave blank to keep the number ending {n}.',
       payKeepAs: 'Leave blank to keep {v}.',
-      payConfirm: 'I confirm these details are correct and authorise ADSPACE PLT to make payments to this account.',
-      paySent: 'Submitted. ADspace will review your details and inform you by email once they are approved.',
+      payConfirm: 'I confirm these details are correct and authorise ' + AGENCY.legal_name + ' to make payments to this account.',
+      paySent: 'Submitted. ' + AGENCY.trading_name + ' will review your details and inform you by email once they are approved.',
       payBad: { bill_kind: 'Choose how you are billed.', id_no: { nric: 'Enter a valid NRIC Number.', passport: 'Enter a valid Passport Number.', brn: window.ADspaceWords.en.brnBad },
         legal_name: { nric: 'Enter your Full Name as per NRIC.', passport: 'Enter your Full Name as per Passport.', brn: 'Enter the Registered Company Name.' },
         tin: 'Enter a valid TIN, or leave it blank.', address: 'Enter the billing address.', currency: 'Choose a currency.',
@@ -135,7 +136,7 @@
       payTooMany: 'Too many submissions today. Please try again tomorrow.',
       payFail: 'Not submitted. Please try again.',
       postsHead: 'Post and results', postLink: 'Post link', postedOn: 'Posted on',
-      countPeriod: 'Results period: {a} to {b}', periodWait: 'ADspace will set the results period shortly.',
+      countPeriod: 'Results period: {a} to {b}', periodWait: AGENCY.trading_name + ' will set the results period shortly.',
       views: 'Views', engagements: 'Engagements', impressions: 'Impressions',
       linkWrong: 'This is not a {p} post link. Please paste the link to your {p} post.', numWrong: 'Enter whole numbers.', dateWrong: 'Choose a date up to today.',
       rateHead: 'Rate your experience', foldHead: 'Booking details',
@@ -147,8 +148,8 @@
         pending_visit: 'Your shoot is booked.',
         pending_delivery: 'The product is on its way to you.',
         pending_draft: 'Your submission is due.',
-        submitted: 'ADspace will review your submission.',
-        reviewing: 'ADspace will review your submission.',
+        submitted: AGENCY.trading_name + ' will review your submission.',
+        reviewing: AGENCY.trading_name + ' will review your submission.',
         changes: 'Please revise as noted below and submit again.',
         scheduled: 'Your submission has been approved and scheduled.',
         posted: 'Posted. Thank you.',
@@ -161,7 +162,7 @@
       codeText: '请输入您收到的访问码。',
       codeWrong: '访问码不正确，请重新输入。',
       standDown: '暂无合作',
-      standDownText: '请联系您的 ADspace 客户经理。',
+      standDownText: '请联系您的 ' + AGENCY.trading_name + ' 客户经理。',
       lang: 'EN',
       work: '您的合作', openCode: '打开', tabsLabel: '页面分区',
       needsYou: '待您处理',
@@ -189,7 +190,7 @@
       sizeMany: '{n}个文件超过{mb}MB上限，请上传较小的文件。',
       failOne: '{file} 上传失败，请重试。',
       failMany: '{n}个文件上传失败，请重试。',
-      uploadMany: '此合作今日的上传数量已达上限，请明天再试或联系 ADspace。',
+      uploadMany: '此合作今日的上传数量已达上限，请明天再试或联系 ' + AGENCY.trading_name + '。',
 
       since: '{d} 起合作',
       bookingsN: function (n) { return n + '个合作'; },
@@ -197,11 +198,11 @@
       linksNone: '暂无主页链接。',
       save: '保存', cancel: '取消', close: '关闭', saved: '已保存。', noChange: '没有更改。',
       linkBad: '{url} 不是主页链接，请输入您的主页链接。',
-      linkTaken: '此主页已登记在另一位创作者名下，请联系您的 ADspace 客户经理。',
+      linkTaken: '此主页已登记在另一位创作者名下，请联系您的 ' + AGENCY.trading_name + ' 客户经理。',
       linkNone: '请至少保留一个主页链接。',
       linkFail: '未能保存，请重试。',
       postsHead: '发布链接与数据', postLink: '帖子链接', postedOn: '实际发布日期',
-      countPeriod: '统计期间：{a} 至 {b}', periodWait: 'ADspace 将尽快设定数据统计期间。',
+      countPeriod: '统计期间：{a} 至 {b}', periodWait: AGENCY.trading_name + ' 将尽快设定数据统计期间。',
       views: '播放量', engagements: '互动量', impressions: '曝光量',
       linkWrong: '这不是{p}的帖子链接，请粘贴您在{p}发布的帖子链接。', numWrong: '请输入整数。', dateWrong: '请选择不晚于今天的日期。',
       rateHead: '为本次合作评分', foldHead: '合作详情',
@@ -215,7 +216,7 @@
       paysNote: '马币款项于发布日期后{myr}个工作日内支付，其他货币款项于{other}个工作日内支付。',
       payGo: '提交资料', payChange: '更改资料',
       payEinvHead: '电子发票（e-Invoice）',
-      payEinv: 'ADspace 向您支付的每笔款项均须向马来西亚内陆税收局（LHDN）提交电子发票。电子发票将依据您在此提供的资料开具，请确保您的姓名、身份证明号码、税务识别号（TIN）及账单地址准确无误，并与您的官方记录一致。',
+      payEinv: AGENCY.trading_name + ' 向您支付的每笔款项均须向马来西亚内陆税收局（LHDN）提交电子发票。电子发票将依据您在此提供的资料开具，请确保您的姓名、身份证明号码、税务识别号（TIN）及账单地址准确无误，并与您的官方记录一致。',
       payAddrNeeded: '需提供账单地址', payAddrGo: '添加账单地址', payAddrSent: '账单地址已保存。',
       payNone: '首次付款前，请提交您的付款资料。',
       payPending: '审核中', payApproved: '已核准', payDeclined: '已拒绝', payChangePending: '更改审核中',
@@ -233,8 +234,8 @@
       payPayee: '账户持有人姓名', payPayeeSame: '与上方名称相同', payWhatsapp: 'WhatsApp号码',
       payKeep: '留空即保留尾号为{n}的号码。',
       payKeepAs: '留空即保留{v}。',
-      payConfirm: '本人确认以上资料正确无误，并授权 ADSPACE PLT 将款项付至此账户。',
-      paySent: '已提交。ADspace 审核通过后将以电邮通知您。',
+      payConfirm: '本人确认以上资料正确无误，并授权 ' + AGENCY.legal_name + ' 将款项付至此账户。',
+      paySent: '已提交。' + AGENCY.trading_name + ' 审核通过后将以电邮通知您。',
       payBad: { bill_kind: '请选择开票身份。', id_no: { nric: '请输入有效的身份证号码。', passport: '请输入有效的护照号码。', brn: window.ADspaceWords.zh.brnBad },
         legal_name: { nric: '请输入身份证上的全名。', passport: '请输入护照上的全名。', brn: '请输入公司注册名称。' },
         tin: '请输入有效的TIN，或留空。', address: '请输入账单地址。', currency: '请选择货币。',
@@ -245,12 +246,12 @@
       payFail: '未能提交，请重试。',
       ended: '此合作已结束。',
       nextUp: {
-        confirmed: 'ADspace 将与您确认拍摄日期。',
+        confirmed: AGENCY.trading_name + ' 将与您确认拍摄日期。',
         pending_visit: '拍摄已安排。',
         pending_delivery: '产品正在寄送中。',
         pending_draft: '请提交您的作品。',
-        submitted: 'ADspace 将审阅您的提交。',
-        reviewing: 'ADspace 将审阅您的提交。',
+        submitted: AGENCY.trading_name + ' 将审阅您的提交。',
+        reviewing: AGENCY.trading_name + ' 将审阅您的提交。',
         changes: '请按以下说明修改后重新提交。',
         scheduled: '已通过并排期。',
         posted: '已发布，感谢您的配合。',
@@ -532,9 +533,9 @@
   var PLAT_ORDER = ['xhs', 'instagram', 'tiktok', 'facebook'];
   var PLACEHOLDER = {
     xhs: 'https://www.xiaohongshu.com/user/profile/…',
-    instagram: 'https://www.instagram.com/adspace.advertising',
-    tiktok: 'https://www.tiktok.com/@adspace.advertising',
-    facebook: 'https://www.facebook.com/adspace.advertising'
+    instagram: window.ADSPACE_CONFIG.examples.instagram,
+    tiktok: window.ADSPACE_CONFIG.examples.tiktok,
+    facebook: window.ADSPACE_CONFIG.examples.facebook
   };
   /* The one leaving mark (js/icons.js), never a drawing of its own (CR-7). */
   function OUTMARK() { return window.ADspaceIcons ? window.ADspaceIcons.svg('out') : ''; }
@@ -773,7 +774,7 @@
       '<a class="plink" href="tel:+' + d + '">' + (I ? I.svg('phone') : '') + esc(t().call) + '</a></div>';
   }
   function placeHtml(where) {
-    return '<div class="cx-chips"><a class="plink" href="https://www.google.com/maps/search/?api=1&query=' +
+    return '<div class="cx-chips"><a class="plink" href="' + window.ADSPACE_CONFIG.mapSearch +
       encodeURIComponent(where) + '" target="_blank" rel="noopener">' + esc(t().directions) +
       OUTMARK() + '</a></div>';
   }
@@ -1262,7 +1263,7 @@
           esc(v.legal_name || kept('legal_name') || T0.payPayeeSame) + '</p><span class="msg" id="pf_payeeMsg"></span></div></div>' +
       '</section>' +
       '<section class="fsec"><h4 class="fsec-h">' + esc(T0.payHeads.contact) + '</h4>' +
-        field('email', T0.payEmail, input('email', !kept('email'), 'type="email" inputmode="email" autocomplete="email" maxlength="160" placeholder="email@adspace.me"'), keepAs('email')) +
+        field('email', T0.payEmail, input('email', !kept('email'), 'type="email" inputmode="email" autocomplete="email" maxlength="160" placeholder="email@' + window.ADSPACE_CONFIG.examples.domain + '"'), keepAs('email')) +
         field('whatsapp', T0.payWhatsapp, input('whatsapp', !kept('whatsapp'), 'type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="012-345 6789"'), keepAs('whatsapp')) +
       '</section>' + einv('<label class="tickline"><input type="checkbox" id="pf_confirm" data-k="confirm"' + (v.confirm ? ' checked' : '') + '><span>' + esc(T0.payConfirm) + '</span></label>' +
         '<span class="msg" id="pf_confirmMsg"></span>') +

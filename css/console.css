@@ -1,4 +1,4 @@
-/* ADspace Digital Portal — the console's own rules (admin/ alone).
+/* Digital Portal — the console's own rules (admin/ alone).
    Loaded after css/portal.css, which holds the tokens and every rule a
    client page can meet; what here can only match the console was moved out
    of it unchanged and in order (second audit, item 19, 2026-10-18), so client

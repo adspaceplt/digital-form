@@ -1,7 +1,7 @@
 /*
  * Verify — the public page the foot of every document names.
  *
- * One exact reference in; the first answer says only that ADSPACE PLT issued
+ * One exact reference in; the first answer says only that the agency issued
  * a document with this reference, what kind it is, when (the month) and
  * whether it stands (`verify_serial`). Its days and steps are shown only to
  * somebody holding the copy: the Document ID printed at the foot of every
@@ -12,6 +12,7 @@
  * figure: the database answers none.
  */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   var db = API && API.client;
   var ORG = window.ADSPACE_ORG || {};
@@ -23,50 +24,50 @@
     en: {
       title: 'Verify document', text: 'Enter the reference or the Document ID printed on the document.',
       kicker: 'Verify', go: 'Verify', checking: 'Checking…', lang: '中文',
-      notFound: 'Not found', notFoundText: 'Please check the reference or the Document ID, or contact ADspace.', enterRef: 'Enter the reference or the Document ID.',
+      notFound: 'Not found', notFoundText: 'Please check the reference or the Document ID, or contact ' + AGENCY.trading_name + '.', enterRef: 'Enter the reference or the Document ID.',
       failed: 'Unable to check', failedText: 'Please try again.',
       locked: 'Too many checks', lockedText: 'Too many checks were made from this network. Please try again in {wait}.',
       ref: 'Reference', issuedBy: 'Issued by', doc: 'Document', issued: 'Issued', docId: 'Document ID', status: 'Status',
-      note: 'This result confirms that ADSPACE PLT issued a document under this reference. It does not confirm the copy you hold.',
+      note: 'This result confirms that ' + AGENCY.legal_name + ' issued a document under this reference. It does not confirm the copy you hold.',
       more: 'More details', moreText: 'Enter the Document ID printed on your copy.', moreGo: 'Show details',
       file: 'File check', fileGo: 'Check a file', fileText: 'Compare a PDF with the sealed copy. The file stays on this device.',
       codeLabel: 'Document ID', codeHint: 'XXXX-XXXX', show: 'Show details', cancel: 'Cancel', showing: 'Checking…',
       noId: 'No Document ID on your copy?', nameLabel: 'Recipient name', nameHint: 'COMPANY NAME SDN BHD',
       enterCode: 'Enter the Document ID.', enterName: 'Enter the Document ID or the recipient name.',
-      lockedRef: 'Too many checks were made for this reference. Please try again in {wait}, or contact ADspace at {contact}.',
-      lockedRefBare: 'Too many checks were made for this reference. Please try again in {wait}, or contact ADspace.',
-      noMatch: 'No document matches these details. Please check the details entered, or contact ADspace at {contact}.',
-      noMatchBare: 'No document matches these details. Please check the details entered, or contact ADspace.',
+      lockedRef: 'Too many checks were made for this reference. Please try again in {wait}, or contact ' + AGENCY.trading_name + ' at {contact}.',
+      lockedRefBare: 'Too many checks were made for this reference. Please try again in {wait}, or contact ' + AGENCY.trading_name + '.',
+      noMatch: 'No document matches these details. Please check the details entered, or contact ' + AGENCY.trading_name + ' at {contact}.',
+      noMatchBare: 'No document matches these details. Please check the details entered, or contact ' + AGENCY.trading_name + '.',
       history: 'History', never: 'The recipient\'s name, the terms and the amounts are never shown here.',
       fileChecking: 'Checking the file…', fileMatch: 'Matches the sealed copy',
       fileNo: 'Does not match the sealed copy', fileFailed: 'Unable to check the file. Please try again.',
       state: { valid: 'Valid', voided: 'Void', replaced: 'Replaced', expired: 'Expired', withdrawn: 'Withdrawn', declined: 'Declined' },
-      step: { issued: 'Issued', sent: 'Sent', signed: 'Signed by the recipient', confirmed: 'Confirmed by ADspace', sealed: 'Sealed',
+      step: { issued: 'Issued', sent: 'Sent', signed: 'Signed by the recipient', confirmed: 'Confirmed by ' + AGENCY.trading_name, sealed: 'Sealed',
         acknowledged: 'Acknowledged by the recipient', finalised: 'Finalised', declined: 'Declined', withdrawn: 'Withdrawn', voided: 'Void',
         replaced: 'Replaced', expired: 'Expired' }
     },
     zh: {
       title: '文件核验', text: '请输入文件上印有的编号或文件识别码。',
       kicker: '文件核验', go: '核验', checking: '核验中…', lang: 'EN',
-      notFound: '未找到', notFoundText: '请核对编号或文件识别码，或联系 ADspace。', enterRef: '请输入编号或文件识别码。',
+      notFound: '未找到', notFoundText: '请核对编号或文件识别码，或联系 ' + AGENCY.trading_name + '。', enterRef: '请输入编号或文件识别码。',
       failed: '无法核验', failedText: '请稍后再试。',
       locked: '查询次数过多', lockedText: '此网络的查询次数过多。请于{wait}后重试。',
       ref: '编号', issuedBy: '签发方', doc: '文件', issued: '签发', docId: '文件识别码', status: '状态',
-      note: '此结果确认 ADSPACE PLT 曾以此编号签发文件，但不确认您所持有的副本。',
+      note: '此结果确认 ' + AGENCY.legal_name + ' 曾以此编号签发文件，但不确认您所持有的副本。',
       more: '更多详情', moreText: '请输入您副本上印有的文件识别码。', moreGo: '显示详情',
       file: '文件比对', fileGo: '核验文件', fileText: '将 PDF 与封存副本比对。文件不会离开此设备。',
       codeLabel: '文件识别码', codeHint: 'XXXX-XXXX', show: '显示详情', cancel: '取消', showing: '核验中…',
       noId: '副本上没有文件识别码？', nameLabel: '收件方名称', nameHint: 'COMPANY NAME SDN BHD',
       enterCode: '请输入文件识别码。', enterName: '请输入文件识别码或收件方名称。',
-      lockedRef: '此编号的核验次数过多。请于{wait}后重试，或通过 {contact} 联系 ADspace。',
-      lockedRefBare: '此编号的核验次数过多。请于{wait}后重试，或联系 ADspace。',
-      noMatch: '没有与这些资料相符的文件。请核对所输入的资料，或通过 {contact} 联系 ADspace。',
-      noMatchBare: '没有与这些资料相符的文件。请核对所输入的资料，或联系 ADspace。',
+      lockedRef: '此编号的核验次数过多。请于{wait}后重试，或通过 {contact} 联系 ' + AGENCY.trading_name + '。',
+      lockedRefBare: '此编号的核验次数过多。请于{wait}后重试，或联系 ' + AGENCY.trading_name + '。',
+      noMatch: '没有与这些资料相符的文件。请核对所输入的资料，或通过 {contact} 联系 ' + AGENCY.trading_name + '。',
+      noMatchBare: '没有与这些资料相符的文件。请核对所输入的资料，或联系 ' + AGENCY.trading_name + '。',
       history: '记录', never: '此处不会显示收件方姓名、条款或金额。',
       fileChecking: '核验文件中…', fileMatch: '与封存副本一致',
       fileNo: '与封存副本不一致', fileFailed: '无法核验文件，请稍后再试。',
       state: { valid: '有效', voided: '已作废', replaced: '已替换', expired: '已过期', withdrawn: '已撤回', declined: '已拒绝' },
-      step: { issued: '签发', sent: '发送', signed: '收件方签署', confirmed: 'ADspace 确认', sealed: '已封存',
+      step: { issued: '签发', sent: '发送', signed: '收件方签署', confirmed: AGENCY.trading_name + ' 确认', sealed: '已封存',
         acknowledged: '收件方确认收悉', finalised: '定稿', declined: '已拒绝', withdrawn: '已撤回', voided: '已作废',
         replaced: '已替换', expired: '已过期' },
       /* The kinds the database names, in Chinese; a kind not listed (a type
@@ -77,19 +78,6 @@
         'social media accounts report': '社交媒体账户报告', 'social media advertising report': '社交媒体广告报告', 'video script': '视频脚本' }
     }
   };
-  /* The issuer's own names, as the page's settings hold them: the demo
-     (js/demo.js) answers for its sample agency, never as ADspace. */
-  (function names() {
-    var cfg = window.ADSPACE_CONFIG || {}, org = ORG.name, brand = cfg.agencyName;
-    if (org === 'ADSPACE PLT' && brand === 'ADspace') return;
-    var walk = function (o) {
-      Object.keys(o).forEach(function (k) {
-        if (typeof o[k] === 'string') o[k] = o[k].replace(/ADSPACE PLT/g, org).replace(/ADspace/g, brand);
-        else if (o[k] && typeof o[k] === 'object') walk(o[k]);
-      });
-    };
-    walk(WORDS);
-  })();
   /* A step done is green, one that closes the document grey, a void red. */
   var STEP_TONE = { voided: 'is-danger', declined: 'is-off', withdrawn: 'is-off', replaced: 'is-off', expired: 'is-off' };
   var lang = 'en';

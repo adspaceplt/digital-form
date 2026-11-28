@@ -26,6 +26,7 @@
  */
 (function () {
   'use strict';
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   var db = API && API.client;
   if (!API || !API.configured || !db) return;
@@ -931,7 +932,7 @@
           '<select class="select" id="ostWhere" data-seg data-seg-value><option value="site">Client\'s site</option>' +
           '<option value="venue">Another venue</option></select></div></div>' +
         '<div class="row" id="ostVenueRow" hidden><div><label class="field-label" for="ostVenue">Venue</label>' +
-          '<textarea class="input" id="ostVenue" data-oneline rows="1" maxlength="200" placeholder="ADspace Advertising"></textarea></div></div>' +
+          '<textarea class="input" id="ostVenue" data-oneline rows="1" maxlength="200" placeholder="' + AGENCY.trading_name + ' Advertising"></textarea></div></div>' +
         /* What Check in waits for comes first, under the place: a long list
            of colleagues once pushed both below a phone's screen (2026-11-24). */
         '<div class="row"><div><span class="field-label">Location</span><div id="ostLoc"></div></div></div>' +

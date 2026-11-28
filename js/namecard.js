@@ -2,8 +2,8 @@
  * namecard.js — a colleague's digital namecard (ADspaceCard), drawn the same
  * way on its public page (/card/?k=…) and in the console's My namecard.
  *
- * The card is the signboard's lockup on a #f5f5f5 card: ADspace in Optima
- * over the tagline in Slate Regular, the tagline about 1.64 times the
+ * The card is the signboard's lockup on a #f5f5f5 card: the agency in the wordmark face
+ * over the tagline in the heavier face, the tagline about 1.64 times the
  * wordmark's width (the user's signboard, 2026-10-03). It turns over to the
  * person and the office, and its front turns into a QR code that opens the
  * same page on somebody else's phone. Save contact hands the phone a vCard.
@@ -43,7 +43,7 @@
      where it has one (the user, 2026-10-07), else its own. The QR itself
      keeps the card's own address, which never changes, so a printed code
      survives an edited short link. */
-  function linkHost() { return (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me'; }
+  function linkHost() { return window.ADspaceAgency.link_domain; }
   function named(card, key) {
     return card && card.slug ? linkHost() + '/' + card.slug : link(key).replace(/^https?:\/\//, '');
   }
@@ -149,7 +149,7 @@
     }
     /* The lockup in golden proportion to the card it is on: the wordmark
        runs the card's width over φ², and the tagline, set at 0.46 of the
-       wordmark's size (the signboard), runs it over φ. Optima sets ADspace
+       wordmark's size (the signboard), runs it over φ. The wordmark face sets the name
        about 3.9 times its size wide. */
     var stage = host.querySelector('.nc-stage');
     var fit = function () {
@@ -238,7 +238,7 @@
       var handle = mount($('mycPreview'), cardOf(), d.key);
       /* The card's short link on the links host, where it has one; the QR on
          the card keeps the card's own address, which never changes. */
-      var host = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me';
+      var host = window.ADspaceAgency.link_domain;
       $('mycSlugPre').textContent = host + '/';
       var share = d.slug ? 'https://' + host + '/' + d.slug : handle.link;
       $('mycUrl').textContent = share.replace(/^https?:\/\//, '');

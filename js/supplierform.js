@@ -14,6 +14,7 @@
  * on the details held but the NRIC and the bank details, which it never
  * reads: left blank, they keep what is held. */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI, db = API && API.client;
   var $ = function (id) { return document.getElementById(id); };
   var esc = window.ADspaceWords.esc;
@@ -37,11 +38,11 @@
   var TERMS = ['NET 7', 'NET 14', 'NET 30', 'NET 45', 'NET 60'];
   /* The authorisation the Jotform form carried, word for word. */
   var AUTH = [
-    'I / We hereby authorise ADSPACE PLT to credit all payments due to me / us to the account above.',
-    'Any amount so credited shall constitute a valid discharge of ADSPACE PLT’s obligations to me / us.',
-    'This authorisation shall remain in force until I / we revoke it by written notice to ADSPACE PLT.',
-    'I / We shall notify ADSPACE PLT in writing at least 30 days before any change to my / our particulars, and such notice takes effect upon ADSPACE PLT’s written acknowledgement of its receipt.',
-    'ADSPACE PLT may, at its absolute discretion, terminate this arrangement by written notice to my / our last known address or email.',
+    'I / We hereby authorise ' + AGENCY.legal_name + ' to credit all payments due to me / us to the account above.',
+    'Any amount so credited shall constitute a valid discharge of ' + AGENCY.legal_name + '’s obligations to me / us.',
+    'This authorisation shall remain in force until I / we revoke it by written notice to ' + AGENCY.legal_name + '.',
+    'I / We shall notify ' + AGENCY.legal_name + ' in writing at least 30 days before any change to my / our particulars, and such notice takes effect upon ' + AGENCY.legal_name + '’s written acknowledgement of its receipt.',
+    AGENCY.legal_name + ' may, at its absolute discretion, terminate this arrangement by written notice to my / our last known address or email.',
     'I / We hereby declare that all the information provided above is true and correct.'
   ];
   var MARK = '<span class="qs-mark" aria-hidden="true">' + window.ADspaceIcons.glyph('check', '', 'width="12" height="12"') + '</span>';
@@ -92,7 +93,7 @@
   /* Who asks, then whose details (2026-10-20, SPF-3); a line of parts breaks
      between its parts, never inside one (2026-10-31). */
   function lead() {
-    return '<span class="qs-part">For ADspace</span> · ' + (info.name ? esc(info.name) + ' · ' : '') +
+    return '<span class="qs-part">For ' + AGENCY.trading_name + '</span> · ' + (info.name ? esc(info.name) + ' · ' : '') +
       '<span class="qs-part">Supplier ID ' + esc(info.code) + '</span>';
   }
   /* The opening page: what the form asks, step by step, and when it closes. */
@@ -100,7 +101,7 @@
     var I = window.ADspaceIcons;
     return '<div class="qs-step qs-intro" data-shown><div class="qs-top"><h1 class="qs-title">' + title() + '</h1>' +
       '<p class="qs-lead">' + lead() + '</p><p class="qs-intro-p">' +
-        (update ? 'Review and update your details as a supplier to ADspace.' : 'Provide your details as a supplier to ADspace.') + '</p></div>' +
+        (update ? 'Review and update your details as a supplier to ' + AGENCY.trading_name + '.' : 'Provide your details as a supplier to ' + AGENCY.trading_name + '.') + '</p></div>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(W.stepExpect) + '</h2>' + I.stepCards(STEPS) + '</section>' +
       '<p class="qs-note qs-time">' + I.svg('clock') + '<span>' + esc(W.formEnds.replace('{d}', day(info.expires_at, true))) + '</span></p></div>' +
       '<div class="qs-foot"><button class="btn btn-primary" type="button" id="sfStart">' + esc(W.stepStart) + '</button></div>';
@@ -120,17 +121,17 @@
     if (n === 2) return '<section class="qs-sec">' +
         field('sfContact', 'Legal name', input('sfContact', 'contact_name', true, 'maxlength="80" autocomplete="name" placeholder="John Doe"')) +
         field('sfRole', 'Designation', input('sfRole', 'designation', true, 'maxlength="80" autocomplete="organization-title"')) +
-        field('sfEmail', 'Email', input('sfEmail', 'email', true, 'type="email" maxlength="160" autocomplete="email" placeholder="email@adspace.me"')) +
+        field('sfEmail', 'Email', input('sfEmail', 'email', true, 'type="email" maxlength="160" autocomplete="email" placeholder="email@' + window.ADSPACE_CONFIG.examples.domain + '"')) +
         field('sfMobile', 'Mobile number (WhatsApp)', input('sfMobile', 'mobile', true, 'type="tel" inputmode="tel" placeholder="012-345 6789"')) +
       '</section>';
     if (n === 3) return '<section class="qs-sec">' +
-        (keepBank ? '<p class="qs-note">' + window.ADspaceWords.note('Leave the account number blank to keep the current bank details. A new bank account must be approved by ADspace before any payment is made to it.') + '</p>' : '') +
+        (keepBank ? '<p class="qs-note">' + window.ADspaceWords.note('Leave the account number blank to keep the current bank details. A new bank account must be approved by ' + AGENCY.trading_name + ' before any payment is made to it.') + '</p>' : '') +
         field('sfTerm', 'Payment term', select('sfTerm', 'payment_term', true, TERMS, 'Choose a term'), 'Subject to approval.') +
         field('sfCur', 'Currency', seg('sfCur', 'currency', [['MYR', 'MYR / RM'], ['SGD', 'SGD / S$']], 'Currency')) +
         field('sfPayee', 'Payee name', input('sfPayee', 'payee_name', !keepBank, 'maxlength="120"'), 'As shown on the bank account.') +
         field('sfBank', 'Bank', select('sfBank', 'bank_name', !keepBank, BANKS, keepBank ? 'Keep current bank' : 'Choose a bank')) +
         field('sfAcct', 'Account number', input('sfAcct', 'bank_account', !keepBank, 'maxlength="24" inputmode="numeric"' + (keepBank ? ' placeholder="Optional"' : ''))) +
-        field('sfFin', 'Finance email', input('sfFin', 'finance_email', true, 'type="email" maxlength="160" placeholder="email@adspace.me"')) +
+        field('sfFin', 'Finance email', input('sfFin', 'finance_email', true, 'type="email" maxlength="160" placeholder="email@' + window.ADSPACE_CONFIG.examples.domain + '"')) +
         field('sfSwift', 'SWIFT code', input('sfSwift', 'swift', false, 'maxlength="11" autocapitalize="characters" placeholder="Optional"')) +
         field('sfBankAddr', 'Bank address', '<textarea class="textarea" id="sfBankAddr" data-k="bank_address" rows="2" maxlength="300" placeholder="Optional">' + esc(typed.bank_address || '') + '</textarea>') +
       '</section>';
@@ -157,7 +158,7 @@
     var v = function (k) { return String(typed[k] || '').trim(); }, acct = v('bank_account').replace(/\D/g, '');
     var when = sent && C ? C.date(sent) + ', ' + C.clock(sent) : '';
     root().innerHTML = I.received({
-      title: W.formReceived, line: text || (update ? 'Thank you. ADspace will review the changes.' : 'Thank you. ADspace will review your details.'),
+      title: W.formReceived, line: text || (update ? 'Thank you. ' + AGENCY.trading_name + ' will review the changes.' : 'Thank you. ' + AGENCY.trading_name + ' will review your details.'),
       /* The reference the database gave the submission (ONE REQUEST
          REFERENCE, 2026-11-26), on the page sent and on a link opened again. */
       refHtml: sent ? lead() : '', reqRef: reqRef,

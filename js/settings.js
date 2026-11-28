@@ -13,6 +13,7 @@
    page; at a desk a list of them beside it scrolls to one. */
 (function () {
   'use strict';
+  var AGENCY = window.ADspaceAgency || {};
   var bridge = window.ADspaceAdmin;
   if (!bridge) return;
   var db = window.ADspaceAPI.client;
@@ -516,7 +517,7 @@
         biz && W.ADspaceOps && { id: 'meetmsg', name: 'Meeting message', kind: 'edit', meta: line('meetmsg'),
           open: function (btn) { if (W.ADspaceOps.openMeetMessage) W.ADspaceOps.openMeetMessage(btn, rowSay('meetmsg')); } },
         /* Website quotations (2026-10-29): how many a day are sent on
-           WhatsApp, each a message ADspace pays for. */
+           WhatsApp, each a message the agency pays for. */
         biz && { id: 'quotewa', name: 'Quotation portal on WhatsApp', kind: 'edit',
           meta: qwa == null ? '' : qwa === 0 ? 'Not sent on WhatsApp' : 'Up to ' + plural(qwa, 'quotation', 'quotations') + ' per day on WhatsApp' }]]]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
@@ -990,13 +991,13 @@
     'bad-sheet': 'Enter the Google Sheets link or ID.', 'bad-tab': 'Enter a tab name of up to 100 characters.',
     'no-sheet': 'Enter the Google Sheets link or ID.',
     'google-not-set-up': 'Google Sheets is not connected yet. Please contact an admin.',
-    'google-refused': 'Google could not open the sheet. Share it with the ADspace Google account, then try again.',
+    'google-refused': 'Google could not open the sheet. Share it with the ' + AGENCY.trading_name + ' Google account, then try again.',
     'needs-update': window.ADspaceWords.line.notYet };
   function checkCrSheet() {
     return db.functions.invoke('creator-mail', { body: { action: 'check' } }).then(function (r) {
       return window.ADspaceAPI.fnRefusal(r).then(function (code) {
         var d = code ? { error: code } : (r.data || {});
-        if (d.error) { rowSay('crsheet')(CS_SAID[d.error] || 'The sheet could not be read. Check the link and that the sheet is shared with the ADspace Google account.', 'err'); return; }
+        if (d.error) { rowSay('crsheet')(CS_SAID[d.error] || 'The sheet could not be read. Check the link and that the sheet is shared with the ' + AGENCY.trading_name + ' Google account.', 'err'); return; }
         var cols = d.columns || [], used = cols.filter(function (c) { return c.value; }).length;
         rowSay('crsheet')(used ? 'Saved. ' + used + ' of ' + plural(cols.length, 'column', 'columns') + ' in ' + d.tab + ' will be filled.'
           : 'Saved. No column in ' + d.tab + ' matches a payment detail. Rename the headers to match, then save again.', used ? 'ok' : 'err');

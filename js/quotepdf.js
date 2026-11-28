@@ -12,7 +12,7 @@
  *      sentence, Description, Qty, Rate, Amount between hairlines, the
  *      totals at the right ending at the one bold figure, then TERMS;
  *   3. Acceptance of quotation: the figures agreed, Issued for and on behalf
- *      of ADSPACE PLT (Prepared by, Reviewed by), and the client's block to
+ *      of the agency's legal name (Prepared by, Reviewed by), and the client's block to
  *      sign and stamp (Name, Designation, Date), left empty until signed.
  * Every page's foot is the reference, PRIVATE & CONFIDENTIAL and the page
  * count. A preview carries DRAFT over every page.
@@ -248,7 +248,7 @@
       add: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 8v8M8 12h8'
     };
     var DISC = 18, GL = 10, GL_STROKE = 0.75, GL_BOX = 24, GAP = 8;
-    /* The heading face's own cap height, read from the font (Slate's is
+    /* The heading face's own cap height, read from the font (the face's is
        about 0.7 of the size where the face does not say). */
     var capOf = function (f, size) {
       var k = f && f.embedder && f.embedder.font, u = k && k.unitsPerEm;

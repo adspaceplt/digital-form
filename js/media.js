@@ -10,7 +10,9 @@
  */
 (function () {
   'use strict';
-  var CDN = /^https:\/\/mycdn\.adspace\.me\/content\/.+\.(mov|mp4|m4v|qt|mkv|webm|mpg|mpeg)$/i;
+  /* The CDN's own address (the agency profile's cdn_base), as a pattern. */
+  var CDN_AT = String(window.ADspaceAgency.cdn_base).replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
+  var CDN = new RegExp('^' + CDN_AT + '\\/content\\/.+\\.(mov|mp4|m4v|qt|mkv|webm|mpg|mpeg)$', 'i');
 
   /* The converted copy of a video on the CDN, else null. A copy is never
      asked for a copy. */
@@ -50,7 +52,7 @@
      Everything under content/ opens only with CloudFront's signed cookies
      once `privateMedia` is on (docs/S3-STORAGE.md §6). A page that has proved
      its link, code or sign-in asks `media-pass` for them before it draws a
-     file, and they are set on adspace.me so mycdn.adspace.me receives them.
+     file, and they are set on the parent domain so the CDN receives them.
      Stored addresses never change. The pass lasts twelve hours and is asked
      again on a page load or a return to the tab once under two hours are left;
      a file that fails in the meantime asks again once and loads again,
@@ -59,7 +61,7 @@
      2026-10-10): `passes` is one policy a folder, set on that folder's own
      path so the browser sends it there alone; a colleague's is content/ on
      the root. A pass is fresh only for the proof it was asked with. */
-  var CONTENT = /^https:\/\/mycdn\.adspace\.me\/content\//i;
+  var CONTENT = new RegExp('^' + CDN_AT + '\\/content\\/', 'i');
   var UNTIL = 'adspace-media-until';
   var FOR = 'adspace-media-for';
   var HOUR = 3600 * 1000;
@@ -83,7 +85,7 @@
     return h.toString(36);
   }
   function fresh(margin) { return cookie(FOR) === tagOf(proof) && until() - Date.now() > margin; }
-  /* adspace.me on the real site; the host alone anywhere else (the tests). */
+  /* the parent domain on the real site; the host alone anywhere else (the tests). */
   function scope() {
     var d = s3().mediaCookieDomain, h = location.hostname;
     return d && (h === d || h.slice(-(d.length + 1)) === '.' + d) ? '; domain=' + d : '';
@@ -109,7 +111,7 @@
   /* The folder a file sits in, as a cookie path: /content/{id}/ or
      /content/creator/{id}/. */
   function folderOf(src) {
-    var m = /^https:\/\/mycdn\.adspace\.me(\/content\/(?:creator\/)?[A-Za-z0-9-]{1,64}\/)/i.exec(String(src || ''));
+    var m = new RegExp('^' + CDN_AT + '(\\/content\\/(?:creator\\/)?[A-Za-z0-9-]{1,64}\\/)', 'i').exec(String(src || ''));
     return m ? m[1] : '';
   }
   /* A colleague's pass covers the whole of content/ (2026-10-15, the user:
@@ -158,7 +160,7 @@
         if (!passes.some(function (x) { return x.path === '/' || x.path === '/content/'; })) {
           CF.forEach(function (n) { put(n, '', 0); put(n, '', 0, '/content/'); });
         }
-        // Only a folder under content/, never another path on adspace.me.
+        // Only a folder under content/, never another path on the parent domain.
         passes = passes.filter(function (x) { return x.path === '/' || FOLDER.test(String(x.path || '')); });
         var now = passes.map(function (x) { return x.path; });
         known().forEach(function (path) { if (now.indexOf(path) < 0 && FOLDER.test(path)) drop(path); });

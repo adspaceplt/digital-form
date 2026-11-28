@@ -353,7 +353,7 @@
       ].concat(aud === 'team' ? [] : [
         { name: 'zh', label: '中文', rows: 2, value: a && a.body_zh || '', required: false, placeholder: 'Optional' }
       ]).concat([
-        { name: 'link', label: 'Link', value: a && a.link || '', required: false, placeholder: 'https://adspace.me' },
+        { name: 'link', label: 'Link', value: a && a.link || '', required: false, placeholder: 'https://' + window.ADSPACE_CONFIG.examples.domain },
         { name: 'sday', label: 'Starts', type: 'date', min: today, required: false, half: true, value: s ? myDay(s) : '' },
         { name: 'stime', label: 'Start time', type: 'time', required: false, half: true, hint: 'Optional', value: s ? myTime(s) : '' },
         { name: 'eday', label: 'Ends', type: 'date', min: today, required: false, half: true, value: e ? myDay(e) : '' },

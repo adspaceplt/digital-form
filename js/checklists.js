@@ -1,4 +1,4 @@
-/* ADspace Digital Portal — a client's checklists (2026-10-15).
+/* The portal — a client's checklists (2026-10-15).
  *
  * The team's New Client Onboarding Checklist and Pre-Advertising Checklist,
  * kept on the client's record item by item, once a client (the user,

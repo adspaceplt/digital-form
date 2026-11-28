@@ -1,4 +1,4 @@
-/* ADspace Digital Portal — a client's quotations (2026-10-14).
+/* The portal — a client's quotations (2026-10-14).
  *
  * A quotation is made from a selection and priced by the database alone
  * (`quote_preview` while it is ticked, `quotation_create` to keep it), from

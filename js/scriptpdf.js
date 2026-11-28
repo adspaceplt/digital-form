@@ -7,7 +7,7 @@
  * back to the Reports style"; js/smreport.js): sizes and spaces on
  * S(k) = 10·φ^(k/2); tables of white cells under a
  * shaded title row, the title row and the grid in one grey (#f2f2f2), heads
- * in Slate Regular. The content keeps the user's template: Video Script and
+ * in the heavier face. The content keeps the user's template: Video Script and
  * its type and month, the header table (Video #, Platform, Client/Brand,
  * Language, Shooting Date & Time, Venue, Est. Shooting Duration, Cast
  * Members/Talent), then each video under its code and title: its script by
@@ -178,7 +178,7 @@
         rowOf(r, true);
       });
     };
-    /* A block's head: the code and title in Slate Medium, a line under it
+    /* A block's head: the code and title in the heading face, a line under it
        in the soft ink where there is one. */
     var blockHead = function (title, sub) {
       var ts = wrap(title, R - M, S(1), med);

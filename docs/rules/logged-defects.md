@@ -81,3 +81,10 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   so a run that keeps missing the few free codes runs out of tries. Not
   re-run to green as a result: held until the draw walks the free codes
   rather than retrying at random, or the suite seeds its own draws.
+- 2026-11-28 · `underhead` (found by release 7's run, code it did not
+  touch; fails the same on main 8980d08): the client record's View all
+  (`#crmLogAll`) stays hidden, so the suite times out waiting for it. Its
+  twelve seeded history lines are dated September 2026, and #1606 opens
+  the record's lists on the last 7 days; likely the suite's seed, not the
+  page. Held until the suite seeds lines inside the window, or the page is
+  shown wrong.

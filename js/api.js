@@ -366,7 +366,7 @@
   }
   /* A number as Malaysia and Singapore write it with the country code:
      012-345 6789 → +60 12-345 6789; 0112345 6789 → +60 11-2345 6789;
-     60187625233 → +60 18-762 5233; 07-123 4567 → +60 7-123 4567;
+     60123456789 → +60 12-345 6789; 07-123 4567 → +60 7-123 4567;
      a Singapore eight → +65 8123 4567. Anything else keeps its digits.
      The namecard's, here so the client portal needs no namecard script. */
   function phoneWord(raw) {
