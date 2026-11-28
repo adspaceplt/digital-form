@@ -1,9 +1,9 @@
 /*
  * meta-import — a report's figures straight from Meta (2026-10-08).
  *
- * The team works in ADspace's own Meta business portfolio; clients share
+ * The team works in the agency's own Meta business portfolio; clients share
  * their ad accounts, Pages and Instagram accounts with it as a partner, and a
- * system user ("ADspace Portal") is assigned every one. Its token reads them
+ * system user (named for the portal) is assigned every one. Its token reads them
  * here and nowhere else: it never reaches a browser.
  *
  * Actions (POST { action, … }):

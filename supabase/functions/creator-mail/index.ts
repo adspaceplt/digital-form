@@ -39,7 +39,7 @@
  * Post recorded and Payment sent end in one button to the creator's own
  * page (2026-11-10, the user: "A"): the booking (`#b=`) or Payments
  * (`?tab=payments`), on the creator's code, at PORTAL_URL (unset:
- * https://digital.adspace.me). The other emails ask nothing of the creator
+ * the profile's portal domain). The other emails ask nothing of the creator
  * and carry none.
  *
  * From the creators' sender, replying to its company mailbox
@@ -49,10 +49,11 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { layout, resend, esc, FONT, sender, button } from '../_shared/mail.ts';
+import { agencyProfile, portalUrl } from '../_shared/agency.ts';
 import { cors, json as cjson } from '../_shared/cors.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
-const PORTAL = () => (secret('PORTAL_URL') || 'https://digital.adspace.me').replace(/\/+$/, '');
+const PORTAL = async () => (secret('PORTAL_URL') || portalUrl(await agencyProfile())).replace(/\/+$/, '');
 /* The emails that end in a way to the creator's page, and its words. */
 const ACTIONS: Record<string, string> = { posted: 'View booking', paid: 'View payment' };
 const BUDGET = 90000;
@@ -71,7 +72,7 @@ async function pageOf(db: any, r: Row): Promise<{ label: string; url: string } |
   const { data } = await db.from('creators').select('access_code').eq('id', r.creator_id).maybeSingle();
   const code = data && String(data.access_code || '');
   if (!/^[A-Za-z0-9]{8}$/.test(code)) return null;
-  let url = PORTAL() + '/creator/?k=' + encodeURIComponent(code);
+  let url = (await PORTAL()) + '/creator/?k=' + encodeURIComponent(code);
   if (r.purpose === 'paid') url += '&tab=payments';
   else if (r.option_id) url += '#b=' + encodeURIComponent(r.option_id);
   return { label, url };
@@ -247,8 +248,8 @@ Deno.serve(async (req) => {
       const act = await pageOf(db, r).catch(() => null);
       const out = await resend({
         from: who.from, to: [r.to_email], reply_to: who.reply_to, subject: r.subject,
-        html: act ? layout({ heading: r.subject, body: r.body + '\n\n{invoices}', block: button(act) })
-                  : layout({ heading: r.subject, body: r.body }),
+        html: act ? await layout({ heading: r.subject, body: r.body + '\n\n{invoices}', block: button(act) })
+                  : await layout({ heading: r.subject, body: r.body }),
         text: act ? r.body + '\n\n' + act.label + ': ' + act.url : r.body
       }, 'creator-' + r.id, apiKey);
       await db.rpc('creator_mail_done', { p_id: r.id, p_status: out.status, p_provider: out.provider, p_error: out.error });

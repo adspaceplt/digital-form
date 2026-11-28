@@ -1633,7 +1633,7 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
   const b = begun.data || {};
   if (b.error) return json({ ...b, ...left }, 200, origin);
   const heading = String(b.subject || '').split(/\s+·\s+/)[0].trim() || (deliver ? 'Invoice' : 'Payment reminder');
-  const html = layout({ heading, body: String(b.body || ''), preheader: String(b.subject || ''), block: invoiceTable(lines),
+  const html = await layout({ heading, body: String(b.body || ''), preheader: String(b.subject || ''), block: invoiceTable(lines),
     fine: [String(b.legal || ''), String(b.disclaimer || '')] });
   const text = String(b.body || '').replace(/\{\s*invoices\s*\}/i, lines.map((l) => l.number + '  ' + money(l.amount, l.currency) +
     '  due ' + day(l.due) + (l.link ? '  ' + l.link : '')).join('\n'));

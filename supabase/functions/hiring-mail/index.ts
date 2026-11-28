@@ -14,7 +14,7 @@
  *                                     the move succeeds;
  *   { interviewId, kind: 'held' }     the interview held (2026-11-20): the
  *                                     candidate thanked and told by when
- *                                     ADspace will inform them of the
+ *                                     the agency will inform them of the
  *                                     outcome;
  *   { interviewId, kind: 'moved' }    that date changed, with the team's
  *                                     note to the candidate;
@@ -31,14 +31,14 @@
  *                                     the reference and the day to answer,
  *                                     never the salary or the terms;
  *   { docId, kind: 'confirmed' }      that offer or contract confirmed and
- *                                     countersigned by ADSPACE PLT
+ *                                     countersigned by the agency
  *                                     (2026-11-20): its name and reference
  *                                     and the candidate's page, never the
  *                                     terms or the salary, no attachment;
  *   { interviewId, kind: 'cancelled' } a confirmed interview cancelled
  *                                     (2026-11-20): its time, that the
  *                                     earlier Google Meet link no longer
- *                                     applies, and that ADspace will
+ *                                     applies, and that the agency will
  *                                     contact them to arrange another time;
  *   { action: 'drain' }              from the database alone (2026-11-20,
  *                                     `hiring_mail_kick`, after
@@ -91,21 +91,28 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
 import { layout, resend, esc, FONT, button as mailButton, codeEmail, sender, fileSent, callerEmail } from '../_shared/mail.ts';
+import { agencyProfile, addressLocal, portalUrl } from '../_shared/agency.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
-const PAGE = 'https://digital.adspace.me/careers/?k=';
-const OFFICE = '61-02 Jalan Mutiara Emas 2A, Taman Mount Austin, 81100 Johor Bahru, Johor';
-const MAP = 'https://hi.adspace.me/map';
+/* The agency profile (`_shared/agency.ts`), read at each request before any
+   email is worded: the candidate's page, the office and its directions, and
+   the name a close and the office carry. */
+let A: Record<string, string> = {};
+const PAGE = () => portalUrl(A) + '/careers/?k=';
+const OFFICE = () => addressLocal(A);
+const MAP = () => A.map_url || '';
+const NAME = () => A.trading_name || '';
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 /* The portal's one email button (`_shared/mail.ts`), 24px under it. */
 const button = (label: string, href: string) => mailButton({ label, url: href, margin: '8px 0 24px' });
 
-/* The close: the colleague who sent it over ADspace, or, sent by a system
-   account (the super admin, named ADspace), the ADspace Hiring Team alone,
+/* The close: the colleague who sent it over the agency's name, or, sent by
+   a system account (the super admin, named as the agency), the agency's
+   Hiring Team alone,
    never the account's name twice (2026-11-20). */
 function signOff(m: Record<string, any>): string {
-  return m.system || !String(m.sender || '').trim() ? 'Yours sincerely,\nADspace Hiring Team' : 'Yours sincerely,\n' + m.sender + '\nADspace';
+  return m.system || !String(m.sender || '').trim() ? 'Yours sincerely,\n' + NAME() + ' Hiring Team' : 'Yours sincerely,\n' + m.sender + '\n' + NAME();
 }
 
 /* Each email's name, as Settings, Messages: Email templates lists it. */
@@ -127,7 +134,7 @@ export function fields(m: Record<string, any>): Record<string, string> {
     'candidate name': String(m.name || ''),
     position: String(m.position || ''),
     'interview length': m.minutes == null ? '' : String(m.minutes),
-    where: m.mode === 'online' ? 'on Google Meet' : 'at the ADspace office',
+    where: m.mode === 'online' ? 'on Google Meet' : 'at the ' + NAME() + ' office',
     times: (m.times || []).map((t: string) => '• ' + t + ' (Malaysia time)').join('\n'),
     'reply by': String(m.reply_by || ''),
     note: String((m.kind === 'moved' ? m.decide_note : m.kind === 'invite' || m.kind === 'confirm' ? m.note : '') || ''),
@@ -140,7 +147,7 @@ export function fields(m: Record<string, any>): Record<string, string> {
        alone, never before the team confirms the time, whatever a template
        holds (2026-11-22); the time changed confirms the new one. */
     place: m.kind !== 'confirm' && m.kind !== 'rescheduled' ? '' : m.mode === 'online' ? 'The interview will be held on Google Meet:\n' + String(m.link || '')
-      : 'The interview will be held at the ADspace office:\n' + OFFICE + '\nDirections: ' + MAP,
+      : 'The interview will be held at the ' + NAME() + ' office:\n' + OFFICE() + '\nDirections: ' + MAP(),
     'google meet notice': m.mode === 'online' ? 'The Google Meet link sent earlier no longer applies.' : '',
     'decision date': String(m.decide_by || ''),
     months: m.months == null ? '' : String(m.months),
@@ -183,10 +190,10 @@ export function words(m: Record<string, any>, tpl: { subject: string; body: stri
     held: 'Thank you for your interview', moved: 'Decision date changed', pool: 'Your application', not: 'Your application', missed: 'Interview missed',
     invite: 'Interview invitation', confirm: 'Interview confirmed', rescheduled: 'Interview time changed'
   } as Record<string, string>)[String(m.kind)] || 'Your application';
-  const block = m.kind === 'doc' ? button(m.doc === 'contract' ? 'View contract' : 'View offer', PAGE + m.key)
-    : m.kind === 'invite' ? button('Choose a time', PAGE + m.key)
+  const block = m.kind === 'doc' ? button(m.doc === 'contract' ? 'View contract' : 'View offer', PAGE() + m.key)
+    : m.kind === 'invite' ? button('Choose a time', PAGE() + m.key)
     : m.kind === 'expired' || m.kind === 'cancelled' || m.kind === 'not' || m.kind === 'missed' ? ''
-    : button('View your application', PAGE + m.key);
+    : button('View your application', PAGE() + m.key);
   return { subject, heading, body, block };
 }
 
@@ -222,7 +229,7 @@ async function sendCode(req: Request, b: Record<string, any>, origin: string | n
      TEMPLATE): the team's words, the code in its box, never in the subject. */
   const tpl = await db.rpc('code_email_template_read');
   const title = m.doc === 'contract' ? 'Employment Contract' : 'Employment Offer';
-  const mail = codeEmail(tpl.error ? null : (tpl.data as Record<string, string> | null),
+  const mail = await codeEmail(tpl.error ? null : (tpl.data as Record<string, string> | null),
     { name: m.name, code: m.code, minutes: 15, purpose: 'to open your ' + title + ' ' + m.ref });
   const who = await sender('careers');
   const { status, provider, error } = await resend({
@@ -270,17 +277,17 @@ async function drain(req: Request, origin: string | null): Promise<Response> {
     const off = offOf(g, tpl, tk);
     if (off) {
       await fileSent({ kind: 'hiring_' + tk, ref: m.id, to: m.to, to_name: m.name, subject: w.subject,
-        body: w.body.replace('{invoices}', PAGE + '…'), reference: m.ref || m.position, status: 'failed', error: off });
+        body: w.body.replace('{invoices}', PAGE() + '…'), reference: m.ref || m.position, status: 'failed', error: off });
       await close('failed', off);
       return;
     }
     const r = await resend({
       from: who.from, reply_to: who.reply_to, to: [m.to], subject: w.subject,
-      html: layout({ heading: w.heading, body: w.body, block: w.block || undefined, preheader: w.subject }),
-      text: w.body.replace('{invoices}', PAGE + m.key)
+      html: await layout({ heading: w.heading, body: w.body, block: w.block || undefined, preheader: w.subject }),
+      text: w.body.replace('{invoices}', PAGE() + m.key)
     }, 'hire-' + tk + '-' + m.id, secret('RESEND_API_KEY'));
     await fileSent({ kind: 'hiring_' + tk, ref: m.id, to: m.to, to_name: m.name, subject: w.subject,
-      body: w.body.replace('{invoices}', PAGE + '…'), reference: m.ref || m.position,
+      body: w.body.replace('{invoices}', PAGE() + '…'), reference: m.ref || m.position,
       status: r.status, provider: r.provider, error: r.error });
     await close(r.status, r.error || null);
     if (r.status === 'sent') sent++;
@@ -302,6 +309,8 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'method' }, 405, origin);
   let b: Record<string, any>;
   try { b = await req.json(); } catch { return json({ error: 'bad-request' }, 400, origin); }
+  A = await agencyProfile();
+  if (!A.portal_domain || !A.trading_name) return json({ error: 'not-sent', reason: 'profile' }, 500, origin);
   if (b && b.kind === 'code') return sendCode(req, b, origin);
   if (b && b.action === 'drain') return drain(req, origin);
   const auth = req.headers.get('Authorization') ?? '';
@@ -343,15 +352,15 @@ Deno.serve(async (req) => {
     : db.rpc('hiring_mail_done', { p_interview: id, p_kind: kind, p_status: st, p_error: err });
   if (off) {
     await fileSent({ kind: 'hiring_' + (outcome ? m.kind : kind), ref: id, to: m.to, to_name: m.name, subject: w.subject,
-      body: w.body.replace('{invoices}', PAGE + '…'), reference: m.ref || m.position, by: callerEmail(auth), status: 'failed', error: off });
+      body: w.body.replace('{invoices}', PAGE() + '…'), reference: m.ref || m.position, by: callerEmail(auth), status: 'failed', error: off });
     await done('failed', off);
     return json({ ok: true, skipped: g.auto ? 'template-off' : 'auto-off' }, 200, origin);
   }
   const who = await sender('careers');
   const msg: Record<string, unknown> = {
     from: who.from, reply_to: who.reply_to, to: [m.to], subject: w.subject,
-    html: layout({ heading: w.heading, body: w.body, block: w.block || undefined, preheader: w.subject }),
-    text: w.body.replace('{invoices}', PAGE + m.key)
+    html: await layout({ heading: w.heading, body: w.body, block: w.block || undefined, preheader: w.subject }),
+    text: w.body.replace('{invoices}', PAGE() + m.key)
   };
   /* A decision's key carries the decision's kind, so a reopened candidate
      decided again is emailed again. */
@@ -371,7 +380,7 @@ Deno.serve(async (req) => {
     (kind === 'rescheduled' ? '-' + String(m.when || '').replace(/[^0-9a-z]/gi, '') + '-' + String(m.moved_key || '') : '') +
     (again ? '-again-' + crypto.randomUUID() : ''), secret('RESEND_API_KEY'));
   await fileSent({ kind: 'hiring_' + (outcome ? m.kind : kind), ref: id, to: m.to, to_name: m.name, subject: w.subject,
-    body: w.body.replace('{invoices}', PAGE + '…'), reference: m.ref || m.position, by: callerEmail(auth), status, provider, error,
+    body: w.body.replace('{invoices}', PAGE() + '…'), reference: m.ref || m.position, by: callerEmail(auth), status, provider, error,
     again_of: again || undefined });
   await done(status, error || null);
   return json(status === 'sent' ? { ok: true } : { error: status === 'unknown' ? 'unknown' : 'not-sent' }, 200, origin);

@@ -1,6 +1,6 @@
 /*
- * meet-create — puts a month's content meeting on the shared ADspace Google
- * calendar (adspacestudios@gmail.com) with a Google Meet link, moves it when
+ * meet-create — puts a month's content meeting on the agency's shared Google
+ * calendar (the admin login's) with a Google Meet link, moves it when
  * the meeting moves, and takes it off when the month has no meeting.
  *
  * The calendar is the shared account's, reached with a refresh token held in
@@ -27,6 +27,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
+import { agencyProfile } from '../_shared/agency.ts';
 
 const TZ = 'Asia/Kuala_Lumpur';
 const CAL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
@@ -201,7 +202,7 @@ Deno.serve(async (req) => {
   const summary = kind === 'hire' ? `Interview · ${m.position}` : touch ? `${m.client_name} · Meeting` : `${m.client_name} · ${m.month_word} Content Discussion`;
   const event: Record<string, unknown> = {
     summary,
-    description: (kind === 'hire' ? 'Interview' : touch ? 'Meeting' : `${m.month_word} Content Discussion`) + '\nBooked from the ADspace Digital Portal.',
+    description: (kind === 'hire' ? 'Interview' : touch ? 'Meeting' : `${m.month_word} Content Discussion`) + '\nBooked from the ' + ((await agencyProfile()).trading_name || '') + ' Digital Portal.',
     start: { dateTime: start.toISOString(), timeZone: TZ },
     end: { dateTime: end.toISOString(), timeZone: TZ }
   };

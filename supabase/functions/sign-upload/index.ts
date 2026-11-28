@@ -1,6 +1,6 @@
 /*
  * sign-upload — hands the browser a short lived permission to PUT one file
- * into the ADspace S3 bucket, so large videos never pass through Supabase.
+ * into the agency's S3 bucket, so large videos never pass through Supabase.
  *
  * AWS credentials live in this function's secrets and never reach the browser.
  * A signed URL is issued to someone signed in to /admin/, or to a creator
