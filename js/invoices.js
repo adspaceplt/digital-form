@@ -390,7 +390,7 @@
     if (rv.after) rv.after();
   }
   /* The words a client's email will carry, filled as the server fills
-     them: {contact name}, {client}, {invoice no}, {count}, {total} and
+     them: {contact name}, {client}, {invoice no}, {count}, {total}, {agency}, {agency legal name} and
      {sign off}; {invoices} is the table. */
   function filled(g) {
     var t = rv.tpl || {};
@@ -404,7 +404,9 @@
       'invoice no': n === 1 ? nos[0] : nos.slice(0, -1).join(', ') + ' and ' + nos[n - 1],
       count: String(n),
       total: totals(g.lines).map(function (x) { return x.replace(' ', '\u00a0'); }).join(' and '),
-      'sign off': who ? 'Yours sincerely' : 'Yours faithfully'
+      'sign off': who ? 'Yours sincerely' : 'Yours faithfully',
+      agency: window.ADspaceAgency.trading_name,
+      'agency legal name': window.ADspaceAgency.legal_name
     };
     var fill = function (s) {
       return String(s || '').replace(/\{\s*([a-z ]+?)\s*\}/gi, function (m, k) { var key = k.toLowerCase().replace(/\s+/g, ' '); return v[key] != null ? v[key] : m; });

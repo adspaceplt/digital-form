@@ -233,3 +233,17 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   escaped where it is inserted (`ADspaceWords.esc`); a field with no value
   is kept as `{field}` and named in `missing`, refused `missing-field` where
   `strict`, never sent blank.
+- The agency's name in saved words is a field, never typed: `{agency}` (the
+  profile's `trading_name`) and `{agency legal name}` (`legal_name`), in the
+  lists of the kinds whose senders fill them (client, supplier, free,
+  invoice, creator-details, creator-booking), filled from the profile by
+  `supplier_email_fill`, `creator_mail_fill`, `template_values` and
+  `js/invoices.js` wherever the sender gives none. A family whose sender
+  fills by its own loop (feedback, quote, candidate, code, meeting) takes
+  them only once it moves onto the store (`2026-11-28-client-emails-in-store.sql`).
+- A family moved onto the store is read by its sender through
+  `template_in_force(key, 'en', today)`, its Settings save adding the next
+  version live from today: the client family (`client.quotation`,
+  `client.offer`, `client.letter`); its old table is kept for the rollback
+  and read by nothing. A migration moving a family copies its words from
+  the live table, never types them (the repository is public).

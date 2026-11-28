@@ -194,7 +194,7 @@ One area per release. Sizes: **S** under half a day, **M** a day, **L** two or m
 | 9 | Static heads (titles, share cards, manifest, favicons; 186 page hits): one install file and a stamp script, since a static head cannot read the database | 2 | M | After 6 |
 | 10 | Brand files and fonts per install; a free default face; Slate and Optima only where the agency holds a licence | 2, 5 | S | With 9 |
 | 11 | Template store: versioned, placeholders, EN and 中文, one engine a side (`templates`, `template_render`, `js/tpl.js`). Built 2026-11-28 ahead of 6, no wording moved; its editor in Settings and Settings › Messages onto it go with 12 | 3 | L | After 6 |
-| 12 | Letter of Offer and client letters (`documents.js`, `letters.js`) | 3 | M | Ride-along with Documents |
+| 12 | Letter of Offer and client letters (`documents.js`, `letters.js`); with it Settings › Messages onto the store a family at a time | 3 | M | Built 2026-11-28 in part: the client family's emails (quotation, Letter of Offer, client letter) in the store, `{agency}` and `{agency legal name}` in saved words (`2026-11-28-client-emails-in-store.sql`). Open: the other nine families, the store's own editor, the letters' words (12b, with Documents) |
 | 13 | Quotation and rate card terms (`quotepdf.js`, `ratecardpdf.js`, `quote.js`) | 3 | S | Ride-along with Services |
 | 14 | HR documents and contract clauses (`hrdocs.js`, `hiring.js`, `onboard.js`) | 3 | M | Ride-along with Hiring |
 | 15 | Consent and privacy lines (careers, supplier, details, personnel); Health agreement, feedback questions and checklist template get their editor | 3 | S | Ride-along per page |

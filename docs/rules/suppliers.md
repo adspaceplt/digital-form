@@ -166,8 +166,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   reference (Emailed {day} · Delivered; `client_emails_of`, one read a
   visit to the client). The three templates are Clients' Email
   templates (`ADspaceMailTpl`, `team.settings`; filed
-  `team.changed` under Client emails). `client_email_templates` and `client_emails` have
-  RLS on, no policy, no grant.
+  `team.changed` under Client emails), kept in the template store as
+  `client.quotation`, `client.offer` and `client.letter` (docs/rules/mechanisms.md).
+  `client_email_templates` (kept for the rollback, read by nothing) and
+  `client_emails` have RLS on, no policy, no grant.
 
 - Tax codes per line (`2026-10-22-tax-codes-per-line.sql`; the user,
   2026-10-22: "make the 8% SST inside settings … choose to apply each under
