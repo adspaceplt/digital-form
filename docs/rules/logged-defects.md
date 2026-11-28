@@ -78,25 +78,3 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   repository's main (f69f372) does not yet, so a rebuild from today's
   stand-in would take that behaviour out of the demo. Not rebuilt here.
   Held until the stand-in and the engine agree.
-- 2026-11-27, found by the gate fixes release (aa07bb1), the same on
-  `main` 11d7466:
-  - `quotesite`: the Option 1 or Option 2 comparison reads #1567's words
-    (Paid to Meta, charged to your credit card; Payment timing) the suite
-    does not yet ask for.
-  - `quotes`: the quotation PDF's TERMS check fails on #1572's terms at
-    1280 and 390.
-  - `weight`: the console is 3.6 KB over its budget of 1332.6 KB on main
-    (this release takes about 0.2 KB off).
-  - `sql`: timed out at 900 s while 67 suites ran.
-  Held here until each ships.
-- 2026-11-27 (night), the day's full gate on main fb3b4e8 (tests 897269e,
-  5,807 s, 277 suites passed, 6 failed). HANDOVER: snapshot fb3b4e8,
-  277 passed / 6 failed, total 5,807 s; `adsreport`, `uxaudit`,
-  `pdflibhash` and `upgrade` shipped with #1588:
-  - `overdue`: "FAIL 1280 no id is held twice on the console crmLinks"
-    (and at 390); #1581 (the client's Services tab short links).
-  - `quoteintakesql`: "FAIL app_settings_set is the schema's last
-    definition, from 2026-11-27-ad-spend-figures.sql"; a later migration
-    redefines it, likely #1575 (`2026-11-27-creator-bill-on-completed.sql`)
-    or `2026-11-27-quote-details-asked.sql`, not pinned.
-  Held here until each ships.

@@ -147,7 +147,8 @@ Moved from `CLAUDE.md` §1 on 2026-11-23. Read whole before changing a suite or 
 - A suite starting its own Postgres first stops any server left on its
   folder (`pg_ctl -D … -m immediate stop`): a run killed partway leaves one,
   which, started over beside, shuts down a minute later and takes the shared
-  socket (2026-11-27, `sql` twice at 60s; held in `sql.js`).
+  socket (2026-11-27, `sql` twice at 60s; every Postgres suite since
+  2026-11-28, held by `gateself`).
 - It runs browser suites three at a time, the Postgres suites in their own
   lane, then three walks side by side: uxaudit, and matrix in two halves
   (`MATRIX_PART=1` the Duo, `OWN` and the keyboard; `2` the four widths and
