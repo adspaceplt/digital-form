@@ -71,7 +71,7 @@ Found by a test in code a release did not touch: `docs/rules/logged-defects.md` 
   (`docs/MAP.md` §B).
 - The restructure (`docs/MAP.md` §G, approved 2026-11-27): release 0, the
   three guards, and release 4, foreign keys on single-target ids, are
-  built; release 6, the agency profile, is built on its draft PR; the
+  built; release 6, the agency profile, is live, and release 7, its page side, is built on its draft PR; the
   rest are open, in the map's order.
 - Open at the handover of 2026-11-25 (the user moves to another account;
   a session opening here picks these up, oldest first, before new work):

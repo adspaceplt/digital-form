@@ -13,7 +13,15 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   copy; a script reads them with no typed fallback (`brandguard` counts
   one). The General mailbox is `mail_boxes`, answered as
   `email`, never copied into the profile; a sender's address is held to
-  the profile's `sender_domain`.
+  the profile's `sender_domain`. A page script joins a profile value into
+  its words (`var AGENCY = window.ADspaceAgency || {};` at the top of its
+  IIFE, then `'Contact ' + AGENCY.trading_name`), never types it: a line,
+  a filename, a PDF's author, a link's host, a pattern on the CDN
+  (`js/media.js` builds its patterns from `cdn_base`); a field's example
+  (an email, a website, a profile link) and the map's search are
+  `ADSPACE_CONFIG.examples` and `mapSearch`. Words built so follow the
+  demo's sample agency by themselves (its alias setters write the
+  profile), so no script swaps names after drawing them.
 - `js/api.js` is the only Supabase client. Demo content is only for a copy
   with no database configured: a configured page whose database library
   failed to load reads Unable to load and records nothing, and a review
