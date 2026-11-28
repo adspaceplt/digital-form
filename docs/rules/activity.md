@@ -41,7 +41,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   function's `campaign.*` / `creator.*` line from `activity_campaign_note`,
   `activity_creator_note` and `activity_log_ids`), and their panes read by it.
 - The Activity record reads its chosen section alone (`.in('action', actionsOf(k))`), newest first, 200 a page; a failed read is `failLine` with Try again (ACT-1, ACT-2, 2026-10-22).
-- Every list of `activity_log` rows (the Activity record, a client's Activity and its rail, a campaign's, a creator's) opens on its last days (`activity_window_days`, 7, Settings, Security, Activity history) through `ADspaceRecords.pager`, Show more (`ADspaceRecords.earlier`) reading older entries a page at a time, a window holding none reading `ADspaceWords.line.recentNone`; Performance's steps stand beside it only as far back as the log is read (2026-11-28).
+- Every list of `activity_log` rows (the Activity record, a client's Activity and its rail, a campaign's, a creator's) opens on its last days (`activity_window_days`, 7, Settings, Company, Activity history) through `ADspaceRecords.pager`, Show more (`ADspaceRecords.earlier`) reading older entries a page at a time, a window holding none reading `ADspaceWords.line.recentNone`; Performance's steps stand beside it only as far back as the log is read (2026-11-28).
 - Every history (the Activity record, a client's and a campaign's Activity and
   rail, a task's log and recent activity, and every Performance history) is
   drawn by `js/records.js`
@@ -88,7 +88,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   address is never among them (`activity_log_meta_check`), and only a
   function writes them (`activity_log_stamp` clears a page's)
   (`2026-11-25-quotation-link-activity.sql`, `tests/quotelinksql.js`).
-- The record keeps an entry by its kind (`2026-11-28-activity-kept-by-kind.sql`): a routine tag (`activity_routine()`, restating the console's `ACTION_ROUTINE` beside `ACTION_LABEL`, `tests/actkeepsql.js` holding the two equal: saves and drafts, stage moves, messages and notices sent, links opened, everyday edits to a set or a booking) for `activity_routine_months` (3), every other tag, an unlisted one included, for `activity_keep_months` (36), both Settings, Security, Activity history (the words call the two routine and important). A new tag is key until it joins both lists. `privacy_retention()` (pg_cron
+- The record keeps an entry by its kind (`2026-11-28-activity-kept-by-kind.sql`): a routine tag (`activity_routine()`, restating the console's `ACTION_ROUTINE` beside `ACTION_LABEL`, `tests/actkeepsql.js` holding the two equal: saves and drafts, stage moves, messages and notices sent, links opened, everyday edits to a set or a booking) for `activity_routine_months` (3), every other tag, an unlisted one included, for `activity_keep_months` (36), both Settings, Company, Activity history (the words call the two routine and important). A new tag is key until it joins both lists. `privacy_retention()` (pg_cron
   `privacy-retention`, daily at 02:45 MYT since 2026-11-26) removes them, and
   clears a WhatsApp message's number, name, variables and link code twelve
   months after it was queued, never one still queued or sending

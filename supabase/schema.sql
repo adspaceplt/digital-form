@@ -174927,7 +174927,7 @@ select public.functions_tidy();
 --     `activity_window_days` 7 (1 to 90, what every Activity list shows
 --     first), `activity_routine_months` 3 (1 to 36),
 --     `activity_keep_months` 36 (12 to 120), `jobs_keep_days` 7 (1 to 90),
---     Settings, Security, Activity history; `send_undo_seconds` 60 (10 to
+--     Settings, Company, Activity history; `send_undo_seconds` 60 (10 to
 --     300), Settings, Messages, Undo before sending, the one window every
 --     email a colleague's act queues waits for Undo (`team.settings`);
 --     taken by `app_settings_set` (restated from CREATOR BILL ON
