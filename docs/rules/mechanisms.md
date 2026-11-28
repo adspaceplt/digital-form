@@ -29,6 +29,16 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   `codeEmail` are async), and the links Worker its own settings
   (`PORTAL_URL`, `HOME_URL`, `AGENCY_NAME`, `WORDMARK_URL`), set equal to
   the profile because the public key it reads with is not answered it.
+  A static file (a page's head and static markup, a manifest, robots.txt,
+  the sitemap, `js/push-sw.js`) cannot read either (release 9,
+  2026-11-28): it names a value as `%agency.<key>%` or `%config.<key>%`,
+  written by the Pages build from `js/config.js` before any stamp
+  (`.github/stamp.js`, which stops on a key the install does not hold or a
+  value needing escaping), and `tests/serve.js` and a suite reading a page
+  off the disk (`tests/published.js`) meet the same words. A browser-called
+  edge function's own origin is the `PORTAL_ORIGIN` setting, `https://` and
+  the profile's `portal_domain` (`_shared/cors.ts`, read at each call;
+  unset, the portal is refused).
 - `js/api.js` is the only Supabase client. Demo content is only for a copy
   with no database configured: a configured page whose database library
   failed to load reads Unable to load and records nothing, and a review

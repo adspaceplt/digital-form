@@ -1,6 +1,6 @@
 {
-  "name": "ADspace Creator Selection",
-  "short_name": "ADspace",
+  "name": "%agency.trading_name% Creator Selection",
+  "short_name": "%agency.trading_name%",
   "scope": "/creators/",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -1,6 +1,6 @@
 {
-  "name": "ADspace Creator Portal",
-  "short_name": "ADspace",
+  "name": "%agency.trading_name% Creator Portal",
+  "short_name": "%agency.trading_name%",
   "scope": "/creator/",
   "display": "standalone",
   "background_color": "#ffffff",

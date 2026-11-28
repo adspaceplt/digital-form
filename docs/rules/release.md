@@ -46,4 +46,7 @@ Moved whole from `CLAUDE.md` §3 Git and delivery, which keeps a one-line pointe
   call (`wa-send`, `supplier-mail`: `_shared/pdfref.ts`; `supplier-mail`,
   `bukku-sync`: `_shared/mail.ts`, the one email layout and Resend send; every function a
   browser calls: `_shared/cors.ts`, the one list of origins and the one
-  answer's headers, `tests/mailfn.js`), and both read back.
+  answer's headers, `tests/mailfn.js`), and both read back. The function
+  setting `PORTAL_ORIGIN` (`https://` and the profile's `portal_domain`) is
+  set before the first deploy of a `cors.ts` that reads it (release 9,
+  2026-11-28): without it every browser call is refused.

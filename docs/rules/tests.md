@@ -9,6 +9,9 @@ Moved from `CLAUDE.md` §1 on 2026-11-23. Read whole before changing a suite or 
   service role key it reads with; a Postgres fixture with no profile band
   takes `sqlAgency`; a suite holding a function to its band's text accepts
   release 8's restatement through `toAgency` alone (2026-11-28).
+- A suite reading a portal page, manifest, robots.txt or the sitemap off the
+  disk reads it through `tests/published.js` (the agency's placeholders
+  written as the Pages build writes them), never raw (release 9, 2026-11-28).
 - `tests/stub2.js`, the Supabase stand-in (its first rule, add every new table,
   function and refusal to it, stays in `CLAUDE.md`):
   - It is also the demo's engine: a push that changes it runs

@@ -17,7 +17,7 @@ self.addEventListener('push', function (e) {
   // One notification per thing: a newer word about the same booking or task
   // replaces the older one, and still sounds.
   if (d.tag) { opts.tag = d.tag; opts.renotify = true; }
-  e.waitUntil(self.registration.showNotification(d.title || 'ADspace', opts));
+  e.waitUntil(self.registration.showNotification(d.title || '%agency.trading_name%', opts));
 });
 
 self.addEventListener('notificationclick', function (e) {

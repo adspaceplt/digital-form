@@ -9,7 +9,7 @@
 <!-- Nothing on this host is for a search engine, and a 404 least of all. -->
 <meta name="robots" content="noindex, nofollow">
 <title>Page not found</title>
-<meta name="description" content="ADspace Digital Portal">
+<meta name="description" content="%agency.trading_name% Digital Portal">
 <link rel="icon" type="image/png" sizes="192x192" href="/img/favicon-192.png">
 <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
 <!-- The one brand face, fetched alongside the stylesheet rather than after it. -->
@@ -29,7 +29,7 @@
      left, a white ground to the browser's edge — so the two root pages of this
      host agree with each other.
 
-     What went with the old page: a `noscript` redirect to adspacestudios.com,
+     What went with the old page: a `noscript` redirect to %agency.website%,
      which was there because that page could not draw itself without script.
      This one needs none, so the redirect would only have thrown a reader off a
      page they could already read; a client following a portal link belongs
@@ -59,8 +59,8 @@
 <body lang="en">
 
 <header class="doorbar">
-  <img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace"
-       onerror="this.replaceWith(Object.assign(document.createElement('b'),{textContent:'ADspace'}))">
+  <img src="%agency.wordmark_url%" alt="%agency.trading_name%"
+       onerror="this.replaceWith(Object.assign(document.createElement('b'),{textContent:'%agency.trading_name%'}))">
 </header>
 
 <main class="shell">
@@ -68,10 +68,10 @@
     <div class="cover-inner">
       <div class="cover-panel" data-glyph="docq">
         <h1>Page not found</h1>
-        <p>Please check the address, or contact ADspace.</p>
+        <p>Please check the address, or contact %agency.trading_name%.</p>
         <div class="cover-acts">
-          <a class="btn" href="https://adspacestudios.com" target="_blank" rel="nofollow noopener">Visit website<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
-          <a class="btn" href="mailto:advertise@adspacestudios.com?subject=Digital%20Portal%20assistance"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>Contact support</a>
+          <a class="btn" href="https://%agency.website%" target="_blank" rel="nofollow noopener">Visit website<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
+          <a class="btn" href="mailto:%agency.email%?subject=Digital%20Portal%20assistance"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>Contact support</a>
         </div>
       </div>
     </div>
@@ -82,8 +82,8 @@
      here because this page runs no script of its own (UX audit NOTFOUND-1,
      2026-10-14). The year is the one value filled in. -->
 <footer class="portalfoot"><div class="portalfoot-in">
-  <span class="portalfoot-copy">&copy; <span id="footYear">2026</span> ADSPACE PLT. All Rights Reserved.</span>
-  <a class="portalfoot-link" href="https://adspacestudios.com/legal/policies" target="_blank" rel="noopener">Terms of Service</a>
+  <span class="portalfoot-copy">&copy; <span id="footYear">2026</span> %agency.legal_name%. All Rights Reserved.</span>
+  <a class="portalfoot-link" href="https://%agency.website%/legal/policies" target="_blank" rel="noopener">Terms of Service</a>
 </div></footer>
 <script>document.getElementById('footYear').textContent = new Date().getFullYear();</script>
 <!-- Page availability covers this page too, as a system page (EVERY PAGE

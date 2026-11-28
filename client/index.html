@@ -5,11 +5,11 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
-<title>ADspace Client Portal</title>
-<meta name="description" content="Your company, services, letters and requests with ADspace.">
-<meta property="og:site_name" content="ADspace">
-<meta property="og:title" content="Client Portal by ADspace">
-<meta property="og:description" content="Your company, services, letters and requests with ADspace.">
+<title>%agency.trading_name% Client Portal</title>
+<meta name="description" content="Your company, services, letters and requests with %agency.trading_name%.">
+<meta property="og:site_name" content="%agency.trading_name%">
+<meta property="og:title" content="Client Portal by %agency.trading_name%">
+<meta property="og:description" content="Your company, services, letters and requests with %agency.trading_name%.">
 <meta name="twitter:card" content="summary">
 <link rel="icon" type="image/png" sizes="192x192" href="/img/favicon-192.png">
 <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
@@ -68,7 +68,7 @@
         <form id="signForm" hidden onsubmit="return false">
           <div class="field">
             <label class="field-label" for="signEmail" id="signEmailLabel">Email</label>
-            <input class="input" id="signEmail" type="email" placeholder="email@adspace.me" autocomplete="email">
+            <input class="input" id="signEmail" type="email" placeholder="email@%agency.short_domain%" autocomplete="email">
           </div>
           <button class="btn btn-primary" id="signGo" type="button">Continue</button>
         </form>
@@ -127,7 +127,7 @@
            who to reach and the company beside it. -->
       <div class="cp-pane cp-overview" data-pane="overview" role="tabpanel" aria-labelledby="tabOverview">
         <div class="cp-col">
-          <!-- A feedback request ADspace sent, open until it is answered
+          <!-- A feedback request %agency.trading_name% sent, open until it is answered
                (CLIENT FEEDBACK, 2026-11-24, js/fbform.js). -->
           <section class="panel cp-card fb-ask" id="ovFb" hidden>
             <div class="cp-card-head"><h3 id="ovFbHead">Rate your experience</h3></div>

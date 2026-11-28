@@ -1,7 +1,7 @@
 {
-  "name": "ADspace Digital Portal",
-  "short_name": "ADspace",
-  "description": "ADspace internal portal.",
+  "name": "%agency.trading_name% Digital Portal",
+  "short_name": "%agency.trading_name%",
+  "description": "%agency.trading_name% internal portal.",
   "id": "/admin/",
   "start_url": "/admin/",
   "scope": "/admin/",

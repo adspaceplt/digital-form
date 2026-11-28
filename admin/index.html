@@ -4,15 +4,15 @@
 <meta charset="UTF-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>ADspace Digital Portal</title>
-<meta name="description" content="ADspace internal portal.">
-<meta property="og:title" content="ADspace Digital Portal">
-<meta property="og:description" content="ADspace Digital Portal.">
-<meta property="og:image" content="https://digital.adspace.me/img/share-1200.png?v=dev">
+<title>%agency.trading_name% Digital Portal</title>
+<meta name="description" content="%agency.trading_name% internal portal.">
+<meta property="og:title" content="%agency.trading_name% Digital Portal">
+<meta property="og:description" content="%agency.trading_name% Digital Portal.">
+<meta property="og:image" content="https://%agency.portal_domain%/img/share-1200.png?v=dev">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="ADspace Digital Portal">
-<!-- The ADspace mark, so a pinned tab reads as ADspace. Served from our own
+<meta property="og:image:alt" content="%agency.trading_name% Digital Portal">
+<!-- The %agency.trading_name% mark, so a pinned tab reads as %agency.trading_name%. Served from our own
      CDN rather than the website builder's, so a site rebuild cannot break it. -->
 <link rel="icon" type="image/png" sizes="192x192" href="/img/favicon-192.png">
 <!-- Installable: the manifest and the home screen icon are the console's own
@@ -91,7 +91,7 @@
 <meta name="theme-color" content="#171717" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="ADspace">
+<meta name="apple-mobile-web-app-title" content="%agency.trading_name%">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <!-- The one brand face, fetched alongside the stylesheet rather than after
      it: a heading that paints in the system face and flips a moment later
@@ -198,7 +198,7 @@
           <form onsubmit="return false">
             <div class="field">
               <label class="field-label" for="authEmail">Company email</label>
-              <input class="input" id="authEmail" type="email" placeholder="email@adspacestudios.com" autocomplete="email">
+              <input class="input" id="authEmail" type="email" placeholder="email@%agency.website%" autocomplete="email">
             </div>
             <!-- Continue sends the code; the passkey, drawn by js/passkey.js
                  only where this browser can use one, is the other way in
@@ -276,8 +276,8 @@
 <div class="console" id="console" hidden>
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-      <img id="sideLogo" class="brand-logo" src="" alt="ADspace">
-      <span class="brand-wordmark" id="sideWordmark" hidden>ADspace</span>
+      <img id="sideLogo" class="brand-logo" src="" alt="%agency.trading_name%">
+      <span class="brand-wordmark" id="sideWordmark" hidden>%agency.trading_name%</span>
       <span class="sidebar-kicker">Digital Portal</span>
     </div>
 
@@ -612,7 +612,7 @@
                    again from the name (namecard_save). -->
               <div><label class="field-label" for="mycSlug">Short link</label>
                 <div class="slugfield">
-                  <span class="slugfield-pre" id="mycSlugPre">hi.adspace.me/</span>
+                  <span class="slugfield-pre" id="mycSlugPre">%agency.link_domain%/</span>
                   <input class="input is-pre" id="mycSlug" placeholder="Made from your name" autocapitalize="off"
                          autocorrect="off" spellcheck="false">
                 </div></div>
@@ -811,7 +811,7 @@
             <h4 class="fsec-h">Client</h4>
             <div class="row fgrid">
               <div class="span-all"><label class="field-label" for="crmName">Brand name</label>
-                <input class="input" id="crmName" aria-required="true" placeholder="ADspace"></div>
+                <input class="input" id="crmName" aria-required="true" placeholder="%agency.trading_name%"></div>
               <div><label class="field-label" for="crmSource">Source</label>
                 <select class="select" id="crmSource"></select></div>
               <div><label class="field-label" for="crmIndustry">Industry</label>
@@ -839,7 +839,7 @@
                 <div class="slugfield"><span class="slugfield-pre" aria-hidden="true">@</span>
                 <input class="input is-pre" id="crmContactWa" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="adspace.advertising"></div></div>
               <div class="span-all"><label class="field-label" for="crmContactEmail">Email</label>
-                <input class="input" id="crmContactEmail" autocomplete="off" type="email" placeholder="email@adspace.me"></div>
+                <input class="input" id="crmContactEmail" autocomplete="off" type="email" placeholder="email@%agency.short_domain%"></div>
             </div>
           </section>
           <details class="fmore" id="crmMore">
@@ -1144,7 +1144,7 @@
                 <div class="slugfield"><span class="slugfield-pre" aria-hidden="true">@</span>
                 <input class="input is-pre" id="ctWa" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="adspace.advertising"></div></div>
               <div class="span-all"><label class="field-label" for="ctEmail">Email</label>
-                <input class="input" id="ctEmail" autocomplete="off" type="email" placeholder="email@adspace.me"></div>
+                <input class="input" id="ctEmail" autocomplete="off" type="email" placeholder="email@%agency.short_domain%"></div>
             </div>
             <div class="row">
               <div><label class="field-label" for="ctLang">Preferred language</label>
@@ -1250,7 +1250,7 @@
                     <!-- Shared by every brand the company bills, or this brand's own (2026-10-31). -->
                     <label class="tickline bill-shared" id="crmBillSharedRow" hidden><input type="checkbox" id="crmBillShared"> <span>Use for every brand this company bills</span></label></div>
                   <div><label class="field-label" for="crmFinanceEmail">Finance email</label>
-                    <input class="input" id="crmFinanceEmail" autocomplete="off" type="email" placeholder="accounts@adspace.me"></div>
+                    <input class="input" id="crmFinanceEmail" autocomplete="off" type="email" placeholder="accounts@%agency.short_domain%"></div>
                   <div class="span-all"><label class="field-label" for="crmBillAddr">Billing address</label>
                     <textarea class="input textarea" id="crmBillAddr" aria-required="true" rows="3"></textarea></div>
                 </div>
@@ -1307,7 +1307,7 @@
               <section class="fsec" data-bmode="profile">
                 <div class="row fgrid">
                   <div><label class="field-label" for="crmWebsite">Website</label>
-                    <textarea class="input" id="crmWebsite" placeholder="https://adspace.me" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea></div>
+                    <textarea class="input" id="crmWebsite" placeholder="https://%agency.short_domain%" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea></div>
                   <div><label class="field-label" for="crmPhone">Office phone</label>
                     <input class="input" id="crmPhone" type="tel" data-check="phone" placeholder="07-123 4567"></div>
                 </div>
@@ -1319,7 +1319,7 @@
                       <span class="logopreview is-empty" id="crmLogoPreview" aria-hidden="true">
                         <img id="crmLogoPreviewImg" alt="" hidden>
                       </span>
-                      <textarea class="input" id="crmLogo" placeholder="https://adspace.me/logo.png" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+                      <textarea class="input" id="crmLogo" placeholder="https://%agency.short_domain%/logo.png" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
                       <button class="btn btn-sm" id="crmLogoUp" type="button" data-need="clients:work"><svg aria-hidden="true" data-ic="upload"></svg>Upload</button>
                       <input id="crmLogoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden data-nodraft></div>
                   </div>
@@ -1643,7 +1643,7 @@
               <div class="qb-board" id="qbBoard">
               <section class="fsec qb-bname">
                 <div class="row"><div><label class="field-label" for="qbBrandName">Brand name</label>
-                  <input class="input" id="qbBrandName" type="text" maxlength="120" data-noenter data-nodraft placeholder="ADspace Advertising"></div></div>
+                  <input class="input" id="qbBrandName" type="text" maxlength="120" data-noenter data-nodraft placeholder="%agency.trading_name% Advertising"></div></div>
               </section>
               <section class="fsec qb-typesec">
                 <h4 class="fsec-h" id="qbTypesLabel">Choose what to quote</h4>
@@ -1893,7 +1893,7 @@
                   <div><label class="field-label" for="qsgPSal">Salutation</label><select class="select" id="qsgPSal"><option value="">None</option></select></div>
                   <div><label class="field-label" for="qsgPName">Name</label><input class="input" id="qsgPName" maxlength="80" aria-required="true" placeholder="John Doe"></div>
                   <div><label class="field-label" for="qsgPPhone">Phone number</label><input class="input" id="qsgPPhone" type="tel" data-check="phone" maxlength="30" aria-required="true" placeholder="012-345 6789"></div>
-                  <div><label class="field-label" for="qsgPEmail">Email</label><input class="input" id="qsgPEmail" type="email" maxlength="160" aria-required="true" placeholder="email@adspace.me"></div>
+                  <div><label class="field-label" for="qsgPEmail">Email</label><input class="input" id="qsgPEmail" type="email" maxlength="160" aria-required="true" placeholder="email@%agency.short_domain%"></div>
                 </div>
               </section>
               <section class="fsec">
@@ -1902,7 +1902,7 @@
                   <div><label class="field-label" for="qsgPSigner">Signed by</label><input class="input" id="qsgPSigner" maxlength="80" aria-required="true" placeholder="John Doe"></div>
                   <div><label class="field-label" for="qsgPRole">Designation</label><input class="input" id="qsgPRole" maxlength="80" aria-required="true" placeholder="Director"></div>
                   <div><label class="field-label" for="qsgPDay">Date signed</label><input class="input" id="qsgPDay" type="date" aria-required="true"></div>
-                  <div><label class="field-label" for="qsgPScan">Scan</label><textarea class="input" id="qsgPScan" data-oneline rows="1" maxlength="500" placeholder="https://adspace.me"></textarea></div>
+                  <div><label class="field-label" for="qsgPScan">Scan</label><textarea class="input" id="qsgPScan" data-oneline rows="1" maxlength="500" placeholder="https://%agency.short_domain%"></textarea></div>
                 </div>
               </section>
               <div class="msg" id="qsgPaperMsg" role="alert"></div>
@@ -4169,7 +4169,7 @@
               <div><label class="field-label" for="tmName">Name</label>
                 <input class="input" id="tmName" aria-required="true" placeholder="John Doe"></div>
               <div><label class="field-label" for="tmEmail">Sign-in email</label>
-                <input class="input" id="tmEmail" autocomplete="off" aria-required="true" type="email" placeholder="email@adspacestudios.com"></div>
+                <input class="input" id="tmEmail" autocomplete="off" aria-required="true" type="email" placeholder="email@%agency.website%"></div>
               <div><label class="field-label" for="tmRole">User group</label>
                 <select class="select" id="tmRole" aria-required="true" aria-describedby="tmRoleSum"></select>
                 <!-- What the group chosen may do, as its row in Groups reads. -->
@@ -4677,7 +4677,7 @@
             <div class="row" id="hbFileRow"><div><label class="field-label" for="hbFile">File</label>
               <input class="input" id="hbFile" type="file" aria-required="true" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.txt,.csv"></div></div>
             <div class="row" id="hbLinkRow" hidden><div><label class="field-label" for="hbLink">Link</label>
-              <textarea class="input" id="hbLink" inputmode="url" aria-required="true" placeholder="https://adspace.me" autocomplete="off" rows="1" data-oneline spellcheck="false" autocapitalize="off"></textarea></div></div>
+              <textarea class="input" id="hbLink" inputmode="url" aria-required="true" placeholder="https://%agency.short_domain%" autocomplete="off" rows="1" data-oneline spellcheck="false" autocapitalize="off"></textarea></div></div>
           </section>
         </div>
         <div class="sheet-foot">
@@ -4796,7 +4796,7 @@
               <div class="nem-cc" id="nemCc" role="group" aria-labelledby="nemCcLabel"></div></div></div>
             <div class="row fgrid" id="nemTypedRow" hidden>
               <div><label class="field-label" for="nemToTyped">To</label>
-                <input class="input" id="nemToTyped" type="email" inputmode="email" autocomplete="off" placeholder="email@adspace.me" aria-required="true" data-nodraft></div>
+                <input class="input" id="nemToTyped" type="email" inputmode="email" autocomplete="off" placeholder="email@%agency.short_domain%" aria-required="true" data-nodraft></div>
               <div><label class="field-label" for="nemCcTyped">Copy</label>
                 <input class="input" id="nemCcTyped" type="email" inputmode="email" autocomplete="off" placeholder="Optional" data-nodraft></div>
             </div>
@@ -5075,7 +5075,7 @@
             <div class="row"><div><label class="field-label" for="vsTitle">Title</label>
               <textarea class="input" id="vsTitle" rows="1" data-oneline maxlength="200" placeholder="Optional" autocomplete="off"></textarea></div></div>
             <div class="row"><div><label class="field-label" for="vsRef">Reference video</label>
-              <textarea class="input" id="vsRef" rows="1" data-oneline inputmode="url" placeholder="https://adspace.me" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div></div>
+              <textarea class="input" id="vsRef" rows="1" data-oneline inputmode="url" placeholder="https://%agency.short_domain%" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div></div>
             <div class="row fgrid">
               <div><label class="field-label" for="vsPlatform">Platform</label><select class="select" id="vsPlatform"></select></div>
               <div><label class="field-label" for="vsLang">Language</label><select class="select" id="vsLang"></select></div>
@@ -5758,7 +5758,7 @@
         <div class="row">
           <div>
             <label class="field-label" for="newTarget">Destination</label>
-            <textarea class="input" id="newTarget" aria-required="true" placeholder="https://adspace.me/promo" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+            <textarea class="input" id="newTarget" aria-required="true" placeholder="https://%agency.short_domain%/promo" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
           </div>
         </div>
         <div class="row fgrid">
@@ -6481,7 +6481,7 @@ raya-2026        https://example.com/raya"></textarea>
           <div class="span-all"><label class="field-label" for="hirName">Name</label>
             <textarea class="input" id="hirName" rows="1" data-oneline aria-required="true" maxlength="120" placeholder="Jane Doe"></textarea></div>
           <div><label class="field-label" for="hirEmail">Email</label>
-            <input class="input" id="hirEmail" type="email" aria-required="true" maxlength="160" placeholder="email@adspace.me"></div>
+            <input class="input" id="hirEmail" type="email" aria-required="true" maxlength="160" placeholder="email@%agency.short_domain%"></div>
           <div><label class="field-label" for="hirPhone">Phone</label>
             <input class="input" id="hirPhone" type="tel" data-check="phone" maxlength="30" placeholder="012-345 6789"></div>
         </div>
@@ -6503,7 +6503,7 @@ raya-2026        https://example.com/raya"></textarea>
         <h4 class="fsec-h">CV</h4>
         <div class="row fgrid">
           <div class="span-all"><label class="field-label" for="hirCvUrl">CV link</label>
-            <textarea class="input" id="hirCvUrl" rows="1" data-oneline maxlength="500" placeholder="https://adspace.me"></textarea></div>
+            <textarea class="input" id="hirCvUrl" rows="1" data-oneline maxlength="500" placeholder="https://%agency.short_domain%"></textarea></div>
           <div class="span-all"><label class="field-label" for="hirCvFile">CV file</label>
             <input class="input" id="hirCvFile" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" data-nodraft>
             <p class="asknote" id="hirCvHeld" hidden></p></div>
@@ -6628,7 +6628,7 @@ raya-2026        https://example.com/raya"></textarea>
       <section class="fsec">
         <h4 class="fsec-h">Recipient</h4>
         <div class="row fgrid">
-          <div class="span-all"><span class="field-label">From</span><p class="readfield" id="supMailFrom">ADspace · portal@sc.adspace.me</p></div>
+          <div class="span-all"><span class="field-label">From</span><p class="readfield" id="supMailFrom">%agency.trading_name% · portal@%agency.sender_domain%</p></div>
           <div class="span-all"><span class="field-label">Replies go to</span><p class="readfield" id="supMailReply">ap@adspacestudios.com</p></div>
           <div class="span-all"><span class="field-label">To</span><p class="readfield" id="supMailTo"></p></div>
         </div>
@@ -6674,7 +6674,7 @@ raya-2026        https://example.com/raya"></textarea>
       <section class="fsec">
         <h4 class="fsec-h">Recipient</h4>
         <div class="row fgrid">
-          <div class="span-all"><span class="field-label">From</span><p class="readfield">ADspace · portal@sc.adspace.me</p></div>
+          <div class="span-all"><span class="field-label">From</span><p class="readfield">%agency.trading_name% · portal@%agency.sender_domain%</p></div>
           <div class="span-all"><span class="field-label">Replies go to</span><p class="readfield" id="dmReply"></p></div>
           <div class="span-all"><label class="field-label" for="dmTo">To</label>
             <select class="select" id="dmTo" aria-required="true" data-nodraft data-nofind></select></div>

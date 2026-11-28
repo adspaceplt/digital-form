@@ -47,11 +47,12 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { isPdf, pdfFrom, namesRef } from '../_shared/pdfref.ts';
-import { ALLOWED_ORIGINS, cors, json } from '../_shared/cors.ts';
+import { cors, json } from '../_shared/cors.ts';
+import { agencyProfile, portalUrl } from '../_shared/agency.ts';
 
-/* The portal's own address: an approval reminder's link button opens a page
-   under it. */
-const SITE = ALLOWED_ORIGINS[0];
+/* The portal's own address, the agency profile's (an approval reminder's
+   link button opens a page under it). */
+const site = async (): Promise<string> => portalUrl(await agencyProfile());
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 
 const GRAPH = () => 'https://graph.facebook.com/' + (secret('META_GRAPH_VERSION') || 'v26.0');
@@ -207,11 +208,11 @@ function named(err?: string): string {
    button's fixed base, each as the database answered it for the record
    being messaged; never a value the page sent, which a stale prefill had
    pointed at another person's page. Nothing where the record holds none. */
-function linkOf(t: Shape, p: Record<string, any>): string {
+function linkOf(t: Shape, p: Record<string, any>, home: string): string {
   if (!t.button_var) return '';
   if (p.code) return String(p.code);
-  if (!p.link) return '';
-  const base = t.button_var.url.split('{{')[0], full = SITE + '/' + String(p.link);
+  if (!p.link || !home) return '';
+  const base = t.button_var.url.split('{{')[0], full = home + '/' + String(p.link);
   return base && full.indexOf(base) === 0 && full.length > base.length ? full.slice(base.length) : '';
 }
 
@@ -399,7 +400,7 @@ Deno.serve(async (req) => {
     const values = t.body_vars.map((v) => String(given[v] == null ? '' : given[v]).trim());
     const headerValue = String(body.header_value || '').trim();
     if (values.some((v) => !v) || (t.header_var && !headerValue)) return json({ error: 'wa-params-missing' }, 200, origin);
-    const buttonValue = linkOf(t, p);
+    const buttonValue = linkOf(t, p, await site());
     if (t.button_var && !buttonValue) return json({ error: 'wa-no-link' }, 200, origin);
     const isNamed = t.format === 'NAMED';
     let bytes: Uint8Array | null = null;

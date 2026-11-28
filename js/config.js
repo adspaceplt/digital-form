@@ -19,6 +19,8 @@ window.ADspaceAgency = {
   address: '61-02 Jalan Mutiara Emas 2A\nTaman Mount Austin\n81100 Johor Bahru\nJohor, Malaysia',
   phone: '60187625233',
   website: 'adspacestudios.com',
+  short_domain: 'adspace.me',
+  facebook_url: 'https://facebook.com/adspacestudios',
   map_url: 'https://hi.adspace.me/map',
   portal_domain: 'digital.adspace.me',
   link_domain: 'hi.adspace.me',
@@ -127,8 +129,7 @@ window.ADSPACE_CONFIG = {
     // proved its link, code or sign-in (js/media.js). On since 2026-10-03,
     // once CloudFront held the portal's key (docs/S3-STORAGE.md §6); the pass
     // is set on `mediaCookieDomain` so mycdn.adspace.me receives it.
-    privateMedia: true,
-    mediaCookieDomain: 'adspace.me'
+    privateMedia: true
   },
   /* Google Drive import.
 
@@ -172,7 +173,7 @@ window.ADSPACE_CONFIG = {
   /* The agency's social pages, offered on /feedback/ once a client has
      answered (CLIENT FEEDBACK, 2026-11-24). */
   socialLinks: [
-    { name: 'Facebook', url: 'https://www.facebook.com/adspacestudios' },
+    window.ADspaceAgency.alias({ name: 'Facebook' }, { url: 'facebook_url' }),
     { name: 'Instagram', url: 'https://www.instagram.com/adspace.advertising' },
     { name: 'LinkedIn', url: 'https://www.linkedin.com/company/adspacestudios' }
   ],
@@ -180,12 +181,10 @@ window.ADSPACE_CONFIG = {
   quoteWhatsApp: 'https://wa.me/adspace',
   /* The agency's own domain and accounts, named as a field's example (a
      placeholder: an email, a website, a profile link). */
-  examples: {
-    domain: 'adspace.me',
+  examples: window.ADspaceAgency.alias({
     instagram: 'https://www.instagram.com/adspace.advertising',
-    tiktok: 'https://www.tiktok.com/@adspace.advertising',
-    facebook: 'https://www.facebook.com/adspace.advertising'
-  },
+    tiktok: 'https://www.tiktok.com/@adspace.advertising'
+  }, { domain: 'short_domain', facebook: 'facebook_url' }),
   // Directions to a place: the map's search, the place's words after it.
   mapSearch: 'https://www.google.com/maps/search/?api=1&query='
 
@@ -195,5 +194,7 @@ window.ADSPACE_CONFIG = {
      to set it. The Supabase anon key and the Google key above are not secrets:
      both are meant to be public and are held back by their own restrictions. */
 };
+/* The media pass's cookie is set on the agency's own domain, so the CDN under it receives it. */
+window.ADspaceAgency.alias(window.ADSPACE_CONFIG.s3, { mediaCookieDomain: 'short_domain' });
 window.ADspaceAgency.alias(window.ADSPACE_CONFIG, { brandLogo: 'wordmark_url', agencyName: 'trading_name',
   serviceTermsUrl: 'service_terms_url', supportEmail: 'email', accountEmail: 'email', linkHost: 'link_domain' });
