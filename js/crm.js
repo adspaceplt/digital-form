@@ -3932,12 +3932,10 @@
     if (on) $('crmBillInRow').hidden = true;
     if (!on) $('crmBillTitle').textContent = 'Billing details';
   }
-  /* A number held before and left as it was is not judged again. */
   function brnRefused(v, held) {
-    if (!v || ADspaceWords.brnDigits(v) === ADspaceWords.brnDigits(held)) return false;
-    var sg = state.client && state.client.market === 'SG';
-    if (!ADspaceWords.brnCheck(v, sg ? 'SG' : 'MY')) return false;
-    msg('crmBillMsg', ADspaceWords.en[sg ? 'uenBad' : 'brnBad'], 'err'); $('crmCompanyNo').focus();
+    var W = ADspaceWords, sg = state.client && state.client.market === 'SG';
+    if (!v || W.brnDigits(v) === W.brnDigits(held) || !W.brnCheck(v, sg ? 'SG' : 'MY')) return false;
+    msg('crmBillMsg', W.en[sg ? 'uenBad' : 'brnBad'], 'err'); $('crmCompanyNo').focus();
     return true;
   }
   function entSave() {

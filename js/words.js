@@ -52,7 +52,6 @@
     linkExpired: 'Link expired', formEnds: 'This form is open until {d}.', formReceived: 'Details received',
     formSubmitted: 'This form has already been submitted.', tickToContinue: 'Tick the box to continue.',
     badMobile: 'Enter a Malaysian or Singaporean mobile number, for example 012-345 6789.',
-    // A registration number refused by `brnCheck`: a BRN, or for a Singapore client a BRN or a UEN.
     brnBad: 'Enter the 12-digit Business Registration Number (BRN).',
     uenBad: 'Enter the 12-digit Business Registration Number (BRN) or the 9- or 10-character Unique Entity Number (UEN).',
     /* A form in steps, the quotation's and the details forms' alike
@@ -401,18 +400,13 @@
   W.emailOk = function (v) {
     return /^[^\s@,;:<>"'()\[\]\\]+@[^\s@,;:<>"'()\[\]\\]+\.[a-z]{2,}$/i.test(String(v == null ? '' : v).trim());
   };
-  /* The one reading of a BRN (`brn_check` in SQL; docs/rules/mechanisms.md):
-     '' where it holds, 'bad', or 'kind' (the other kind's code). */
+  /* One BRN rule, `brn_check`'s twin: '', 'bad' or 'kind'. */
   W.brnDigits = function (v) { return String(v == null ? '' : v).replace(/[\s-]+/g, '').toUpperCase(); };
   W.brnCheck = function (v, market, kind) {
-    var d = W.brnDigits(v), C = window.ADspaceClock;
-    if (market === 'SG' && /^([0-9]{8,9}[A-Z]|[TSR][0-9]{2}[A-Z]{2}[0-9]{4}[A-Z])$/.test(d)) return '';
-    var now = C && C.today ? Number(C.today().slice(0, 4)) : new Date().getFullYear();
-    var y = Number(d.slice(0, 4)), code = d.slice(4, 6);
-    if (!/^\d{12}$/.test(d) || y < 1900 || y > now || !/^0[1-4]$/.test(code)) return 'bad';
-    if (kind === 'soleprop' && code !== '03') return 'kind';
-    if (kind === 'company' && code === '03') return 'kind';
-    return '';
+    var d = W.brnDigits(v), C = window.ADspaceClock, y = +d.slice(0, 4), c = d.slice(4, 6);
+    if (market === 'SG' && /^(\d{8,9}[A-Z]|[TSR]\d\d[A-Z]{2}\d{4}[A-Z])$/.test(d)) return '';
+    if (!/^\d{12}$/.test(d) || y < 1900 || y > (C ? +C.today().slice(0, 4) : new Date().getFullYear()) || !/^0[1-4]$/.test(c)) return 'bad';
+    return kind && (kind === 'soleprop') !== (c === '03') ? 'kind' : '';
   };
   /* The console's standard lines (2026-11-04, the user: "every new build
      didnt follow your tone"): a line two screens say is written once here
