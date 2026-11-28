@@ -562,8 +562,10 @@ work is shaped to spend it on the fix, not on overhead.
   - favicon: the wordmark set in the repo (`/favicon.ico`, `img/favicon-*`,
     `img/apple-touch-icon.png`, `img/icon-512.png`), never the monogram;
   - in the repo: `css/adspace-mark.png` (the monogram, the letterhead's
-    alone), `css/SlateBook.TTF`,
-    `css/SlateRg.TTF` (and `.woff2`), `css/SlateMedium.TTF`, `css/OPTIMA.TTF`.
+    alone); the faces in `css/fonts/` (`text`, `bold` and `medium` `.ttf`,
+    `bold` and `medium` `.woff2`, `mark.ttf`), named by the profile
+    (`font_text`, `font_bold`, `font_medium`, `font_mark`) and drawn on
+    screen as `--font-head` and `--font-mark`; never a face's own name.
   - `ADspace.png` and the website favicon were rejected.
 - The issuer (`ADSPACE_ORG`): ADSPACE PLT, 202304002162, SST
   J31-2401-32100002, 61-02 Jalan Mutiara Emas 2A, Taman Mount Austin, 81100

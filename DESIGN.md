@@ -173,11 +173,13 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 | Floor | 11px | Nothing smaller (the review mockups are exempt) |
 | Mono | `ui-monospace, SFMono-Regular, Menlo` 12.5px | Slugs, tokens, codes only |
 
-- Slate Regular (`/css/SlateRg.woff2`, preloaded, `font-display: optional`)
+- Slate Regular (`/css/fonts/bold.woff2`, preloaded, `font-display: optional`)
   through `--font-head` on the display and section headings, and on the front
   door's names (`.lp-way-name`, the days) and tagline (`.lp-tagline`,
-  19/400, 16 phone). Optima sets the front door's name (`.lp-title`, 48/400,
-  36 phone) and otherwise stays on the letterhead.
+  19/400, 16 phone). Optima (`--font-mark`, `css/fonts/mark.ttf`) sets the front door's name (`.lp-title`, 48/400,
+  36 phone) and otherwise stays on the letterhead. A face's file is the install's
+  (`css/fonts/`, the agency profile's `font_*`) and its family is a token's
+  (`Agency Head`, `Agency Mark`): no rule, head or script types the face's own name.
 - The front door's hierarchy: headings in the body face 17/600 (16 phone); the
   names under them in Slate Regular 400, 15 (14 phone); links 13.5 (13);
   address and lead 14.
