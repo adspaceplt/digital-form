@@ -224,6 +224,13 @@ Moved from `CLAUDE.md` §2, Access, on 2026-11-23.
   (My Work's pickers). A read of `team_members` names its columns, never
   `*` (refused); a new column is granted by running that file's part 3
   again with it named. The stand-in refuses the same.
+- A caller is the row their login is linked to, never the row an address
+  names: every check asks `auth.uid()` against `team_members.auth_user_id`
+  or `client_contacts.auth_user_id`, set by `identity_link` alone (a sign-in,
+  the backfill) and let go when the record's address changes; a job acting
+  as a colleague sets the claims' `sub` to that colleague's link; an
+  address is contact data (`2026-11-28-access-by-account-id.sql`,
+  `tests/identitysql.js`).
 - `is_team()` gates every team table and edge function. `authenticated` is not
   the team, because clients hold logins.
 - A system account (`team_members.system`, `2026-10-08-system-account.sql`;

@@ -18,7 +18,6 @@ import { cors, json } from '../_shared/cors.ts';
 
 /* An email compared as itself, never as a pattern: `_` and `%` in an
    address are letters here, not wildcards (audit P2, 2026-10-10). */
-const exactEmail = (s: string) => String(s).replace(/[\\%_]/g, (c) => '\\' + c);
 
 /* What the pages upload, and the one type each is stored as (audit
    2026-10-16, finding 4): a content set's videos and pictures and their cover
@@ -174,16 +173,15 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: auth } } }
     );
     const { data: { user }, error: authErr } = await supa.auth.getUser();
-    if (authErr || !user?.email) return json({ error: 'not_signed_in' }, 401, origin);
+    if (authErr || !user?.id) return json({ error: 'not_signed_in' }, 401, origin);
 
     // Clients sign in to /client/ with the same Authentication, so a login by
     // itself is not enough: the person has to be an active member of the team,
     // asked of the database with the service role.
-    // A removed colleague may share the address with one added again: the
-    // active row answers (Team audit, item 10).
+    // The colleague is the row this login is linked to (ACCESS BY ACCOUNT
+    // ID, 2026-11-28), never a row an address names.
     const { data: member } = await admin.from('team_members')
-      .select('active').ilike('email', exactEmail(user.email))
-      .order('active', { ascending: false }).limit(1).maybeSingle();
+      .select('active').eq('auth_user_id', user.id).maybeSingle();
     if (!member || !member.active) return json({ error: 'not_team' }, 403, origin);
 
     /* A colleague's employee record file (2026-11-16): an NRIC copy or a

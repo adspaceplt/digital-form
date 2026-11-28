@@ -94,18 +94,17 @@ Deno.serve(async (req) => {
     { global: { headers: { Authorization: auth } } }
   );
   const { data: { user }, error: authErr } = await asCaller.auth.getUser();
-  if (authErr || !user?.email) return json({ error: 'not_signed_in' }, 401, origin);
+  if (authErr || !user?.id) return json({ error: 'not_signed_in' }, 401, origin);
 
   // 2. Are they an active admin? Asked of the database with the service role,
   //    so a row the caller cannot see or forge still decides.
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
-  // A removed colleague may share the address with one added again: the
-  // active row answers (Team audit, item 10).
+  // The caller is the row this login is linked to (ACCESS BY ACCOUNT ID,
+  // 2026-11-28), never a row an address names.
   const { data: caller } = await admin.from('team_members')
-    .select('id, role, is_admin, active').ilike('email', exactEmail(user.email))
-      .order('active', { ascending: false }).limit(1).maybeSingle();
+    .select('id, role, is_admin, active').eq('auth_user_id', user.id).maybeSingle();
   if (!caller || !caller.active) return json({ error: 'not_admin' }, 403, origin);
 
   // 3. What they want. kind "client" invites a client contact to /client/
