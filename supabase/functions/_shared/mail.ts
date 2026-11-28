@@ -14,13 +14,17 @@
  *     as fine print reads (the user, 2026-11-11), the company's line in the
  *     dark grey. Text is #1a1a1a, never true black, the rest the palette's
  *     #515151, #f5f5f5 and #ffffff (the user, 2026-11-09); the address breaks before its postcode, and Apple
- *     Mail's number and address detection is kept from recolouring it.
+ *     Mail's number and address detection is kept from recolouring it. The
+ *     wordmark, the company's line and the site are the agency profile's
+ *     (`_shared/agency.ts`), never typed here; `layout` is async.
  *   resend(msg, key)
  *     posts one email with an idempotency key; answers sent with Resend's
  *     id, failed, or unknown where the answer never came (filed as Not
  *     confirmed, never sent again by itself). A request that never left
  *     (DNS, connect, TLS) is failed with `not sent:`.
  */
+import { agencyProfile, addressLines, phoneLine, mailSite } from './agency.ts';
+
 export const esc = (s: unknown) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as Record<string, string>)[c]);
 export const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
@@ -36,16 +40,29 @@ export const joinMoney = (t: string) => String(t).replace(/\b(RM|S\$) +(?=[-\d])
 function paras(body: string): string[] {
   return String(body || '').replace(/\r/g, '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
 }
-/* The public page a document is checked on: the server's copy of
-   ADSPACE_ORG.verifyUrl (js/config.js), which a function cannot read;
-   `tests/mailfn.js` holds the two alike. */
-export const VERIFY_URL = 'digital.adspace.me/verify';
+/* The public page a document is checked on: the profile's `verify_url`,
+   the page's ADSPACE_ORG.verifyUrl. */
+export async function verifyUrl(): Promise<string> {
+  return String((await agencyProfile()).verify_url || '');
+}
 export const BLOCK = /^\{\s*invoices\s*\}$/i;
 /* `{invoices}` set in a line of its own words stands as its own paragraph,
    so the table is drawn wherever it was typed (review 2026-10-29, 3). */
 const TOKEN = /\{\s*invoices\s*\}/i;
 
-export function layout(o: { heading: string; body: string; foot?: string; preheader?: string; block?: string; fine?: string[] }): string {
+/* The company's line under the card: the legal name and its registration,
+   the address broken before its postcode, the phone and the site. */
+function company(a: Record<string, string>): string {
+  const ls = addressLines(a), at = ls.findIndex((l) => /^\d{4,6}\s/.test(l));
+  const addr = at > 0 ? esc(ls.slice(0, at).join(', ')) + ',<br>' + esc(ls.slice(at).join(', ')) : esc(ls.join(', '));
+  const site = mailSite(a), phone = phoneLine(a);
+  return esc(a.legal_name || '') + (a.reg_no ? ' (' + esc(a.reg_no) + ')' : '') + '<br>' + (addr ? addr + '<br>' : '') +
+    [phone ? esc(phone) : '', site ? '<a href="https://' + esc(site) + '" style="color:#515151;text-decoration:none;">' + esc(site) + '</a>' : '']
+      .filter(Boolean).join(' · ');
+}
+
+export async function layout(o: { heading: string; body: string; foot?: string; preheader?: string; block?: string; fine?: string[] }): Promise<string> {
+  const a = await agencyProfile(), site = mailSite(a);
   const body = o.block ? String(o.body || '').replace(TOKEN, '\n\n{invoices}\n\n') : o.body;
   const ps = paras(body).map((p) => (o.block && BLOCK.test(p)) ? o.block :
     '<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">' + p.split('\n').map((l) => joinMoney(esc(l))).join('<br>') + '</p>').join('');
@@ -60,19 +77,18 @@ export function layout(o: { heading: string; body: string; foot?: string; prehea
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;"><tr><td align="center" style="padding:32px 16px;">' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">' +
     '<tr><td class="card" style="background:#ffffff;border-radius:14px;padding:32px;font-family:' + FONT + ';color:#1a1a1a;">' +
-    '<a href="https://adspace.me" style="display:inline-block;text-decoration:none;border:0;"><img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace" width="91" height="26" style="display:block;width:91px;height:26px;border:0;outline:none;"></a>' +
+    '<a href="https://' + esc(site) + '" style="display:inline-block;text-decoration:none;border:0;"><img src="' + esc(a.wordmark_url || '') + '" alt="' + esc(a.trading_name || '') + '" width="91" height="26" style="display:block;width:91px;height:26px;border:0;outline:none;"></a>' +
     '<h1 style="margin:24px 0 16px;font-size:24px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#1a1a1a;">' + esc(o.heading) + '</h1>' +
     ps +
     (o.foot ? '<p style="margin:8px 0 0;padding-top:16px;border-top:1px solid #ececec;font-size:13px;line-height:1.55;color:#515151;">' + esc(o.foot) + '</p>' : '') +
     '</td></tr>' +
     '<tr><td class="foot" style="padding:24px 32px 0;font-family:' + FONT + ';font-size:12px;line-height:1.6;color:#515151;">' +
-    'ADSPACE PLT (202304002162)<br>61-02 Jalan Mutiara Emas 2A, Taman Mount Austin,<br>81100 Johor Bahru, Johor, Malaysia<br>' +
-    '(60)18 762 5233 · <a href="https://adspace.me" style="color:#515151;text-decoration:none;">adspace.me</a>' +
+    company(a) +
     fine +
     /* The portal's own line (the user, 2026-11-18), a row under the fine
        print in its light grey: the year is Malaysia's at the send. */
     '<p style="margin:24px 0 0;font-size:11px;line-height:1.5;color:#a1a1a1;">&copy; ' +
-      new Date(Date.now() + 8 * 3600e3).getUTCFullYear() + ' ADSPACE PLT. All Rights Reserved.</p>' +
+      new Date(Date.now() + 8 * 3600e3).getUTCFullYear() + ' ' + esc(a.legal_name || '') + '. All Rights Reserved.</p>' +
     '</td></tr></table></td></tr></table></body></html>';
 }
 
@@ -119,14 +135,19 @@ export async function resend(msg: Record<string, unknown>, key: string, apiKey: 
    team's (Settings, Messages, Email templates, Sign-in and codes). {name},
    {minutes} and {purpose} are filled as words; {code} stands in the shaded
    box where it has a paragraph of its own, else as its digits. The code is
-   never in the subject or the preview line a lock screen shows. */
-export const CODE_WORDS = {
-  subject: 'Your ADspace verification code {purpose}',
-  body: 'Dear {name},\n\nPlease enter the following code {purpose}:\n\n{code}\n\nThe code expires in {minutes} minutes.\n\nYours sincerely,\nADspace',
-  foot: 'The code may be used once. If you did not request it, please disregard this email; nothing is signed without the code.'
-};
-export function codeEmail(t: { subject?: string; body?: string; foot?: string } | null,
-  v: { name: string; code: string; minutes: number | string; purpose: string }): { subject: string; html: string; text: string } {
+   never in the subject or the preview line a lock screen shows. The words
+   below stand in where the template could not be read, named by the
+   profile's trading name. */
+export function codeWords(name: string) {
+  return {
+    subject: 'Your ' + name + ' verification code {purpose}',
+    body: 'Dear {name},\n\nPlease enter the following code {purpose}:\n\n{code}\n\nThe code expires in {minutes} minutes.\n\nYours sincerely,\n' + name,
+    foot: 'The code may be used once. If you did not request it, please disregard this email; nothing is signed without the code.'
+  };
+}
+export async function codeEmail(t: { subject?: string; body?: string; foot?: string } | null,
+  v: { name: string; code: string; minutes: number | string; purpose: string }): Promise<{ subject: string; html: string; text: string }> {
+  const CODE_WORDS = codeWords(String((await agencyProfile()).trading_name || ''));
   const w = { subject: (t && t.subject) || CODE_WORDS.subject, body: (t && t.body) || CODE_WORDS.body, foot: t && typeof t.foot === 'string' ? t.foot : CODE_WORDS.foot };
   const fill = (s: string) => s.replace(/\{\s*name\s*\}/gi, () => v.name).replace(/\{\s*minutes\s*\}/gi, () => String(v.minutes))
     .replace(/\{\s*purpose\s*\}/gi, () => v.purpose).replace(/\s+([.,:;])/g, '$1');
@@ -135,7 +156,7 @@ export function codeEmail(t: { subject?: string; body?: string; foot?: string } 
   const foot = fill(w.foot).trim();
   const box = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;border-radius:10px;margin:4px 0 24px;"><tr><td align="center" style="padding:16px 24px 16px 28px;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:28px;line-height:1.2;font-weight:600;letter-spacing:4px;color:#1a1a1a;">' + esc(v.code) + '</td></tr></table>';
   const own = paras(body).some((p) => /^\{\s*code\s*\}$/i.test(p));
-  const html = layout({
+  const html = await layout({
     heading: 'Your verification code', preheader: subject + '.', block: own ? box : undefined,
     body: own ? body.replace(/\{\s*code\s*\}/i, '{invoices}').replace(/\{\s*code\s*\}/gi, () => v.code) : body.replace(/\{\s*code\s*\}/gi, () => v.code),
     foot: foot || undefined
@@ -147,7 +168,8 @@ export function codeEmail(t: { subject?: string; body?: string; foot?: string } 
    2026-11-17): Settings, Messages: Reply-to mailboxes, a company mailbox
    for each section (`mail_senders`, `mail_boxes`), never a colleague's own
    address. Read as the service role; a database that cannot answer sends
-   from portal@sc.adspace.me replying to the general mailbox. */
+   from portal@ on the profile's sending domain, under its trading name,
+   replying to the general mailbox (the profile's `email`). */
 async function rpcAsService(fn: string, args: Record<string, unknown>): Promise<unknown> {
   const url = Deno.env.get('SUPABASE_URL'), key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!url || !key) return null;
@@ -162,7 +184,8 @@ export async function sender(key: string): Promise<{ from: string; reply_to: str
     const d = await rpcAsService('mail_sender', { p_key: key }) as Record<string, string> | null;
     if (d && d.from && d.reply_to) return { from: d.from, reply_to: d.reply_to };
   } catch (_e) { /* the fallback below */ }
-  return { from: 'ADspace <portal@sc.adspace.me>', reply_to: 'advertise@adspacestudios.com' };
+  const a = await agencyProfile();
+  return { from: (a.trading_name || '') + ' <portal@' + (a.sender_domain || '') + '>', reply_to: a.email || '' };
 }
 /* An email no other log keeps, filed for Messages' Email log once Resend
    has answered (`system_email_file`). Never a code or a sign-in link's

@@ -74,3 +74,10 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   repository's main (f69f372) does not yet, so a rebuild from today's
   stand-in would take that behaviour out of the demo. Not rebuilt here.
   Held until the stand-in and the engine agree.
+- 2026-11-28, `reqrefsql` (release 8's affected run, code it does not
+  touch): "every draw is a code held nowhere" failed once with
+  `public_request_ref: no free number` (free 0) on a month the suite fills
+  all but a few, then passed on the branch and on main. The draw is random,
+  so a run that keeps missing the few free codes runs out of tries. Not
+  re-run to green as a result: held until the draw walks the free codes
+  rather than retrying at random, or the suite seeds its own draws.

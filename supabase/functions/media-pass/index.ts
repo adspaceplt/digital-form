@@ -7,8 +7,8 @@
  * under `content/`. Once the CloudFront behaviour for `content/*` trusts the
  * portal's key group (docs/S3-STORAGE.md §6), a file opens only with these
  * cookies: a raw address copied out of a page answers 403. The stored
- * addresses never change; the browser carries the pass to mycdn.adspace.me
- * because both hosts are on adspace.me.
+ * addresses never change; the browser carries the pass to the profile's CDN
+ * (`cdn_base`) because both hosts are on the agency's own domain.
  *
  * A pass is given only to a caller who proves one of the four ways in, with
  * the same functions the pages themselves are answered by:
@@ -32,6 +32,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json as send } from '../_shared/cors.ts';
+import { agencyProfile } from '../_shared/agency.ts';
 
 /* Every answer is no-store: it carries a signed pass or link. */
 const json = (body: unknown, status: number, origin: string | null) =>
@@ -42,7 +43,6 @@ const json = (body: unknown, status: number, origin: string | null) =>
 
 // Twelve hours: a working day, so a review left open does not lose its media.
 const HOURS = 12;
-const CDN = 'https://mycdn.adspace.me';
 /* A pass is one CloudFront policy a folder (a policy holds one statement),
    each set as cookies on that folder's own path, so a browser sends a
    folder's pass only to that folder: `content/{clientId}/` for what the team
@@ -230,7 +230,10 @@ Deno.serve(async (req) => {
   if (!k.cf_media_key_id) return json({ off: true }, 200, origin);
 
   // 3. One custom policy a folder, signed with the private half; the page
-  //    sets each as CloudFront's three cookies on that folder's path.
+  //    sets each as CloudFront's three cookies on that folder's path. The
+  //    CDN is the agency profile's; a profile that cannot be read signs none.
+  const CDN = String((await agencyProfile()).cdn_base || '');
+  if (!CDN) return json({ error: 'not-ready' }, 500, origin);
   const expires = Math.floor(Date.now() / 1000) + HOURS * 3600;
   const signer = await crypto.subtle.importKey('pkcs8', unpem(k.cf_media_private), ALG, false, ['sign']);
   const sign = async (folder: string) => {

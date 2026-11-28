@@ -23,13 +23,17 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
 import { esc, layout, resend, FONT, sender, fileSent, button as mailButton } from '../_shared/mail.ts';
+import { agencyProfile, portalUrl } from '../_shared/agency.ts';
 
 /* An email compared as itself, never as a pattern: `_` and `%` in an
    address are letters here, not wildcards (audit P2, 2026-10-10). */
 const exactEmail = (s: string) => String(s).replace(/[\\%_]/g, (c) => '\\' + c);
 
-const SIGN_IN_PAGE = 'https://digital.adspace.me/admin/';
-const CLIENT_PAGE  = 'https://digital.adspace.me/client/';
+/* The pages a link opens, on the profile's portal domain. */
+const signInPage = (a: Record<string, string>) => portalUrl(a) + '/admin/';
+const clientPage = (a: Record<string, string>) => portalUrl(a) + '/client/';
+/* The subject, named by the profile's trading name. */
+const subjectOf = (kind: string, n: string) => kind === 'client' ? 'Welcome to your ' + n + ' Client Portal' : 'Your access to the ' + n + ' Digital Portal';
 /* The invitation an address with a login is sent by the portal itself,
    from the sender Supabase's own sign-in emails use. */
 
@@ -37,31 +41,31 @@ const CLIENT_PAGE  = 'https://digital.adspace.me/client/';
    (docs/SIGN-IN-EMAILS.md), for an address that already has a login, which
    Supabase will not invite (2026-11-11: two invitations the user sent went
    nowhere). Its button is a one-time sign-in link. */
-function invitation(kind: string, greeting: string, link: string) {
+async function invitation(kind: string, greeting: string, link: string, n: string) {
   const client = kind === 'client';
   const button = mailButton({ label: client ? 'Open Client Portal' : 'Sign in', url: link, margin: '8px 0 24px' });
   const dear = 'Dear ' + greeting + ',';
   const body = client
-    ? [dear, 'Thank you for choosing ADspace. Your Client Portal is now ready. It brings together your services and resources with ADspace all in one place.',
+    ? [dear, 'Thank you for choosing ' + n + '. Your Client Portal is now ready. It brings together your services and resources with ' + n + ' all in one place.',
        'Please use the button below to open your Client Portal.', '{invoices}',
-       'After this first visit, you may sign in at any time with a code sent to this email address. Should you have any questions, please contact your ADspace account manager.',
-       'Yours sincerely,\nADspace']
-    : [dear, 'ADspace has given you access to the ADspace Digital Portal. Please use the button below to sign in.', '{invoices}',
-       'After this first visit, you may sign in at any time with a code sent to this email address.', 'Yours sincerely,\nADspace'];
-  const subject = client ? 'Welcome to your ADspace Client Portal' : 'Your access to the ADspace Digital Portal';
+       'After this first visit, you may sign in at any time with a code sent to this email address. Should you have any questions, please contact your ' + n + ' account manager.',
+       'Yours sincerely,\n' + n]
+    : [dear, n + ' has given you access to the ' + n + ' Digital Portal. Please use the button below to sign in.', '{invoices}',
+       'After this first visit, you may sign in at any time with a code sent to this email address.', 'Yours sincerely,\n' + n];
+  const subject = subjectOf(kind, n);
   /* The plain copy beside the HTML (2026-11-18): an email of HTML alone
      reads to Gmail as bulk mail. */
   const foot = 'This link may be used once and expires shortly.\nIf you were not expecting this invitation, please disregard this email.';
   return {
     subject,
     text: body.join('\n\n').replace('{invoices}', (client ? 'Open Client Portal' : 'Sign in') + ': ' + link) + '\n\n' + foot,
-    html: layout({
+    html: (await layout({
       heading: subject, body: body.join('\n\n'), block: button,
-      preheader: client ? 'Your invitation to the ADspace Client Portal.' : 'You have been given access to the ADspace Digital Portal.',
+      preheader: client ? 'Your invitation to the ' + n + ' Client Portal.' : 'You have been given access to the ' + n + ' Digital Portal.',
       foot: 'This link may be used once and expires shortly. If you were not expecting this invitation, please disregard this email.'
     /* The foot's second sentence on a line of its own, as the template
        sets it (the user, 2026-11-11). */
-    }).replace('expires shortly. If you were', 'expires shortly.<br>If you were')
+    })).replace('expires shortly. If you were', 'expires shortly.<br>If you were')
   };
 }
 
@@ -130,10 +134,14 @@ Deno.serve(async (req) => {
      never the sign-in link it carries. */
   /* Sent again from Messages' Email log (SEND AGAIN, 2026-11-18): filed as
      sending that invitation again. */
+  /* The agency profile: the pages a link opens and the name an invitation
+     carries. A profile that cannot be read sends nothing. */
+  const ag = await agencyProfile();
+  if (!ag.portal_domain || !ag.trading_name) return json({ error: 'invite_failed', detail: 'The invitation could not be sent. Please try again.' }, 500, origin);
   const againOf = /^[0-9a-f-]{36}$/.test(String(body.againOf || '')) ? String(body.againOf) : '';
   const file = (o: Record<string, unknown>) => fileSent(Object.assign({ kind: kind === 'client' ? 'invite_client' : 'invite_team',
     client: clientId || null, to: email, to_name: greeting, by: user.email || '', again_of: againOf || undefined,
-    subject: kind === 'client' ? 'Welcome to your ADspace Client Portal' : 'Your access to the ADspace Digital Portal' }, o));
+    subject: subjectOf(kind, ag.trading_name || '') }, o));
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'bad_email' }, 400, origin);
 
   const isAdmin = caller.is_admin === true || caller.role === 'admin';
@@ -167,7 +175,7 @@ Deno.serve(async (req) => {
     if (!member) return json({ error: 'not_team_member' }, 403, origin);
     /* A colleague is greeted by the name on their record; an admin alone may
        word it otherwise (audit 2026-11-11: anyone holding team.invite could
-       put any words into an ADspace email). */
+       put any words into the agency's email). */
     greeting = greetingOf('', (isAdmin && name) ? name : (member.name || name));
   }
   // Twenty invitations a day each, counted by the database before a login is
@@ -188,7 +196,7 @@ Deno.serve(async (req) => {
         /* The one Invite user template words a client's welcome and a
            colleague's access each its own way (docs/SIGN-IN-EMAILS.md). */
         data: { name, kind, greeting },
-        redirectTo: kind === 'client' ? CLIENT_PAGE : SIGN_IN_PAGE
+        redirectTo: kind === 'client' ? clientPage(ag) : signInPage(ag)
       })
     : await admin.auth.admin.createUser({
         email, email_confirm: true, user_metadata: { name }
@@ -201,19 +209,19 @@ Deno.serve(async (req) => {
          invitation goes all the same, from the portal, its button a
          one-time sign-in link to the right page. */
       const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
-        type: 'magiclink', email, options: { redirectTo: kind === 'client' ? CLIENT_PAGE : SIGN_IN_PAGE }
+        type: 'magiclink', email, options: { redirectTo: kind === 'client' ? clientPage(ag) : signInPage(ag) }
       });
       /* The button opens the portal's own page with the link's proof, never
          supabase.co: a link off the sender's domain reads to an inbox as
          spam (2026-11-18, Resend's check); the page proves it (js/api.js). */
       const hashed = link?.properties?.hashed_token;
-      const href = hashed ? (kind === 'client' ? CLIENT_PAGE : SIGN_IN_PAGE) + '?token_hash=' + encodeURIComponent(hashed) + '&type=email' : '';
+      const href = hashed ? (kind === 'client' ? clientPage(ag) : signInPage(ag)) + '?token_hash=' + encodeURIComponent(hashed) + '&type=email' : '';
       const apiKey = Deno.env.get('RESEND_API_KEY');
       if (linkErr || !href || !apiKey) {
         console.error('invite-member: no link or key', linkErr?.message ?? '', !!apiKey);
         return json({ error: 'invite_failed', detail: 'The invitation could not be sent. Please try again.' }, 500, origin);
       }
-      const mail = invitation(kind, greeting, href);
+      const mail = await invitation(kind, greeting, href, ag.trading_name || '');
       const who = await sender('team');
       const sent = await resend({ from: who.from, reply_to: who.reply_to, to: [email], subject: mail.subject, html: mail.html, text: mail.text },
         /* A key of its own: each press is a new link, so the same key a

@@ -1,5 +1,5 @@
 /*
- * sign-download — hands the browser a link to a private file in the ADspace
+ * sign-download — hands the browser a link to a private file in the agency's
  * S3 bucket that lasts five minutes. Today that file is a campaign's invoice
  * PDF (2026-10-02): new invoices are uploaded under `private/`, which
  * CloudFront does not serve, so the only way in is a link signed here.
@@ -25,7 +25,7 @@
  * colleague sends { quotation } with their sign-in (`quotation_seal_key`
  * answers them as themselves); the client's link sends { quoteKey } and the
  * service role reads the quotation the link shows (`quote_seal_key`, once
- * ADspace has confirmed it). The key is always under the quotation's own
+ * the agency has confirmed it). The key is always under the quotation's own
  * client's folder.
  *
  * A report's pictures (2026-11-20) are kept under `private/{client}/thumbs/`
@@ -39,7 +39,7 @@
  *
  * Once CloudFront serves `private/*` behind the portal's key group
  * (docs/S3-STORAGE.md §5d) and `cf_private_ready` reads `on` in
- * `app_secrets`, the link is a CloudFront signed URL on mycdn.adspace.me,
+ * `app_secrets`, the link is a CloudFront signed URL on the profile's CDN,
  * signed with private/'s own key (`cf_private_files_private`,
  * `cf_private_files_key_id`; CloudFront key group `adspace-portal-private`),
  * never the media pass's, so a pass for content/ can open nothing here
@@ -73,6 +73,7 @@ async function s3get(aws: AwsClient, url: string): Promise<Response | 'timeout'>
 }
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json as send } from '../_shared/cors.ts';
+import { agencyProfile } from '../_shared/agency.ts';
 
 /* Every answer is no-store: it carries a signed pass or link. */
 const json = (body: unknown, status: number, origin: string | null) =>
@@ -88,7 +89,6 @@ const THUMB_KEY = /^private\/[0-9a-f-]{36}\/thumbs\/[0-9a-f-]{36}\.jpg$/;
 // A report picture's link: an hour, so a report open for a while keeps them.
 const THUMB_EXPIRES = 3600;
 const UUID = /^[0-9a-f-]{36}$/;
-const CDN = 'https://mycdn.adspace.me';
 const ALG = { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-1' };
 
 function b64(buf: ArrayBuffer): string {
@@ -120,6 +120,8 @@ async function cdnLink(path: string): Promise<string | null> {
   const pem = own ? s.cf_private_files_private : s.cf_media_private;
   const keyId = own ? s.cf_private_files_key_id : s.cf_media_key_id;
   if (s.cf_private_ready !== 'on' || !pem || !keyId) return null;
+  const CDN = String((await agencyProfile()).cdn_base || '');
+  if (!CDN) return null;
   const resource = `${CDN}/${path}`;
   const expires = Math.floor(Date.now() / 1000) + EXPIRES;
   const policy = JSON.stringify({
@@ -242,7 +244,7 @@ Deno.serve(async (req) => {
   /* A signed quotation's sealed copy (SIGNED DOCUMENT SEAL, 2026-11-17):
      a colleague names the quotation and the database answers them as
      themselves; the client's link names its key and the service role reads
-     the quotation that link shows, once ADspace has confirmed it. Either
+     the quotation that link shows, once the agency has confirmed it. Either
      way the file is the quotation's own client's. */
   if (body.quotation) {
     const auth = req.headers.get('Authorization') ?? '';

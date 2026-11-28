@@ -20,13 +20,21 @@ so that host keeps redirecting through Rebrandly for as long as those slides
 are in use. `ADSPACE_CONFIG.linkHost` decides what the *next* link is built
 with, and that is `hi.adspace.me`.
 
-## The three variables
+## The variables
 
-Plain text vars on the Worker, not secrets, because none of them is one:
+Plain text vars on the Worker, not secrets, because none of them is one.
+The agency's four are set equal to the agency profile (Settings › Business;
+`agency_profile`, restructure release 8, 2026-11-28): the Worker reads the
+database with the public key alone, which the profile does not answer, and
+types none of them. Set all four before a deploy of the 2026-11-28 code:
+an unset one is read as nothing.
 
 - `SUPABASE_URL` — the project URL
 - `SUPABASE_ANON_KEY` — the public key, the same one `js/config.js` carries
-- `HOME_URL` — where the bare host sends somebody, `https://adspacestudios.com`
+- `HOME_URL` — where the bare host sends somebody: the profile's `website`, as `https://{website}`
+- `PORTAL_URL` — `https://` and the profile's `portal_domain`
+- `AGENCY_NAME` — the profile's `trading_name` (the link previews' "… by {name}", a refused link's "Please contact {name}.")
+- `WORDMARK_URL` — the profile's `wordmark_url` (a refused link's mark)
 
 One secret, optional: `IP_RELAY_SECRET`, the database's `ip_relay_secret`
 (read it in the SQL Editor: `select value from app_secrets where key =

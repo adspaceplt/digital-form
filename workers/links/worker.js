@@ -1,5 +1,5 @@
 /*
- * hi.adspace.me — the ADspace short link redirector
+ * The agency's short link redirector (its link domain)
  *
  * A Cloudflare Worker on a custom domain. It does one thing: take the first
  * path segment, ask the database where it goes, and send the visitor there.
@@ -21,10 +21,17 @@
  * followed the old one. The whole point of keeping these in a table is that
  * they can be changed. Every answer carries `no-store` for the same reason.
  *
- * go.adspace.me is not served by this Worker and is deliberately left alone:
- * the QR codes already printed on slides encode that whole address, so that
- * host keeps redirecting through Rebrandly for as long as those slides are
- * in use. This host is what new links are built with.
+ * The older QR host (README.md) is not served by this Worker and is
+ * deliberately left alone: the QR codes already printed on slides encode
+ * that whole address, so that host keeps redirecting through Rebrandly for
+ * as long as those slides are in use. This host is what new links are built
+ * with.
+ *
+ * The agency's values are the Worker's own settings, set equal to the
+ * agency profile (restructure release 8, 2026-11-28; the Worker reads the
+ * database with the public key alone, which the profile does not answer):
+ * PORTAL_URL, HOME_URL, AGENCY_NAME (its trading name) and WORDMARK_URL.
+ * None is typed here.
  *
  * Deploy: see README.md in this folder.
  */
@@ -42,7 +49,9 @@ const SLUG = /^[a-z0-9][a-z0-9._-]{0,79}$/;
 const REVIEW = /^r\/([A-Za-z0-9_-]{6,64})(?:\/([0-9a-f]{8}))?$/;
 const PREVIEWER = /whatsapp|facebookexternalhit|facebot|twitterbot|slackbot|telegrambot|linkedinbot|discordbot|skypeuripreview|applebot|googlebot|bingbot|pinterest|redditbot|embedly|iframely|line\/|kakaotalk|viber|snapchat|microsoftpreview|teams/i;
 const REVIEW_LINE = "This month's posts, shown the way they will appear on each platform. Approve, or tell us what to change.";
-const REVIEW_NAME = 'Content Review Portal by ADspace';
+/* "{what} by {agency}", the agency's trading name from AGENCY_NAME. */
+const by = (env, what) => what + ' by ' + (env.AGENCY_NAME || '');
+const portal = (env) => String(env.PORTAL_URL || '').replace(/\/+$/, '');
 
 async function reviewPreview(env, key, set) {
   const r = await fetch(env.SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1/rpc/review_link_preview', {
@@ -60,14 +69,15 @@ async function reviewPreview(env, key, set) {
   return d && typeof d === 'object' ? d : {};
 }
 
-/* "{Content set} {Brand} - Content Review Portal by ADspace", each part only
-   where it is known. */
-function reviewTitle(d) {
+/* "{Content set} {Brand} - Content Review Portal by {agency}", each part
+   only where it is known. */
+function reviewTitle(env, d) {
   const lead = [d.set, d.brand].filter(Boolean).join(' ');
-  return lead ? lead + ' - ' + REVIEW_NAME : REVIEW_NAME;
+  const name = by(env, 'Content Review Portal');
+  return lead ? lead + ' - ' + name : name;
 }
 
-function previewPage(title, line, to) {
+function previewPage(env, title, line, to) {
   const body = `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
@@ -75,7 +85,7 @@ function previewPage(title, line, to) {
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(line)}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="ADspace">
+<meta property="og:site_name" content="${esc(env.AGENCY_NAME || '')}">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(line)}">
 <meta name="twitter:card" content="summary">
@@ -95,13 +105,12 @@ function previewPage(title, line, to) {
 }
 
 async function review(request, env, key, set) {
-  const base = (env.PORTAL_URL || 'https://digital.adspace.me').replace(/\/+$/, '');
-  const to = base + '/review/?k=' + encodeURIComponent(key) + (set ? '#s-' + set : '');
+  const to = portal(env) + '/review/?k=' + encodeURIComponent(key) + (set ? '#s-' + set : '');
   if (!PREVIEWER.test(request.headers.get('user-agent') || '')) return goTo(to);
   let d = {};
   try { d = await reviewPreview(env, key, set); }
   catch (e) { console.error('review_link_preview failed: ' + e.message); }
-  return previewPage(reviewTitle(d), REVIEW_LINE, to);
+  return previewPage(env, reviewTitle(env, d), REVIEW_LINE, to);
 }
 
 /* The other links a client or a creator is sent, as short links
@@ -120,11 +129,11 @@ async function review(request, env, key, set) {
 const SHARE = /^([scvp])\/([A-Za-z0-9_-]{6,64})$/;
 const PORTAL_ROUTE = /^c\/?$/;
 const SHARE_KIND = {
-  script: { kind: 'script', path: '/script/?k=', name: 'Video Scripts by ADspace',
+  script: { kind: 'script', path: '/script/?k=', name: 'Video Scripts',
        line: 'The videos planned for the month, scene by scene.' },
-  campaign: { kind: 'campaign', path: '/creators/?k=', name: 'Creator Selection by ADspace',
+  campaign: { kind: 'campaign', path: '/creators/?k=', name: 'Creator Selection',
        line: 'Choose the creators for this campaign, then follow their drafts and posts.' },
-  creator: { kind: 'creator', path: '/creator/?k=', name: 'Creator Portal by ADspace',
+  creator: { kind: 'creator', path: '/creator/?k=', name: 'Creator Portal',
        line: 'The brief, the shoot and where to hand in the draft.' }
 };
 const LETTER_KIND = { v: 'script', c: 'campaign', p: 'creator' };
@@ -182,7 +191,7 @@ async function whichOf(env, key, request) {
   return kind;
 }
 
-/* "{Campaign} {Brand} - Creator Selection by ADspace", each part only where
+/* "{Campaign} {Brand} - Creator Selection by {agency}", each part only where
    it is known. */
 async function share(request, env, letter, key) {
   let kind = LETTER_KIND[letter];
@@ -193,25 +202,26 @@ async function share(request, env, letter, key) {
     kind = (await whichOf(env, key, request)) === 'script' ? 'script' : 'campaign';
   }
   const k = SHARE_KIND[kind];
-  const base = (env.PORTAL_URL || 'https://digital.adspace.me').replace(/\/+$/, '');
+  const base = portal(env);
   const to = base + k.path + encodeURIComponent(key);
   if (!PREVIEWER.test(request.headers.get('user-agent') || '')) return goTo(to);
   let d = {};
   try { d = await sharePreview(env, k.kind, key, request); }
   catch (e) { console.error('share_link_preview failed: ' + e.message); }
   const lead = [d.title, d.brand].filter(Boolean).join(' ');
-  return previewPage(lead ? lead + ' - ' + k.name : k.name, k.line, to);
+  const name = by(env, k.name);
+  return previewPage(env, lead ? lead + ' - ' + name : name, k.line, to);
 }
 
 /* One page, four outcomes. The title says what happened and the line says
    what to do about it, which is the rule every cover in the portal follows;
    neither repeats the other. A short link is opened by people who are not
-   our clients and have no account manager, so the line names ADspace alone
+   our clients and have no account manager, so the line names the agency alone
    (the user, 2026-10-27). */
 const SAY = {
-  missing: ['Link not recognised', 'Please contact ADspace.'],
-  paused:  ['Link expired', 'Please contact ADspace.'],
-  revoked: ['Code withdrawn', 'Please contact ADspace.'],
+  missing: ['Link not recognised', 'Please contact {agency}.'],
+  paused:  ['Link expired', 'Please contact {agency}.'],
+  revoked: ['Code withdrawn', 'Please contact {agency}.'],
   failed:  ['Unable to load', 'Please try again in a moment.']
 };
 
@@ -227,8 +237,9 @@ function esc(s) {
    at 26px on the 24px edge (16 on a phone); the panel on the optical centre
    of what is left; no foot. The mark is the only fetch on the page and the
    wordmark stands in if it fails, exactly as js/chrome.js does. */
-function page(kind) {
-  const [title, line] = SAY[kind] || SAY.missing;
+function page(env, kind) {
+  const [title, said] = SAY[kind] || SAY.missing;
+  const line = said.replace('{agency}', env.AGENCY_NAME || '');
   const body = `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
@@ -267,8 +278,8 @@ function page(kind) {
 </style>
 </head><body>
   <header class="bar">
-    <img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace"
-         onerror="this.replaceWith(Object.assign(document.createElement('b'),{textContent:'ADspace'}))">
+    <img src="${esc(env.WORDMARK_URL || '')}" alt="${esc(env.AGENCY_NAME || '')}"
+         onerror="this.replaceWith(Object.assign(document.createElement('b'),{textContent:'${esc(String(env.AGENCY_NAME || '').replace(/[\\']/g, '\\$&'))}'}))">
   </header>
   <main>
     <div class="panel">
@@ -360,7 +371,7 @@ export default {
 
     /* The bare host is not a link. Somebody who types it has half a URL, so
        they go to the website rather than to a refusal. */
-    if (!path) return goTo(env.HOME_URL || 'https://adspacestudios.com');
+    if (!path) return goTo(env.HOME_URL);
 
     /* A short link host has nothing worth indexing and a slug is not meant
        to be discoverable, so nothing here is crawled. */
@@ -376,12 +387,12 @@ export default {
     const sh = SHARE.exec(path);
     if (sh) return share(request, env, sh[1], sh[2]);
     /* /c alone is the client portal, which signs in by email (2026-10-15). */
-    if (PORTAL_ROUTE.test(path)) return goTo((env.PORTAL_URL || 'https://digital.adspace.me').replace(/\/+$/, '') + '/client/');
+    if (PORTAL_ROUTE.test(path)) return goTo(portal(env) + '/client/');
 
     /* A slug is one segment. Anything deeper is not a link we issued, and
        asking the database about it would only be a slower way to say so. */
     const slug = path.toLowerCase();
-    if (!SLUG.test(slug)) return page('missing');
+    if (!SLUG.test(slug)) return page(env, 'missing');
 
     let row;
     try {
@@ -391,10 +402,10 @@ export default {
          a message somebody can act on belongs; here it is one line and a
          retry. */
       console.error('link_resolve failed for ' + slug + ': ' + e.message);
-      return page('failed');
+      return page(env, 'failed');
     }
 
-    if (row.state !== 'ok' || !row.url) return page(row.state === 'ok' ? 'missing' : row.state);
+    if (row.state !== 'ok' || !row.url) return page(env, row.state === 'ok' ? 'missing' : row.state);
     /* A person's visit is counted; a HEAD (a link checker) is not. */
     if (request.method === 'GET' && ctx && ctx.waitUntil) ctx.waitUntil(hit(env, slug, (url.searchParams.get('q') || '').trim()));
     return goTo(carryQuery(row.url, url.searchParams));

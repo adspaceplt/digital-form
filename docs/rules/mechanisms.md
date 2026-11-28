@@ -13,7 +13,13 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   copy; a script reads them with no typed fallback (`brandguard` counts
   one). The General mailbox is `mail_boxes`, answered as
   `email`, never copied into the profile; a sender's address is held to
-  the profile's `sender_domain`.
+  the profile's `sender_domain`. On the server (release 8, 2026-11-28) a
+  database function reads `agency(key)`, an edge function
+  `_shared/agency.ts` (the email layout's wordmark and company line, the
+  sender's fallback, every link and name it sends; `layout` and
+  `codeEmail` are async), and the links Worker its own settings
+  (`PORTAL_URL`, `HOME_URL`, `AGENCY_NAME`, `WORDMARK_URL`), set equal to
+  the profile because the public key it reads with is not answered it.
 - `js/api.js` is the only Supabase client. Demo content is only for a copy
   with no database configured: a configured page whose database library
   failed to load reads Unable to load and records nothing, and a review
