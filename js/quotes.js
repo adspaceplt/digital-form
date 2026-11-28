@@ -814,7 +814,7 @@
           return drawPdf(q, ctx)
             .then(function (blob) { return { blob: blob, name: window.ADspaceQuotePdf.fileName(q) }; });
         } },
-        onSent: function (line) { ctx.reload(function () { ctx.msg('qtMsg', line, 'ok'); }); } });
+        onSent: function (line, q, who) { ctx.reload(function () { ctx.msg('qtMsg', line, 'ok'); if (q) window.ADspaceAdmin.mailUndo(q, who, document.getElementById('qtMsg'), function () { ctx.reload(); }); }); } });
       return;
     }
     if (a === 'confirm') {
@@ -1031,7 +1031,8 @@
         return ctx.db.functions.invoke('supplier-mail', { body: { quoteAsk: true, quotation: q.id } }).then(function (r) {
           var m = (r && r.data) || {};
           if (r.error || m.error) return ASK_SAID[m.error] || ASK_SAID['not-sent'];
-          done('Email sent to ' + (m.to_name || m.to || to) + '.');
+          if (m.queued) ctx.reload(function () { ctx.msg('qtMsg', '', 'ok'); window.ADspaceAdmin.mailUndo(m.queued, m.to_name || m.to || to, document.getElementById('qtMsg'), function () { ctx.reload(); }); });
+          else done('Email sent to ' + (m.to_name || m.to || to) + '.');
           return '';
         }).catch(function () { return ASK_SAID['not-sent']; });
       });

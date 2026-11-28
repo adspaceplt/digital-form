@@ -145,14 +145,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   from `template_fields_all()` as chips inserting at the caret, a field it
   cannot fill marked as it is typed; no test email (Send test to me
   removed, the user, 2026-11-10; `2026-11-10-template-test-email-removed.sql`).
-- An email written in two languages is one templates row, never one a
-  language (the user, 2026-11-27: "use a switch in one item"): its line
-  names both (`English · 中文`, a language with no subject or message
-  `中文 not written`, that email going out in English), its editor opens
-  in English under a Language view strip (`#mt-lang`) that swaps subject,
-  message and button, keeping what was typed in each, and Save writes
-  each language changed through its own `p_lang` (`langRows` in
-  `js/mailtpl.js`; Feedback, Ask for details); `count` counts emails.
+- Every email the portal sends is in English alone, whatever the
+  recipient's or client's language (the user, 2026-11-28: "email we only
+  do one, all in international English. No Chinese email."): a feedback
+  request and Ask for details send their English template
+  (`feedback_mail_begin`, `quote_details_mail_begin`, `v_zh` false); the
+  中文 rows stay stored, sent by nothing and offered by no editor (Settings,
+  Messages draws English alone, `LANGS` in `js/mailtpl.js`). Client pages
+  and report PDFs stay bilingual.
 - Messages go through the WhatsApp Business Platform (Cloud API), each with a
   template Meta approved (the user, 2026-10-09: report to client, team
   reminders, creator updates, a feedback request sent by hand). Phase 1
@@ -379,6 +379,32 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   service role's alone) before touching a queue, else 401; `wa_kick` and
   `push_kick` send it, once a transaction, so a statement queueing forty
   rows wakes each sender once (`2026-10-19-wake-calls-carry-a-secret.sql`).
+- Undo send (`2026-11-28-undo-send.sql`; the user, 2026-11-28: "Clients
+  too… a nice gesture of could revert or cancel within a minute"): every
+  email a colleague sends, by hand or by a step (supplier-mail's supplier,
+  client document, New email, feedback request and Ask for details;
+  bukku-sync's invoice email and overdue reminder; hiring-mail's step
+  emails, by hand and sent again, a decision's included), is built whole
+  and queued (`_shared/mail.ts` `queue`, `mail_queue_put`, the service
+  role's) for `send_undo_seconds` (Business setting, 60), its own row
+  reading Queued; supplier-mail's drain (`mail_queue_claim`,
+  `mail_queue_close` through the sender's own close as the colleague who
+  queued it; pg_cron `mail-queue` every five minutes, as every drain's wake,
+  wakes it only while one is due: an email goes one to six minutes after
+  it was sent) sends it.
+  The screen that sent it draws `ADspaceAdmin.mailUndo` under its line the
+  whole window (Email to {name} will be sent in 1 minute. · Undo; several at
+  once one bar); the Email log's sheet and a supplier's Emails offer Cancel email
+  to its sender or at Messages Full Access (`mail_cancel`, `sent` once the
+  drain took it: Not cancelled. The email has already been sent.); the
+  row, the Email log and the Activity record read Queued, Cancelled and
+  Sent. A cancelled email is never Sent recently, a feedback request's is
+  withdrawn, a decision reopened cancels its email. Immediate, never
+  queued: codes, sign-in links and invitations, what a client or visitor
+  sends themselves, and what the portal sends by itself (reminders it
+  sends on its schedule, expiry emails, creator emails, alerts). A queue
+  that cannot take an email sends it at once (`tests/undosend.js`,
+  `tests/undosendsql.js`).
 - Every email goes with a plain-text copy beside its HTML, and the sending
   domain (`sc.adspace.me`) has Resend's click tracking off: an email of HTML
   alone, or links rewritten through a tracker, reads to Gmail as bulk mail

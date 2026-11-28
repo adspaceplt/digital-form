@@ -90,7 +90,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
-import { layout, resend, esc, FONT, button as mailButton, codeEmail, sender, fileSent, callerEmail } from '../_shared/mail.ts';
+import { layout, resend, esc, FONT, button as mailButton, codeEmail, sender, fileSent, callerEmail, callerId, queue } from '../_shared/mail.ts';
 import { agencyProfile, addressLocal, portalUrl } from '../_shared/agency.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
@@ -374,14 +374,29 @@ Deno.serve(async (req) => {
      is confirmed again (Change interview time, 2026-11-22); the time
      changed carries the move's own moment, so each move is emailed once and
      a second move emails again. */
-  const { status, provider, error } = await resend(msg, 'hire-' + (outcome ? m.kind : kind) + '-' + id + (isDoc ? '-' + String(m.sent_key || '') : '') +
+  const idem = 'hire-' + (outcome ? m.kind : kind) + '-' + id + (isDoc ? '-' + String(m.sent_key || '') : '') +
     (kind === 'held' || kind === 'moved' ? '-' + String(m.decide_by || '').replace(/[^0-9a-z]/gi, '') : '') +
     (kind === 'confirm' ? '-' + String(m.when || '').replace(/[^0-9a-z]/gi, '') : '') +
     (kind === 'rescheduled' ? '-' + String(m.when || '').replace(/[^0-9a-z]/gi, '') + '-' + String(m.moved_key || '') : '') +
-    (again ? '-again-' + crypto.randomUUID() : ''), secret('RESEND_API_KEY'));
-  await fileSent({ kind: 'hiring_' + (outcome ? m.kind : kind), ref: id, to: m.to, to_name: m.name, subject: w.subject,
-    body: w.body.replace('{invoices}', PAGE() + '…'), reference: m.ref || m.position, by: callerEmail(auth), status, provider, error,
-    again_of: again || undefined });
+    (again ? '-again-' + crypto.randomUUID() : '');
+  /* Undo send (2026-11-28): filed Queued in the Email log and queued
+     whole; supplier-mail's drain sends it once its minute passes and
+     closes it through this email's own close, as the colleague. A queue
+     that cannot take it sends at once, as before. */
+  const filedAs = { kind: 'hiring_' + (outcome ? m.kind : kind), ref: id, to: m.to, to_name: m.name, subject: w.subject,
+    body: w.body.replace('{invoices}', PAGE() + '…'), reference: m.ref || m.position, by: callerEmail(auth), again_of: again || undefined };
+  const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
+  const filed = await svc.rpc('system_email_file', { p: { ...filedAs, status: 'sending' } });
+  const fid = !filed.error && typeof filed.data === 'string' ? filed.data : '';
+  if (fid) {
+    const q = await queue({ source: 'system', log_id: fid, msg, idem, to_name: m.name, what: NAMES[tk] || 'Email', by: callerId(auth),
+      close: { fn: outcome ? 'outcome' : isDoc ? 'doc' : isConfirmed ? 'confirmed' : 'interview', ref: id, kind } });
+    if (q) return json({ ok: true, queued: q }, 200, origin);
+  }
+  const { status, provider, error } = await resend(msg, idem, secret('RESEND_API_KEY'));
+  if (fid) await svc.from('system_emails').update({ status, provider_id: provider || null, error: error || null,
+    sent_at: status === 'sent' ? new Date().toISOString() : null }).eq('id', fid);
+  else await fileSent({ ...filedAs, status, provider, error });
   await done(status, error || null);
   return json(status === 'sent' ? { ok: true } : { error: status === 'unknown' ? 'unknown' : 'not-sent' }, 200, origin);
 });

@@ -104,7 +104,7 @@
   }
   function day(d) { return d && C ? C.date(d.length === 10 ? d + 'T00:00:00+08:00' : d) : ''; }
   function when(iso) { return iso && C ? C.date(iso).replace(/ \d{4}$/, '') + ', ' + C.clock(iso) : ''; }
-  var STATUS = { sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-live'], delivered: ['Delivered', 'is-live'],
+  var STATUS = { queued: ['Queued', 'is-warn'], cancelled: ['Cancelled', 'is-off'], sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-live'], delivered: ['Delivered', 'is-live'],
     opened: ['Opened', 'is-ok'], bounced: ['Bounced', 'is-danger'], complained: ['Marked as spam', 'is-danger'],
     failed: ['Not sent', 'is-danger'], unknown: ['Not confirmed', 'is-warn'] };
   function statusOf(e) { return STATUS[e.status] || [e.status, '']; }
@@ -572,7 +572,7 @@
     go.disabled = true;
     if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(go, true);
     var i = 0, token = {};
-    rv.run = token; rv.shut = false;
+    rv.run = token; rv.shut = false; rv.queued = [];
     var next = function () {
       if (rv.run !== token) {
         go.disabled = false;
@@ -585,8 +585,12 @@
         go.disabled = false;
         if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(go, false);
         var bad = left.filter(function (g) { return !(rv.done[g.contact] && rv.done[g.contact].ok); }).length;
-        $('odMsg').textContent = bad ? plural(left.length - bad, 'email', 'emails') + ' sent. ' + bad + ' not sent. The reason is shown against each client.' : 'Sent.';
+        var qd = rv.queued || [];
+        $('odMsg').textContent = bad ? plural(left.length - bad, 'email', 'emails') + (qd.length ? ' will be sent. ' : ' sent. ') + bad + ' not sent. The reason is shown against each client.' : qd.length ? '' : 'Sent.';
         $('odMsg').className = 'msg ' + (bad ? 'warn' : 'ok');
+        if (qd.length && window.ADspaceAdmin && window.ADspaceAdmin.mailUndo) {
+          window.ADspaceAdmin.mailUndo(qd.map(function (x) { return x.q; }), qd[0].name, $('odMsg'), function () { if (rv.after) rv.after(); });
+        }
         var firstBad = rv.groups.findIndex ? rv.groups.findIndex(function (g) { return rv.done[g.contact] && !rv.done[g.contact].ok; }) : -1;
         if (firstBad > -1) rv.on = firstBad;
         paintReview();
@@ -599,7 +603,10 @@
         subject: ed.subject || '', body: ed.body || '', again: recent.indexOf(g) > -1 }).then(function (d) {
         if (rv.run !== token) { next(); return; }
         var paid = leftOut(d);
-        if (d.ok) rv.done[g.contact] = { ok: true, text: window.ADspaceWords.line.sendTo(d.to, d.cc, null, 'Sent to') + '.' + paid };
+        /* Undo send (2026-11-28): each email queued, cancelled together
+           from one bar under the sheet's line once the run ends. */
+        if (d.ok && d.queued) { rv.queued.push({ q: d.queued, name: g.name }); rv.done[g.contact] = { ok: true, text: window.ADspaceWords.line.mailQueued(g.name, d.queued.seconds) + paid }; }
+        else if (d.ok) rv.done[g.contact] = { ok: true, text: window.ADspaceWords.line.sendTo(d.to, d.cc, null, 'Sent to') + '.' + paid };
         else if (d.error === 'recent') {
           /* Sent meanwhile by somebody else: kept here, so the next Send asks
              Send again for this client alone. */

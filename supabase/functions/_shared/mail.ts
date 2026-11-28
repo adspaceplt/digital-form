@@ -201,3 +201,25 @@ export function callerEmail(auth: string): string {
     return String(JSON.parse(atob(part + '==='.slice((part.length + 3) % 4))).email || '');
   } catch (_e) { return ''; }
 }
+/* The caller's login id, from their token (already checked by the
+   database's own reads before anything is queued). */
+export function callerId(auth: string): string {
+  try {
+    const part = (auth.replace(/^Bearer\s+/i, '').split('.')[1] || '').replace(/-/g, '+').replace(/_/g, '/');
+    return String(JSON.parse(atob(part + '==='.slice((part.length + 3) % 4))).sub || '');
+  } catch (_e) { return ''; }
+}
+/* Undo send (2026-11-28): an email a colleague sends is queued, built
+   whole, and goes once `send_undo_seconds` pass (`mail_queue_put`, the
+   service role's), its row reading Queued until supplier-mail's drain
+   sends it and closes it through the sender's own close. Answers
+   { source, id, seconds, send_at }, or null where the queue could not take
+   it, and the sender then sends at once as before. */
+export async function queue(p: { source: string; log_id: string; msg: Record<string, unknown>; idem: string;
+  to_name?: string; what?: string; close?: Record<string, unknown>; by?: string }): Promise<Record<string, unknown> | null> {
+  try {
+    const d = await rpcAsService('mail_queue_put', { p }) as Record<string, unknown> | null;
+    if (d && d.ok) return { source: d.source, id: d.id, seconds: d.seconds, send_at: d.send_at };
+  } catch (_e) { /* sent at once below */ }
+  return null;
+}

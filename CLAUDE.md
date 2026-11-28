@@ -190,7 +190,7 @@ is empty and only shrinks (`--write` refuses to add).
   route list in the same push that builds it.
 - A new thing joins every shared list of its kind in the same push that
   builds it, checked before the PR opens and named in its Test plan: an email its row in Settings › Messages (`js/mailtpl.js`,
-  English and 中文); a number or reference its Settings numbering
+  English alone: no email is sent in Chinese); a number or reference its Settings numbering
   (`id_formats`); a business figure its setting; a word two screens say
   `ADspaceWords.line`; a part of a client's record a place within the six
   tabs (`docs/rules/clients.md`), never a seventh; a route the walks; a page
