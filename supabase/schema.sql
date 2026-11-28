@@ -174908,6 +174908,9 @@ revoke all on function public.creator_pay_check(jsonb) from public, anon, authen
 
 -- END OF ONE BRN RULE -------------------------------------------------------
 
+select public.functions_tidy();
+
+-- ===========================================================================
 -- UNDO SEND — every email a colleague sends waits a minute (2026-11-28)
 -- ===========================================================================
 -- WHY: the user, 2026-11-28: "Can the 1 min delay apply not only to
