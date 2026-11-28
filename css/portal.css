@@ -6857,7 +6857,8 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 /* A total's S$ where billed in RM, under its figure (2026-11-27). */
 .qs-tot .qs-near { display: block; font-size: 12.5px; font-weight: 400; color: var(--ink-mute); }
 /* MOCK-UP: a monthly line over its months; the term discount under the last total. */
-.qs-saved { justify-self: end; width: min(420px, 100%); margin: 0; padding: 0 16px; text-align: right; font-size: 14px; color: var(--ink-soft); }
+.qs-tot > .qs-saved { padding-top: 0; }
+.qs-tot > .qs-saved dd { color: var(--ink-soft); font-size: 13px; font-variant-numeric: normal; }
 .qs-acts { display: flex; gap: 8px; }
 /* A quotation's Add-on Rates (2026-11-25): read only, two columns at a
    desk, a group's name over its rates; never a total. */

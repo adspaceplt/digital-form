@@ -9921,7 +9921,7 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .qb-sideline > .qb-sidename { grid-area: n; }
 .qb-sideline > .qb-fig { grid-area: f; justify-self: start; color: var(--ink-soft); }
 /* MOCK-UP: a line over its months; the term discount under the last total. */
-.qb-fig > .qb-per { display: block; font-size: 12.5px; color: var(--ink-mute); }
+.qb-sideline > .qb-per { grid-column: 1; font-size: 12.5px; color: var(--ink-mute); }
 .qb-sidenote.qb-saved, .qb-note.qb-saved { color: var(--ink-soft); }
 .qb-sideline > .qb-sideact { grid-area: a; }
 .qb-sidename { overflow-wrap: anywhere; }

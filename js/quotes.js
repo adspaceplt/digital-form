@@ -3321,7 +3321,7 @@
     /* MOCK-UP: a monthly line over its own months, where the period is ticked. */
     var perOf = function (l) {
       var lp = MON.periodTotals(t, B && B.sel) && MON.linePeriod(l, t);
-      return lp ? '<small class="qb-per">' + esc(window.ADspaceWords.line.linePeriod(CUR + ' ' + acct(lp.incl), lp.months, MON.sstOf(d.lines, t.sst_pct).on)) + '</small>' : '';
+      return lp ? '<span class="qb-per">' + esc(window.ADspaceWords.line.linePeriod(CUR + ' ' + acct(lp.incl), lp.months, MON.sstOf(d.lines, t.sst_pct).on)) + '</span>' : '';
     };
     var board = B ? boardLines().map(function (l) { return l.key; }) : [];
     var row = function (l) {
@@ -3336,7 +3336,7 @@
       }
       return '<div class="qb-sideline" data-key="' + esc(l.key || '') + '"><span class="qb-sidename">' + esc(l.label) +
         (Number(l.qty) > 1 && l.kind !== 'package' && l.kind !== 'plan' ? ' × ' + esc(l.qty) : '') + '</span>' +
-        '<span class="qb-fig">' + esc(l.in_plan ? 'In plan' : CUR + ' ' + acct(l.amount)) + perOf(l) + '</span>' +
+        '<span class="qb-fig">' + esc(l.in_plan ? 'In plan' : CUR + ' ' + acct(l.amount)) + '</span>' + perOf(l) +
         '<span class="team-act qb-sideact">' + (items.length ? '<button class="kmenu-btn" type="button" aria-label="' + esc('More actions, ' + l.label) + '" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' + items.map(function (x) {
             return '<button class="kmenu-item" data-g="' + x[1] + '" data-a="' + x[0] + '" type="button" role="menuitem">' + esc(x[2]) + '</button>';

@@ -1051,6 +1051,7 @@
   /* The totals as a list: label, figure, a total in bold with its S$ under it. */
   function totHtml(rows, cls) {
     return rows.length ? '<dl class="qs-tot' + (cls ? ' ' + cls : '') + '">' + rows.map(function (x) {
+      if (x.saved) return '<div class="qs-saved"><dt></dt><dd>' + esc(x[0]) + '</dd></div>';
       return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + (x[4] ? '<small class="qs-near">' + esc(x[4]) + '</small>' : '') + '</dt><dd>' + esc(x[1]) +
         (x[3] ? '<small class="qs-near">' + esc(x[3].trim()) + '</small>' : '') + '</dd></div>';
     }).join('') + '</dl>' : '';
@@ -1095,9 +1096,12 @@
         var row = [ptWord('ptMonths', pt.months, on), qc() + ' ' + n2(pt.period), 0, near(pt.period)];
         row.period = true;
         r.push(row);
+        /* MOCK-UP: the term discount under the period's total. */
+        if (!(pt.total != null && tt.once)) r.push.apply(r, savedRow(tt));
       }
     });
     if (pt && pt.total != null && tt.once) r.all = [ptWord('ptAll', pt.months, on), qc() + ' ' + n2(pt.total), 1, near(pt.total), ptWord('ptNote', pt.months, on)];
+    if (r.all) r.allSaved = savedRow(tt);
     if (adsOf(tt).length) r.push([w.adsT, qc() + ' ' + n2(tt.ads_total), 1, near(tt.ads_total)]);
     return r;
   }
@@ -1111,11 +1115,12 @@
     var on = sstOn(tt), a = qc() + ' ' + n2(lp.incl);
     return '<small class="qs-per">' + esc(lang === 'zh' ? f(t()[on ? 'lpT' : 'lpTNone'], { n: lp.months, a: a }) : window.ADspaceWords.line.linePeriod(a, lp.months, on)) + '</small>';
   }
-  function savedHtml(tt) {
+  function savedRow(tt) {
     var v = periodOf(tt) ? window.ADspaceMoney.termSaved(curLines(), tt) : 0;
-    if (!v) return '';
-    var a = qc() + ' ' + n2(v);
-    return '<p class="qs-saved">' + esc(lang === 'zh' ? f(t().savedT, { a: a }) : window.ADspaceWords.line.termSaved(a)) + '</p>';
+    if (!v) return [];
+    var a = qc() + ' ' + n2(v), row = [lang === 'zh' ? f(t().savedT, { a: a }) : window.ADspaceWords.line.termSaved(a), ''];
+    row.saved = true;
+    return [row];
   }
   function periodOf(tt) { return window.ADspaceMoney.periodTotals(tt, Q && tt === Q.totals && !Q.revised ? Q.selection : null); }
   /* English from ADspaceWords.line, one copy with the PDF; Chinese its own. */
@@ -1192,7 +1197,7 @@
         (q.revised ? '<span class="qs-meta">' + esc(f(t().revised, { d: day(q.issued_at), r: q.first_ref })) + '</span>' : '') + '</div>' +
       '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(t().line) + '</span><span class="qs-num qs-q">' + esc(t().qty) + '</span>' +
       '<span class="qs-num qs-r">' + esc(f(t().rate, { c: qc() })) + '</span><span class="qs-num">' + esc(f(t().sub, { c: qc() })) + '</span></div>' + lines + '</div>' +
-      (function (rows) { return totHtml(rows) + (rows.all ? totHtml([rows.all], 'qs-tot-all') : '') + savedHtml(tt); })(totalsRows(tt)) +
+      (function (rows) { return totHtml(rows) + (rows.all ? totHtml([rows.all].concat(rows.allSaved || []), 'qs-tot-all') : ''); })(totalsRows(tt)) +
       /* Once sealed, the signed copy beside it is the one download. */
       (q.seal && q.seal.sealed ? '' : '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button></div>') +
       '<div class="qs-notes">' + notes.map(function (n, i) { return '<span>' + noteH(n) + '</span>' + (i === adAt ? adHowBtn() : ''); }).join('') + '</div>' +
